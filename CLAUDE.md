@@ -49,6 +49,12 @@ supabase migration up
 2. Environment variables are pre-configured for local development
 3. For production, update Supabase URLs and keys accordingly
 
+### Vercel Deployment Setup
+1. The project includes a `vercel.json` configuration for optimal serverless deployment
+2. Puppeteer configuration automatically handles Vercel's serverless environment
+3. Uses `@sparticuz/chromium` for serverless-compatible Chrome binary
+4. If experiencing shared library issues, the application gracefully falls back with user-friendly error messages
+
 ## Development Workflow
 
 ### Best Practices

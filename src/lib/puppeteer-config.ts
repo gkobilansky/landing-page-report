@@ -20,14 +20,55 @@ async function getLocalExecutablePath() {
 export async function createPuppeteerBrowser() {
   const isProduction = process.env.NODE_ENV === 'production';
   
-  return await puppeteer.launch({
-    args: isProduction 
-      ? chromium.args
-      : ['--no-sandbox', '--disable-setuid-sandbox'],
-    defaultViewport: chromium.defaultViewport,
-    executablePath: isProduction 
-      ? await chromium.executablePath()
-      : await getLocalExecutablePath(),
-    headless: isProduction ? chromium.headless : true,
-  });
+  if (isProduction) {
+    // Vercel/serverless configuration with optimized chromium
+    try {
+      console.log('🔧 Launching Chromium in serverless environment...');
+      
+      // Enhanced args for better compatibility on Vercel
+      const args = [
+        ...chromium.args,
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--single-process',
+        '--no-zygote',
+        '--disable-extensions',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=VizDisplayCompositor',
+        '--disable-ipc-flooding-protection',
+        '--disable-background-media-suspend'
+      ];
+
+      const executablePath = await chromium.executablePath();
+      
+      console.log(`🎯 Using Chromium executable at: ${executablePath}`);
+      
+      return await puppeteer.launch({
+        args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath,
+        headless: chromium.headless,
+        timeout: 60000,
+      });
+    } catch (error) {
+      console.error('❌ Failed to launch Chromium:', error);
+      throw new Error(`Chromium launch failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  } else {
+    // Local development configuration
+    return await puppeteer.launch({
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ],
+      executablePath: await getLocalExecutablePath(),
+      headless: true,
+    });
+  }
 }

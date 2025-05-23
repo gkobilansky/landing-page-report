@@ -185,13 +185,25 @@ async function analyzeWithPuppeteer(
     console.error('❌ Puppeteer fallback also failed:', error);
     const loadTime = Date.now() - startTime;
     
+    // Provide more specific error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const isChromiumError = errorMessage.includes('libnss3.so') || errorMessage.includes('shared libraries');
+    
     return {
       score: 0,
       grade: 'F',
       metrics: { lcp: 0, fcp: 0, cls: 0, tbt: 0, si: 0 },
       lighthouseScore: 0,
-      issues: ['Both Lighthouse and Puppeteer analysis failed'],
-      recommendations: ['Please check if the URL is accessible and try again'],
+      issues: [
+        'Page speed analysis unavailable', 
+        isChromiumError ? 'Browser engine temporarily unavailable' : 'Analysis failed'
+      ],
+      recommendations: [
+        isChromiumError 
+          ? 'This is a temporary server issue - please try again in a few minutes'
+          : 'Please check if the URL is accessible and try again',
+        'Consider manual testing with Google PageSpeed Insights as an alternative'
+      ],
       loadTime
     };
   }
