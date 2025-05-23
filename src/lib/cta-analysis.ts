@@ -302,7 +302,7 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
       additionalClickableElements.forEach(element => {
         if (processedElements.has(element)) return;
         
-        const text = element.textContent?.trim() || '';
+        let text = element.textContent?.trim() || '';
         
         // For input elements, get the value instead
         if (element.tagName === 'INPUT' && (element as HTMLInputElement).value) {
