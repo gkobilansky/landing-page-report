@@ -87,10 +87,10 @@ interface AnalysisResultsProps {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 90) return 'bg-green-100 text-green-800'
-  if (score >= 80) return 'bg-yellow-100 text-yellow-800'
-  if (score >= 70) return 'bg-orange-100 text-orange-800'
-  return 'bg-red-100 text-red-800'
+  if (score >= 90) return 'text-green-300';
+  if (score >= 80) return 'text-yellow-300';
+  if (score >= 70) return 'text-orange-300';
+  return 'text-red-300';
 }
 
 function getScoreGrade(score: number): string {
@@ -103,8 +103,8 @@ function getScoreGrade(score: number): string {
 
 function ScoreBadge({ score, testId }: { score: number; testId?: string }) {
   return (
-    <span 
-      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getScoreColor(score)}`}
+    <span
+      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getScoreColor(score)} border border-current`}
       data-testid={testId}
     >
       {score}
@@ -114,9 +114,9 @@ function ScoreBadge({ score, testId }: { score: number; testId?: string }) {
 
 function CategoryCard({ title, score, children }: { title: string; score?: number; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="rounded-lg border border-gray-700 p-6" style={{ backgroundColor: 'var(--color-bg-card)' }}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <h3 className="text-lg font-semibold text-gray-100">{title}</h3>
         {score !== undefined && <ScoreBadge score={score} testId={`score-badge-${title.toLowerCase().replace(/\s+/g, '-')}`} />}
       </div>
       {children}
@@ -128,15 +128,15 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="rounded-lg border border-gray-700 p-6" style={{ backgroundColor: 'var(--color-bg-card)' }}>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Analysis Results</h2>
-            <p className="text-gray-600 mt-1">{result.url}</p>
+            <h2 className="text-2xl font-bold text-gray-100">Analysis Results</h2>
+            <p className="text-gray-400 mt-1">{result.url}</p>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-gray-900 mb-1">{result.overallScore}</div>
-            <div className="text-sm text-gray-600">Overall Score</div>
+            <div className="text-3xl font-bold text-gray-100 mb-1">{result.overallScore}</div>
+            <div className="text-sm text-gray-400">Overall Score</div>
             <div className="text-sm text-gray-500 mt-2">Status: {result.status}</div>
           </div>
         </div>
@@ -147,25 +147,25 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         {/* Page Load Speed */}
         {result.pageLoadSpeed && (
           <CategoryCard title="Page Load Speed" score={result.pageLoadSpeed.score}>
-            <div className="space-y-3">
+            <div className="space-y-3 text-gray-300">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-600">LCP:</span> {Math.round(result.pageLoadSpeed.metrics.lcp)}ms
+                  <span className="text-gray-400">LCP:</span> {Math.round(result.pageLoadSpeed.metrics.lcp)}ms
                 </div>
                 <div>
-                  <span className="text-gray-600">FCP:</span> {Math.round(result.pageLoadSpeed.metrics.fcp)}ms
+                  <span className="text-gray-400">FCP:</span> {Math.round(result.pageLoadSpeed.metrics.fcp)}ms
                 </div>
                 <div>
-                  <span className="text-gray-600">CLS:</span> {result.pageLoadSpeed.metrics.cls.toFixed(3)}
+                  <span className="text-gray-400">CLS:</span> {result.pageLoadSpeed.metrics.cls.toFixed(3)}
                 </div>
                 <div>
-                  <span className="text-gray-600">Lighthouse:</span> {result.pageLoadSpeed.lighthouseScore}
+                  <span className="text-gray-400">Lighthouse:</span> {result.pageLoadSpeed.lighthouseScore}
                 </div>
               </div>
               {result.pageLoadSpeed.issues.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-600 space-y-1">
+                  <h4 className="font-medium text-gray-100 mb-2">Issues:</h4>
+                  <ul className="text-sm text-red-400 space-y-1">
                     {result.pageLoadSpeed.issues.map((issue, index) => (
                       <li key={index}>• {issue}</li>
                     ))}
@@ -174,8 +174,8 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
               )}
               {result.pageLoadSpeed.recommendations.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-600 space-y-1">
+                  <h4 className="font-medium text-gray-100 mb-2">Recommendations:</h4>
+                  <ul className="text-sm text-blue-400 space-y-1">
                     {result.pageLoadSpeed.recommendations.map((rec, index) => (
                       <li key={index}>• {rec}</li>
                     ))}
@@ -189,12 +189,12 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         {/* Font Usage */}
         {result.fontUsage && (
           <CategoryCard title="Font Usage" score={result.fontUsage.score}>
-            <div className="space-y-3">
+            <div className="space-y-3 text-gray-300">
               <div className="text-sm">
-                <span className="text-gray-600">Font Families ({result.fontUsage.fontCount}):</span>
+                <span className="text-gray-400">Font Families ({result.fontUsage.fontCount}):</span>
                 <div className="mt-1">
                   {result.fontUsage.fontFamilies.map((font, index) => (
-                    <span key={index} className="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded mr-2 mb-1 text-xs">
+                    <span key={index} className="inline-block bg-gray-700 text-gray-200 px-2 py-1 rounded mr-2 mb-1 text-xs">
                       {font}
                     </span>
                   ))}
@@ -202,8 +202,8 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
               </div>
               {result.fontUsage.issues.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-600 space-y-1">
+                  <h4 className="font-medium text-gray-100 mb-2">Issues:</h4>
+                  <ul className="text-sm text-red-400 space-y-1">
                     {result.fontUsage.issues.map((issue, index) => (
                       <li key={index}>• {issue}</li>
                     ))}
@@ -212,8 +212,8 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
               )}
               {result.fontUsage.recommendations.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-600 space-y-1">
+                  <h4 className="font-medium text-gray-100 mb-2">Recommendations:</h4>
+                  <ul className="text-sm text-blue-400 space-y-1">
                     {result.fontUsage.recommendations.map((rec, index) => (
                       <li key={index}>• {rec}</li>
                     ))}
@@ -227,25 +227,25 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         {/* Image Optimization */}
         {result.imageOptimization && (
           <CategoryCard title="Image Optimization" score={result.imageOptimization.score}>
-            <div className="space-y-3">
+            <div className="space-y-3 text-gray-300">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-600">Total Images:</span> {result.imageOptimization.totalImages}
+                  <span className="text-gray-400">Total Images:</span> {result.imageOptimization.totalImages}
                 </div>
                 <div>
-                  <span className="text-gray-600">Modern Formats:</span> {result.imageOptimization.modernFormats}
+                  <span className="text-gray-400">Modern Formats:</span> {result.imageOptimization.modernFormats}
                 </div>
                 <div>
-                  <span className="text-gray-600">With Alt Text:</span> {result.imageOptimization.withAltText}
+                  <span className="text-gray-400">With Alt Text:</span> {result.imageOptimization.withAltText}
                 </div>
                 <div>
-                  <span className="text-gray-600">Properly Sized:</span> {result.imageOptimization.appropriatelySized}
+                  <span className="text-gray-400">Properly Sized:</span> {result.imageOptimization.appropriatelySized}
                 </div>
               </div>
               {result.imageOptimization.issues.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-600 space-y-1">
+                  <h4 className="font-medium text-gray-100 mb-2">Issues:</h4>
+                  <ul className="text-sm text-red-400 space-y-1">
                     {result.imageOptimization.issues.map((issue, index) => (
                       <li key={index}>• {issue}</li>
                     ))}
@@ -254,8 +254,8 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
               )}
               {result.imageOptimization.recommendations.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-600 space-y-1">
+                  <h4 className="font-medium text-gray-100 mb-2">Recommendations:</h4>
+                  <ul className="text-sm text-blue-400 space-y-1">
                     {result.imageOptimization.recommendations.map((rec, index) => (
                       <li key={index}>• {rec}</li>
                     ))}
@@ -269,40 +269,37 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         {/* CTA Analysis */}
         {result.ctaAnalysis && (
           <CategoryCard title="CTA Analysis" score={result.ctaAnalysis.score}>
-            <div className="space-y-3">
-              {result.ctaAnalysis.ctas.length > 0 && (
+            <div className="space-y-3 text-gray-300">
+              {result.ctaAnalysis.primaryCTA && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">CTAs Found:</h4>
-                  <div className="space-y-2">
-                    {result.ctaAnalysis.ctas.slice(0, 5).map((cta, index) => (
-                      <div key={index} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
-                        <span className="font-medium">{cta.text}</span>
-                        <div className="flex items-center space-x-2">
-                          {cta.confidence && (
-                            <span className="text-xs text-gray-600">
-                              {(cta.confidence * 100).toFixed(0)}% confidence
-                            </span>
-                          )}
-                          {cta.actionStrength && (
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                              {cta.actionStrength}
-                            </span>
-                          )}
-                          {(cta.aboveFold || cta.isAboveFold) && (
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                              Above fold
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <h4 className="font-medium text-gray-100 mb-1">Primary CTA:</h4>
+                  <p className="text-sm">
+                    {result.ctaAnalysis.primaryCTA.text}
+                    <span className="text-xs text-gray-500 ml-2">
+                       (Strength: {result.ctaAnalysis.primaryCTA.actionStrength}, Visibility: {result.ctaAnalysis.primaryCTA.visibility})
+                    </span>
+                  </p>
                 </div>
+              )}
+              {result.ctaAnalysis.ctas && result.ctaAnalysis.ctas.length > 0 && (
+                 <div>
+                    <h4 className="font-medium text-gray-100 mb-1 mt-3">All CTAs ({result.ctaAnalysis.ctas.length}):</h4>
+                    <ul className="space-y-1 text-sm">
+                        {result.ctaAnalysis.ctas.map((cta, index) => (
+                            <li key={index} className="border-b border-gray-700 py-1 last:border-b-0">
+                                {cta.text}
+                                <span className="text-xs text-gray-500 ml-2">
+                                    ({cta.isAboveFold ? 'Above Fold' : 'Below Fold'}, Strength: {cta.actionStrength}, Visibility: {cta.visibility})
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                 </div>
               )}
               {result.ctaAnalysis.issues.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-600 space-y-1">
+                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Issues:</h4>
+                  <ul className="text-sm text-red-400 space-y-1">
                     {result.ctaAnalysis.issues.map((issue, index) => (
                       <li key={index}>• {issue}</li>
                     ))}
@@ -311,8 +308,8 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
               )}
               {result.ctaAnalysis.recommendations.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-600 space-y-1">
+                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Recommendations:</h4>
+                  <ul className="text-sm text-blue-400 space-y-1">
                     {result.ctaAnalysis.recommendations.map((rec, index) => (
                       <li key={index}>• {rec}</li>
                     ))}
@@ -325,26 +322,26 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
 
         {/* Whitespace Assessment */}
         {result.whitespaceAssessment && (
-          <CategoryCard title="Whitespace & Layout" score={result.whitespaceAssessment.score}>
-            <div className="space-y-3">
+          <CategoryCard title="Whitespace Assessment" score={result.whitespaceAssessment.score}>
+            <div className="space-y-3 text-gray-300">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-600">Whitespace Ratio:</span> {(result.whitespaceAssessment.metrics.whitespaceRatio * 100).toFixed(0)}%
+                  <span className="text-gray-400">Whitespace Ratio:</span> {result.whitespaceAssessment.metrics.whitespaceRatio.toFixed(2)}
                 </div>
                 <div>
-                  <span className="text-gray-600">Clutter Score:</span> {result.whitespaceAssessment.metrics.clutterScore}
+                  <span className="text-gray-400">Clutter Score:</span> {result.whitespaceAssessment.metrics.clutterScore}
                 </div>
                 <div>
-                  <span className="text-gray-600">Max Density:</span> {result.whitespaceAssessment.metrics.elementDensityPerSection.maxDensity}
+                  <span className="text-gray-400">Avg Element Density:</span> {result.whitespaceAssessment.metrics.elementDensityPerSection.averageDensity.toFixed(2)}
                 </div>
-                <div>
-                  <span className="text-gray-600">Total Elements:</span> {result.whitespaceAssessment.metrics.elementDensityPerSection.totalElements}
+                 <div>
+                  <span className="text-gray-400">Spacing Adequate:</span> {result.whitespaceAssessment.metrics.hasAdequateSpacing ? 'Yes' : 'No'}
                 </div>
               </div>
               {result.whitespaceAssessment.issues.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-600 space-y-1">
+                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Issues:</h4>
+                  <ul className="text-sm text-red-400 space-y-1">
                     {result.whitespaceAssessment.issues.map((issue, index) => (
                       <li key={index}>• {issue}</li>
                     ))}
@@ -353,8 +350,8 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
               )}
               {result.whitespaceAssessment.recommendations.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-600 space-y-1">
+                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Recommendations:</h4>
+                  <ul className="text-sm text-blue-400 space-y-1">
                     {result.whitespaceAssessment.recommendations.map((rec, index) => (
                       <li key={index}>• {rec}</li>
                     ))}
@@ -368,24 +365,23 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         {/* Social Proof */}
         {result.socialProof && (
           <CategoryCard title="Social Proof" score={result.socialProof.score}>
-            <div className="space-y-3">
-              {result.socialProof.elements.length > 0 && (
+            <div className="space-y-3 text-gray-300">
+              {result.socialProof.elements.length > 0 ? (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Elements Found:</h4>
-                  <div className="space-y-1 text-sm">
+                  <h4 className="font-medium text-gray-100 mb-2">Elements Detected:</h4>
+                  <ul className="text-sm space-y-1">
                     {result.socialProof.elements.map((element, index) => (
-                      <div key={index} className="flex justify-between">
-                        <span className="capitalize">{element.type}:</span>
-                        <span>{element.count}</span>
-                      </div>
+                      <li key={index}>• {element.type} ({element.count})</li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
+              ) : (
+                <p className="text-sm">No social proof elements detected.</p>
               )}
               {result.socialProof.issues.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-600 space-y-1">
+                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Issues:</h4>
+                  <ul className="text-sm text-red-400 space-y-1">
                     {result.socialProof.issues.map((issue, index) => (
                       <li key={index}>• {issue}</li>
                     ))}

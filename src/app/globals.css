@@ -1,1 +1,10 @@
 @import "tailwindcss";
+:root {
+    --color-bg-main: oklch(0.313815 0.021108 254.139);
+    --color-bg-card: oklch(0.211484 0.01165 254.088);
+}
+
+body {
+    @apply text-gray-100;
+    background-color: var(--color-bg-main);
+}
