@@ -51,9 +51,11 @@ supabase migration up
 
 ### Vercel Deployment Setup
 1. The project includes a `vercel.json` configuration for optimal serverless deployment
-2. Puppeteer configuration automatically handles Vercel's serverless environment
-3. Uses `@sparticuz/chromium` for serverless-compatible Chrome binary
-4. If experiencing shared library issues, the application gracefully falls back with user-friendly error messages
+2. **Browser Service**: Uses Browserless.io for reliable Chrome browser access in production
+3. **Environment Variables Required**:
+   - `BLESS_KEY`: Browserless.io API key (add to Vercel environment variables)
+4. **Local Development**: Automatically uses local Chrome installation
+5. **Reliable Deployment**: No Chromium dependency issues on serverless platforms
 
 ## Development Workflow
 

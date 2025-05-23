@@ -187,6 +187,7 @@ async function analyzeWithPuppeteer(
     
     // Provide more specific error information
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const isBrowserlessError = errorMessage.includes('Browserless connection failed') || errorMessage.includes('WebSocket');
     const isChromiumError = errorMessage.includes('libnss3.so') || errorMessage.includes('shared libraries');
     
     return {
@@ -196,10 +197,13 @@ async function analyzeWithPuppeteer(
       lighthouseScore: 0,
       issues: [
         'Page speed analysis unavailable', 
+        isBrowserlessError ? 'Browser service temporarily unavailable' : 
         isChromiumError ? 'Browser engine temporarily unavailable' : 'Analysis failed'
       ],
       recommendations: [
-        isChromiumError 
+        isBrowserlessError 
+          ? 'Browser service is temporarily down - please try again in a few minutes'
+          : isChromiumError 
           ? 'This is a temporary server issue - please try again in a few minutes'
           : 'Please check if the URL is accessible and try again',
         'Consider manual testing with Google PageSpeed Insights as an alternative'

@@ -17,7 +17,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@sparticuz/chromium": "^133.0.0",
     "@supabase/supabase-js": "^2.49.8",
     "@tailwindcss/postcss": "^4.1.7",
     "lighthouse": "^12.6.0",

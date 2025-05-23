@@ -1,5 +1,4 @@
 import puppeteer from 'puppeteer-core';
-import chromium from '@sparticuz/chromium';
 
 // Import puppeteer for local development executable path
 let localPuppeteer: any;
@@ -19,47 +18,29 @@ async function getLocalExecutablePath() {
 
 export async function createPuppeteerBrowser() {
   const isProduction = process.env.NODE_ENV === 'production';
+  const browserlessKey = process.env.BLESS_KEY;
   
-  if (isProduction) {
-    // Vercel/serverless configuration with optimized chromium
+  if (isProduction && browserlessKey) {
+    // Browserless.io configuration for production
     try {
-      console.log('🔧 Launching Chromium in serverless environment...');
+      console.log('🌐 Connecting to Browserless.io...');
       
-      // Enhanced args for better compatibility on Vercel
-      const args = [
-        ...chromium.args,
-        '--no-first-run',
-        '--no-default-browser-check',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--single-process',
-        '--no-zygote',
-        '--disable-extensions',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-features=VizDisplayCompositor',
-        '--disable-ipc-flooding-protection',
-        '--disable-background-media-suspend'
-      ];
-
-      const executablePath = await chromium.executablePath();
+      const browserWSEndpoint = `wss://chrome.browserless.io?token=${browserlessKey}`;
       
-      console.log(`🎯 Using Chromium executable at: ${executablePath}`);
+      console.log('🔗 Connecting to browser WebSocket endpoint...');
       
-      return await puppeteer.launch({
-        args,
-        defaultViewport: chromium.defaultViewport,
-        executablePath,
-        headless: chromium.headless,
-        timeout: 60000,
+      return await puppeteer.connect({
+        browserWSEndpoint,
+        defaultViewport: { width: 1920, height: 1080 },
       });
     } catch (error) {
-      console.error('❌ Failed to launch Chromium:', error);
-      throw new Error(`Chromium launch failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ Failed to connect to Browserless:', error);
+      throw new Error(`Browserless connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   } else {
     // Local development configuration
+    console.log('🏠 Running in local development mode...');
+    
     return await puppeteer.launch({
       args: [
         '--no-sandbox', 
