@@ -52,6 +52,36 @@ jest.mock('@/lib/page-speed-analysis', () => ({
   )
 }));
 
+jest.mock('@/lib/whitespace-assessment', () => ({
+  analyzeWhitespace: jest.fn(() => 
+    Promise.resolve({
+      score: 85,
+      grade: 'B',
+      metrics: {
+        whitespaceRatio: 0.58,
+        elementDensityPerSection: {
+          gridSections: 12,
+          elementDensityPerSection: [2, 3, 1, 4, 2, 1, 3, 2, 1, 2, 3, 1],
+          maxDensity: 4,
+          averageDensity: 2.1,
+          totalElements: 45
+        },
+        spacingAnalysis: {
+          headlineSpacing: { marginTop: 32, marginBottom: 24, adequate: true },
+          ctaSpacing: { marginTop: 40, marginBottom: 40, marginLeft: 20, marginRight: 20, adequate: true },
+          contentBlockSpacing: { averageMarginBetween: 32, adequate: true },
+          lineHeight: { average: 1.6, adequate: true }
+        },
+        clutterScore: 15,
+        hasAdequateSpacing: true
+      },
+      issues: [],
+      recommendations: ['Excellent whitespace usage! Content is well-spaced and digestible'],
+      loadTime: 2500
+    })
+  )
+}));
+
 jest.mock('@/lib/cta-analysis', () => ({
   analyzeCTA: jest.fn(() => 
     Promise.resolve({
@@ -213,5 +243,38 @@ describe('/api/analyze', () => {
     expect(response.status).toBe(200);
     expect(data.analysis.pageLoadSpeed.score).toBe(95);
     expect(data.analysis.pageLoadSpeed.grade).toBe('A');
+  });
+
+  it('should support whitespace component analysis', async () => {
+    const request = createRequest({ 
+      url: 'https://example.com',
+      component: 'whitespace'
+    });
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.analysis.whitespaceAssessment).toBeDefined();
+    expect(data.analysis.whitespaceAssessment.score).toBe(85);
+    expect(data.analysis.whitespaceAssessment.grade).toBe('B');
+    expect(data.analysis.whitespaceAssessment.metrics.whitespaceRatio).toBe(0.58);
+    expect(data.analysis.whitespaceAssessment.metrics.elementDensityPerSection.maxDensity).toBe(4);
+    expect(data.analysis.whitespaceAssessment.metrics.spacingAnalysis.headlineSpacing.adequate).toBe(true);
+    expect(data.analysis.whitespaceAssessment.metrics.hasAdequateSpacing).toBe(true);
+    expect(data.analysis.overallScore).toBe(85); // Only whitespace analysis ran
+  });
+
+  it('should support spacing component analysis (alternative name)', async () => {
+    const request = createRequest({ 
+      url: 'https://example.com',
+      component: 'spacing'
+    });
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.analysis.whitespaceAssessment.score).toBe(85);
+    expect(data.analysis.whitespaceAssessment.grade).toBe('B');
   });
 });

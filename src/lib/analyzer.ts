@@ -3,6 +3,7 @@ import lighthouse, { RunnerResult } from 'lighthouse';
 import { analyzeFontUsage, FontAnalysisResult } from './font-analysis';
 import { analyzeCTA, CTAAnalysisResult } from './cta-analysis';
 import { analyzePageSpeed, PageSpeedAnalysisResult } from './page-speed-analysis';
+import { analyzeWhitespace, WhitespaceAnalysisResult } from './whitespace-assessment';
 
 export interface AnalysisResult {
   url: string;
@@ -62,7 +63,27 @@ export interface AnalysisResult {
   };
   whitespaceAssessment: {
     score: number;
+    grade: 'A' | 'B' | 'C' | 'D' | 'F';
+    metrics: {
+      whitespaceRatio: number;
+      elementDensityPerSection: {
+        gridSections: number;
+        maxDensity: number;
+        averageDensity: number;
+        totalElements: number;
+      };
+      spacingAnalysis: {
+        headlineSpacing: { adequate: boolean };
+        ctaSpacing: { adequate: boolean };
+        contentBlockSpacing: { adequate: boolean };
+        lineHeight: { adequate: boolean };
+      };
+      clutterScore: number;
+      hasAdequateSpacing: boolean;
+    };
     issues: string[];
+    recommendations: string[];
+    loadTime: number;
   };
   socialProof: {
     score: number;
@@ -115,7 +136,7 @@ export class LandingPageAnalyzer {
         analyzeFontUsage(url),
         this.analyzeImageOptimization(page),
         this.analyzeCTAWrapper(page, url),
-        this.analyzeWhitespace(page),
+        this.analyzeWhitespaceWrapper(url),
         this.analyzeSocialProof(page)
       ]);
 
@@ -289,38 +310,66 @@ export class LandingPageAnalyzer {
     }
   }
 
-  private async analyzeWhitespace(page: Page) {
-    const whitespaceAnalysis = await page.evaluate(() => {
-      const body = document.body;
-      const elements = Array.from(body.querySelectorAll('*'));
+  private async analyzeWhitespaceWrapper(url: string) {
+    try {
+      console.log('🔍 Starting comprehensive whitespace analysis...');
+      const result = await analyzeWhitespace(url);
+      console.log(`✅ Whitespace analysis complete. Score: ${result.score}, Grade: ${result.grade}`);
       
-      let totalElements = elements.length;
-      let densityScore = 0;
-
-      // Simple density calculation based on element count vs viewport
-      const viewportArea = window.innerWidth * window.innerHeight;
-      const elementDensity = totalElements / (viewportArea / 10000);
-
-      if (elementDensity > 5) densityScore -= 30;
-      else if (elementDensity > 3) densityScore -= 15;
-
+      // Transform the result to match the expected interface
       return {
-        elementCount: totalElements,
-        density: elementDensity
+        score: result.score,
+        grade: result.grade,
+        metrics: {
+          whitespaceRatio: result.metrics.whitespaceRatio,
+          elementDensityPerSection: {
+            gridSections: result.metrics.elementDensityPerSection.gridSections,
+            maxDensity: result.metrics.elementDensityPerSection.maxDensity,
+            averageDensity: result.metrics.elementDensityPerSection.averageDensity,
+            totalElements: result.metrics.elementDensityPerSection.totalElements
+          },
+          spacingAnalysis: {
+            headlineSpacing: { adequate: result.metrics.spacingAnalysis.headlineSpacing.adequate },
+            ctaSpacing: { adequate: result.metrics.spacingAnalysis.ctaSpacing.adequate },
+            contentBlockSpacing: { adequate: result.metrics.spacingAnalysis.contentBlockSpacing.adequate },
+            lineHeight: { adequate: result.metrics.spacingAnalysis.lineHeight.adequate }
+          },
+          clutterScore: result.metrics.clutterScore,
+          hasAdequateSpacing: result.metrics.hasAdequateSpacing
+        },
+        issues: result.issues,
+        recommendations: result.recommendations,
+        loadTime: result.loadTime
       };
-    });
-
-    const issues: string[] = [];
-    let score = 100 + whitespaceAnalysis.density;
-
-    if (whitespaceAnalysis.density > 5) {
-      issues.push('Page appears cluttered with too many elements');
+    } catch (error) {
+      console.error('❌ Whitespace analysis failed:', error);
+      
+      // Fallback to basic scoring
+      return {
+        score: 0,
+        grade: 'F' as const,
+        metrics: {
+          whitespaceRatio: 0,
+          elementDensityPerSection: {
+            gridSections: 0,
+            maxDensity: 0,
+            averageDensity: 0,
+            totalElements: 0
+          },
+          spacingAnalysis: {
+            headlineSpacing: { adequate: false },
+            ctaSpacing: { adequate: false },
+            contentBlockSpacing: { adequate: false },
+            lineHeight: { adequate: false }
+          },
+          clutterScore: 100,
+          hasAdequateSpacing: false
+        },
+        issues: ['Whitespace analysis module failed'],
+        recommendations: ['Unable to perform detailed whitespace analysis'],
+        loadTime: 0
+      };
     }
-
-    return {
-      score: Math.max(0, Math.min(100, score)),
-      issues
-    };
   }
 
   private async analyzeSocialProof(page: Page) {

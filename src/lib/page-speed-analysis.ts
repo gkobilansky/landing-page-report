@@ -5,10 +5,17 @@ let lighthouse: any;
 async function loadLighthouse() {
   if (!lighthouse) {
     try {
-      lighthouse = (await import('lighthouse')).default;
+      // Try different import patterns for better Next.js compatibility
+      const lighthouseModule = await import('lighthouse');
+      lighthouse = lighthouseModule.default || lighthouseModule;
+      
+      // Verify lighthouse is actually a function
+      if (typeof lighthouse !== 'function') {
+        throw new Error('Lighthouse module did not export a function');
+      }
     } catch (error) {
       console.error('Failed to load Lighthouse:', error);
-      throw new Error('Lighthouse is not available in this environment');
+      throw new Error(`Lighthouse is not available in this environment: ${error.message}`);
     }
   }
   return lighthouse;
@@ -79,11 +86,19 @@ async function analyzeWithLighthouse(
 
     console.log('🔍 Running Lighthouse performance audit...');
     const lighthouseModule = await loadLighthouse();
-    const lighthouseResult = await lighthouseModule(url, {
+    
+    // Configure Lighthouse options more robustly
+    const lighthouseOptions = {
       onlyCategories: ['performance'],
       formFactor: throttling === 'mobile' ? 'mobile' : 'desktop',
-      port: 0
-    });
+      // Remove port option that might be causing path issues
+      logLevel: 'error', // Reduce noise
+      output: 'json',
+      // Add explicit browser instance
+      ...(browser && { port: new URL(browser.wsEndpoint()).port })
+    };
+    
+    const lighthouseResult = await lighthouseModule(url, lighthouseOptions);
 
     if (!lighthouseResult || !lighthouseResult.lhr) {
       throw new Error('Invalid Lighthouse result');

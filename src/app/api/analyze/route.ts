@@ -4,6 +4,7 @@ import { analyzeFontUsage } from '@/lib/font-analysis';
 import { analyzeImageOptimization } from '@/lib/image-optimization';
 import { analyzeCTA } from '@/lib/cta-analysis';
 import { analyzePageSpeed } from '@/lib/page-speed-analysis';
+import { analyzeWhitespace } from '@/lib/whitespace-assessment';
 import puppeteer from 'puppeteer';
 
 export async function POST(request: NextRequest) {
@@ -56,7 +57,30 @@ export async function POST(request: NextRequest) {
       fontUsage: { score: 0, fontFamilies: [], fontCount: 0, issues: [], recommendations: [] },
       imageOptimization: { score: 0, totalImages: 0, modernFormats: 0, withAltText: 0, appropriatelySized: 0, issues: [], recommendations: [], details: {} },
       ctaAnalysis: { score: 0, ctas: [], issues: [], recommendations: [] },
-      whitespaceAssessment: { score: 0, issues: [] },
+      whitespaceAssessment: { 
+        score: 0, 
+        grade: 'F',
+        metrics: {
+          whitespaceRatio: 0,
+          elementDensityPerSection: {
+            gridSections: 0,
+            maxDensity: 0,
+            averageDensity: 0,
+            totalElements: 0
+          },
+          spacingAnalysis: {
+            headlineSpacing: { adequate: false },
+            ctaSpacing: { adequate: false },
+            contentBlockSpacing: { adequate: false },
+            lineHeight: { adequate: false }
+          },
+          clutterScore: 0,
+          hasAdequateSpacing: false
+        },
+        issues: [],
+        recommendations: [],
+        loadTime: 0
+      },
       socialProof: { score: 0, elements: [], issues: [] },
       overallScore: 0,
       status: 'completed'
@@ -162,6 +186,65 @@ export async function POST(request: NextRequest) {
           ctas: [],
           issues: ['CTA analysis failed due to error'],
           recommendations: []
+        };
+      }
+    }
+
+    if (shouldRun('whitespace') || shouldRun('spacing')) {
+      console.log('🔄 Starting whitespace assessment...')
+      try {
+        const whitespaceResult = await analyzeWhitespace(validatedUrl.toString());
+        analysisResult.whitespaceAssessment = {
+          score: whitespaceResult.score,
+          grade: whitespaceResult.grade,
+          metrics: {
+            whitespaceRatio: whitespaceResult.metrics.whitespaceRatio,
+            elementDensityPerSection: {
+              gridSections: whitespaceResult.metrics.elementDensityPerSection.gridSections,
+              maxDensity: whitespaceResult.metrics.elementDensityPerSection.maxDensity,
+              averageDensity: whitespaceResult.metrics.elementDensityPerSection.averageDensity,
+              totalElements: whitespaceResult.metrics.elementDensityPerSection.totalElements
+            },
+            spacingAnalysis: {
+              headlineSpacing: { adequate: whitespaceResult.metrics.spacingAnalysis.headlineSpacing.adequate },
+              ctaSpacing: { adequate: whitespaceResult.metrics.spacingAnalysis.ctaSpacing.adequate },
+              contentBlockSpacing: { adequate: whitespaceResult.metrics.spacingAnalysis.contentBlockSpacing.adequate },
+              lineHeight: { adequate: whitespaceResult.metrics.spacingAnalysis.lineHeight.adequate }
+            },
+            clutterScore: whitespaceResult.metrics.clutterScore,
+            hasAdequateSpacing: whitespaceResult.metrics.hasAdequateSpacing
+          },
+          issues: whitespaceResult.issues,
+          recommendations: whitespaceResult.recommendations,
+          loadTime: whitespaceResult.loadTime
+        };
+        scores.push(whitespaceResult.score);
+        console.log(`✅ Whitespace assessment complete: Score ${whitespaceResult.score}, Grade ${whitespaceResult.grade}`);
+      } catch (error) {
+        console.error('❌ Whitespace assessment failed:', error);
+        analysisResult.whitespaceAssessment = {
+          score: 0,
+          grade: 'F',
+          metrics: {
+            whitespaceRatio: 0,
+            elementDensityPerSection: {
+              gridSections: 0,
+              maxDensity: 0,
+              averageDensity: 0,
+              totalElements: 0
+            },
+            spacingAnalysis: {
+              headlineSpacing: { adequate: false },
+              ctaSpacing: { adequate: false },
+              contentBlockSpacing: { adequate: false },
+              lineHeight: { adequate: false }
+            },
+            clutterScore: 100,
+            hasAdequateSpacing: false
+          },
+          issues: ['Whitespace assessment failed due to error'],
+          recommendations: [],
+          loadTime: 0
         };
       }
     }
