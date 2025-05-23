@@ -13,7 +13,7 @@ describe('CTA Analysis', () => {
         </html>
       `;
 
-      const result = await analyzeCTA(mockHTML);
+      const result = await analyzeCTA(mockHTML, { isHtml: true });
       
       expect(result.score).toBeGreaterThan(80);
       expect(result.ctas).toHaveLength(3);
@@ -37,7 +37,7 @@ describe('CTA Analysis', () => {
         </html>
       `;
 
-      const result = await analyzeCTA(mockHTML);
+      const result = await analyzeCTA(mockHTML, { isHtml: true });
       
       expect(result.score).toBeLessThan(50);
       expect(result.issues).toContain('No clear CTA above the fold');
@@ -55,7 +55,7 @@ describe('CTA Analysis', () => {
         </html>
       `;
 
-      const result = await analyzeCTA(mockHTML);
+      const result = await analyzeCTA(mockHTML, { isHtml: true });
       
       expect(result.ctas).toHaveLength(3); // Contact Us filtered out by our improved filtering
       expect(result.primaryCTA).toBeDefined();
@@ -75,7 +75,7 @@ describe('CTA Analysis', () => {
         </html>
       `;
 
-      const result = await analyzeCTA(mockHTML);
+      const result = await analyzeCTA(mockHTML, { isHtml: true });
       
       const buyNowCTA = result.ctas.find(cta => cta.text === 'Buy Now');
       const instantAccessCTA = result.ctas.find(cta => cta.text === 'Get Instant Access');
@@ -102,7 +102,7 @@ describe('CTA Analysis', () => {
         </html>
       `;
 
-      const result = await analyzeCTA(mockHTML);
+      const result = await analyzeCTA(mockHTML, { isHtml: true });
       
       expect(result.score).toBeLessThan(90);
       expect(result.issues).toContain('Too many competing CTAs above the fold (5 found) - focus on 1-2 primary actions');
@@ -126,7 +126,7 @@ describe('CTA Analysis', () => {
         </html>
       `;
 
-      const result = await analyzeCTA(mockHTML);
+      const result = await analyzeCTA(mockHTML, { isHtml: true });
       
       const prominentCTA = result.ctas.find(cta => cta.text === 'Get Started');
       const smallCTA = result.ctas.find(cta => cta.text === 'Sign Up');
@@ -152,7 +152,7 @@ describe('CTA Analysis', () => {
         </html>
       `;
 
-      const result = await analyzeCTA(mockHTML);
+      const result = await analyzeCTA(mockHTML, { isHtml: true });
       
       const heroCTA = result.ctas.find(cta => cta.text === 'Start Free Trial');
       const footerCTA = result.ctas.find(cta => cta.text === 'Contact Support');
@@ -176,7 +176,7 @@ describe('CTA Analysis', () => {
         </html>
       `;
 
-      const result = await analyzeCTA(perfectCTAHTML);
+      const result = await analyzeCTA(perfectCTAHTML, { isHtml: true });
       
       expect(result.score).toBeGreaterThan(95);
       expect(result.issues).toHaveLength(0);
@@ -198,7 +198,7 @@ describe('CTA Analysis', () => {
         </html>
       `;
 
-      const result = await analyzeCTA(edgeCaseHTML);
+      const result = await analyzeCTA(edgeCaseHTML, { isHtml: true });
       
       expect(result.ctas).toHaveLength(1); // Only the div with onclick should be detected
       expect(result.score).toBeLessThan(50);
@@ -220,7 +220,7 @@ describe('CTA Analysis', () => {
         </html>
       `;
 
-      const result = await analyzeCTA(formHTML);
+      const result = await analyzeCTA(formHTML, { isHtml: true });
       
       expect(result.ctas).toHaveLength(2);
       expect(result.ctas[0].type).toBe('form-submit');
@@ -245,7 +245,7 @@ describe('CTA Analysis', () => {
         </html>
       `;
 
-      const result = await analyzeCTA(mobileHTML, { viewport: { width: 375, height: 667 } });
+      const result = await analyzeCTA(mobileHTML, { viewport: { width: 375, height: 667 }, isHtml: true });
       
       expect(result.ctas[0].mobileOptimized).toBe(true);
       expect(result.score).toBeGreaterThan(85);
@@ -264,7 +264,7 @@ describe('CTA Analysis', () => {
         </html>
       `;
 
-      const result = await analyzeCTA(priceHTML);
+      const result = await analyzeCTA(priceHTML, { isHtml: true });
       
       expect(result.ctas).toHaveLength(2); // Price CTA and Learn More, About Us filtered out
       expect(result.primaryCTA?.text).toBe('$150 – Build Your Physical Autonomy');
@@ -284,7 +284,7 @@ describe('CTA Analysis', () => {
         </html>
       `;
 
-      const result = await analyzeCTA(duplicateHTML);
+      const result = await analyzeCTA(duplicateHTML, { isHtml: true });
       
       // Should deduplicate "Get Started" variations but keep "Start Now" as different
       expect(result.ctas).toHaveLength(2);
@@ -307,7 +307,7 @@ describe('CTA Analysis', () => {
         </html>
       `;
 
-      const result = await analyzeCTA(testimonialHTML);
+      const result = await analyzeCTA(testimonialHTML, { isHtml: true });
       
       // Should only detect actual CTAs, not customer names
       expect(result.ctas).toHaveLength(2);

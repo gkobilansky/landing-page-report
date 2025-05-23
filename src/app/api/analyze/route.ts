@@ -90,23 +90,9 @@ export async function POST(request: NextRequest) {
     if (shouldRun('cta')) {
       console.log('🔄 Starting CTA analysis...')
       
-      // Launch puppeteer to get HTML content for CTA analysis
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
-
       try {
-        const page = await browser.newPage();
-        await page.setViewport({ width: 1920, height: 1080 });
-        console.log(`🌐 Navigating to: ${validatedUrl.toString()}`);
-        await page.goto(validatedUrl.toString(), { waitUntil: 'networkidle2', timeout: 30000 });
-        
-        const htmlContent = await page.content();
-        console.log(`📄 HTML content length: ${htmlContent.length}`);
-        
         console.log('🎯 Running CTA analysis...');
-        const ctaResult = await analyzeCTA(htmlContent);
+        const ctaResult = await analyzeCTA(validatedUrl.toString());
         console.log(`✅ CTA analysis complete: ${ctaResult.ctas.length} CTAs found, score: ${ctaResult.score}`);
         
         analysisResult.ctaAnalysis = {
@@ -131,8 +117,6 @@ export async function POST(request: NextRequest) {
           recommendations: ctaResult.recommendations
         };
         scores.push(ctaResult.score);
-
-        await page.close();
       } catch (error) {
         console.error('❌ CTA analysis failed:', error);
         analysisResult.ctaAnalysis = {
@@ -141,8 +125,6 @@ export async function POST(request: NextRequest) {
           issues: ['CTA analysis failed due to error'],
           recommendations: []
         };
-      } finally {
-        await browser.close();
       }
     }
 

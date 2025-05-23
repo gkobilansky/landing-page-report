@@ -32,6 +32,47 @@ jest.mock('@/lib/image-optimization', () => ({
   )
 }));
 
+jest.mock('@/lib/cta-analysis', () => ({
+  analyzeCTA: jest.fn(() => 
+    Promise.resolve({
+      score: 100,
+      ctas: [
+        {
+          text: 'Get Started',
+          type: 'primary',
+          isAboveFold: true,
+          actionStrength: 'strong',
+          urgency: 'medium',
+          visibility: 'high',
+          context: 'hero',
+          hasValueProposition: true,
+          hasUrgency: false,
+          hasGuarantee: false,
+          mobileOptimized: true,
+          position: { top: 200, left: 100, width: 120, height: 40 }
+        }
+      ],
+      primaryCTA: {
+        text: 'Get Started',
+        type: 'primary',
+        isAboveFold: true,
+        actionStrength: 'strong',
+        urgency: 'medium',
+        visibility: 'high',
+        context: 'hero',
+        hasValueProposition: true,
+        hasUrgency: false,
+        hasGuarantee: false,
+        mobileOptimized: true,
+        position: { top: 200, left: 100, width: 120, height: 40 }
+      },
+      secondaryCTAs: [],
+      issues: [],
+      recommendations: ['Excellent CTA implementation!']
+    })
+  )
+}));
+
 describe('/api/analyze', () => {
   const createRequest = (body: any) => {
     const mockRequest = {

@@ -107,10 +107,11 @@ src/
 
 #### 3. CTA Analysis (`src/lib/cta-analysis.ts`)
 - **Purpose**: Identify and evaluate call-to-action effectiveness
-- **Algorithm**: JSDOM-based element detection with smart filtering and deduplication
+- **Algorithm**: Puppeteer-based element detection with smart filtering and deduplication
 - **Features**: Price CTA prioritization, action word analysis, context awareness
 - **Real-world validation**: GMB.io test case with 198→31 CTA noise reduction
 - **Test Coverage**: 14 comprehensive test cases including customer name filtering
+- **Testing Support**: Dual-mode function accepts both URLs and HTML strings for testing
 
 ### API Architecture (`src/app/api/analyze/route.ts`)
 - **Endpoint**: `POST /api/analyze`

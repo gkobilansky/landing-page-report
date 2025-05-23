@@ -107,7 +107,7 @@ export class LandingPageAnalyzer {
         this.analyzePageLoadSpeed(url),
         analyzeFontUsage(url),
         this.analyzeImageOptimization(page),
-        this.analyzeCTAWrapper(page),
+        this.analyzeCTAWrapper(page, url),
         this.analyzeWhitespace(page),
         this.analyzeSocialProof(page)
       ]);
@@ -216,17 +216,13 @@ export class LandingPageAnalyzer {
     };
   }
 
-  private async analyzeCTAWrapper(page: Page) {
+  private async analyzeCTAWrapper(page: Page, url: string) {
     try {
       console.log('🔍 Starting CTA analysis...');
       
-      // Get the HTML content of the page
-      const htmlContent = await page.content();
-      console.log(`📄 HTML content length: ${htmlContent.length}`);
-      
-      // Use the new CTA analysis module
+      // Use the new CTA analysis module with URL
       console.log('About to call analyzeCTA...');
-      const result = await analyzeCTA(htmlContent);
+      const result = await analyzeCTA(url);
       console.log('analyzeCTA returned:', { score: result.score, ctaCount: result.ctas.length });
       console.log(`🎯 CTA analysis complete. Found ${result.ctas.length} CTAs, score: ${result.score}`);
       
