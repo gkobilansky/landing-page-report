@@ -1,5 +1,7 @@
 import puppeteer, { Browser, Page } from 'puppeteer';
 import lighthouse, { RunnerResult } from 'lighthouse';
+import { analyzeFontUsage, FontAnalysisResult } from './font-analysis';
+import { analyzeCTA, CTAAnalysisResult } from './cta-analysis';
 
 export interface AnalysisResult {
   url: string;
@@ -15,8 +17,10 @@ export interface AnalysisResult {
   };
   fontUsage: {
     score: number;
-    fonts: string[];
+    fontFamilies: string[];
+    fontCount: number;
     issues: string[];
+    recommendations: string[];
   };
   imageOptimization: {
     score: number;
@@ -32,10 +36,22 @@ export interface AnalysisResult {
     score: number;
     ctas: Array<{
       text: string;
-      position: string;
+      type: string;
       isAboveFold: boolean;
+      actionStrength: string;
+      urgency: string;
+      visibility: string;
+      context: string;
     }>;
+    primaryCTA?: {
+      text: string;
+      type: string;
+      actionStrength: string;
+      visibility: string;
+      context: string;
+    };
     issues: string[];
+    recommendations: string[];
   };
   whitespaceAssessment: {
     score: number;
@@ -64,16 +80,22 @@ export class LandingPageAnalyzer {
   }
 
   async analyze(url: string, email: string): Promise<AnalysisResult> {
+    console.log(`🔍 Starting comprehensive analysis for: ${url}`)
+    
     if (!this.browser) {
+      console.log('🚀 Initializing browser...')
       await this.initialize();
     }
 
+    console.log('📄 Creating new page...')
     const page = await this.browser!.newPage();
     await page.setViewport({ width: 1920, height: 1080 });
 
     try {
+      console.log('🌐 Navigating to target URL...')
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
 
+      console.log('⚡ Running all analysis modules in parallel...')
       const [
         pageLoadSpeed,
         fontUsage,
@@ -83,13 +105,14 @@ export class LandingPageAnalyzer {
         socialProof
       ] = await Promise.all([
         this.analyzePageLoadSpeed(url),
-        this.analyzeFontUsage(page),
+        analyzeFontUsage(url),
         this.analyzeImageOptimization(page),
-        this.analyzeCTA(page),
+        this.analyzeCTAWrapper(page),
         this.analyzeWhitespace(page),
         this.analyzeSocialProof(page)
       ]);
 
+      console.log('📊 Calculating overall score...')
       const overallScore = this.calculateOverallScore([
         pageLoadSpeed.score,
         fontUsage.score,
@@ -99,6 +122,8 @@ export class LandingPageAnalyzer {
         socialProof.score
       ]);
 
+      console.log(`🎯 Analysis complete! Overall score: ${overallScore}/100`)
+      
       return {
         url,
         email,
@@ -153,36 +178,6 @@ export class LandingPageAnalyzer {
     }
   }
 
-  private async analyzeFontUsage(page: Page) {
-    const fonts = await page.evaluate(() => {
-      const elements = Array.from(document.querySelectorAll('*'));
-      const fontFamilies = new Set<string>();
-
-      elements.forEach(el => {
-        const computedStyle = window.getComputedStyle(el);
-        const fontFamily = computedStyle.fontFamily;
-        if (fontFamily && fontFamily !== 'inherit') {
-          fontFamilies.add(fontFamily);
-        }
-      });
-
-      return Array.from(fontFamilies);
-    });
-
-    const issues: string[] = [];
-    let score = 100;
-
-    if (fonts.length > 3) {
-      issues.push(`Too many font families (${fonts.length}). Recommended: 2-3 max.`);
-      score -= (fonts.length - 3) * 15;
-    }
-
-    return {
-      score: Math.max(0, score),
-      fonts,
-      issues
-    };
-  }
 
   private async analyzeImageOptimization(page: Page) {
     const images = await page.evaluate(() => {
@@ -221,60 +216,82 @@ export class LandingPageAnalyzer {
     };
   }
 
-  private async analyzeCTA(page: Page) {
-    const ctas = await page.evaluate(() => {
-      const selectors = [
-        'button',
-        'a[href*="signup"]',
-        'a[href*="register"]',
-        'a[href*="buy"]',
-        'a[href*="purchase"]',
-        '.cta',
-        '.btn-primary',
-        'input[type="submit"]'
-      ];
-
-      const ctaElements: Array<{
-        text: string;
-        position: string;
-        isAboveFold: boolean;
-      }> = [];
-
-      selectors.forEach(selector => {
-        const elements = Array.from(document.querySelectorAll(selector));
-        elements.forEach(el => {
-          const rect = el.getBoundingClientRect();
-          const isAboveFold = rect.top < window.innerHeight;
-          
-          ctaElements.push({
+  private async analyzeCTAWrapper(page: Page) {
+    try {
+      console.log('🔍 Starting CTA analysis...');
+      
+      // Get the HTML content of the page
+      const htmlContent = await page.content();
+      console.log(`📄 HTML content length: ${htmlContent.length}`);
+      
+      // Use the new CTA analysis module
+      console.log('About to call analyzeCTA...');
+      const result = await analyzeCTA(htmlContent);
+      console.log('analyzeCTA returned:', { score: result.score, ctaCount: result.ctas.length });
+      console.log(`🎯 CTA analysis complete. Found ${result.ctas.length} CTAs, score: ${result.score}`);
+      
+      // Transform the result to match the expected interface
+      return {
+        score: result.score,
+        ctas: result.ctas.map(cta => ({
+          text: cta.text,
+          type: cta.type,
+          isAboveFold: cta.isAboveFold,
+          actionStrength: cta.actionStrength,
+          urgency: cta.urgency,
+          visibility: cta.visibility,
+          context: cta.context
+        })),
+        primaryCTA: result.primaryCTA ? {
+          text: result.primaryCTA.text,
+          type: result.primaryCTA.type,
+          actionStrength: result.primaryCTA.actionStrength,
+          visibility: result.primaryCTA.visibility,
+          context: result.primaryCTA.context
+        } : undefined,
+        issues: result.issues,
+        recommendations: result.recommendations
+      };
+    } catch (error) {
+      console.error('❌ CTA analysis failed:', error);
+      
+      // Fallback to basic CTA detection using page evaluation
+      const fallbackResult = await page.evaluate(() => {
+        const clickableElements = Array.from(document.querySelectorAll('a, button, input[type="submit"], [onclick], [role="button"]'));
+        const ctas = clickableElements
+          .map(el => ({
             text: el.textContent?.trim() || '',
-            position: `${Math.round(rect.top)}px from top`,
-            isAboveFold
-          });
-        });
+            href: (el as HTMLAnchorElement).href || '',
+            tagName: el.tagName
+          }))
+          .filter(cta => cta.text.length > 0 && cta.text.length < 100)
+          .slice(0, 20); // Limit to first 20 to avoid overwhelming results
+          
+        return ctas;
       });
-
-      return ctaElements;
-    });
-
-    const issues: string[] = [];
-    let score = 100;
-
-    const aboveFoldCTAs = ctas.filter((cta: any) => cta.isAboveFold);
-    
-    if (aboveFoldCTAs.length === 0) {
-      issues.push('No clear CTA above the fold');
-      score -= 50;
-    } else if (aboveFoldCTAs.length > 2) {
-      issues.push('Too many CTAs above the fold - focus on one primary action');
-      score -= 20;
+      
+      return {
+        score: fallbackResult.length > 0 ? 50 : 0, // Basic scoring
+        ctas: fallbackResult.map(cta => ({
+          text: cta.text,
+          type: 'text-link',
+          isAboveFold: true, // Assume true for fallback
+          actionStrength: 'medium',
+          urgency: 'low',
+          visibility: 'medium',
+          context: 'content'
+        })),
+        primaryCTA: fallbackResult.length > 0 ? {
+          text: fallbackResult[0].text,
+          type: 'text-link',
+          actionStrength: 'medium',
+          visibility: 'medium',
+          context: 'content'
+        } : undefined,
+        issues: ['CTA analysis module failed, using fallback detection'],
+        recommendations: ['Unable to perform detailed CTA analysis']
+      };
     }
-
-    return {
-      score: Math.max(0, score),
-      ctas,
-      issues
-    };
   }
 
   private async analyzeWhitespace(page: Page) {

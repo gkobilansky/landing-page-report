@@ -20,7 +20,9 @@
       "Bash(npm run lint)",
       "Bash(npm run type-check:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm test:*)",
+      "Bash(node:*)"
     ],
     "deny": []
   }

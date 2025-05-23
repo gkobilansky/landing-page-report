@@ -9,6 +9,9 @@ global.TextDecoder = TextDecoder
 // Polyfill fetch and related APIs
 require('whatwg-fetch')
 
+// Polyfill setImmediate for puppeteer compatibility
+global.setImmediate = global.setImmediate || ((fn, ...args) => setTimeout(fn, 0, ...args))
+
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useRouter() {
