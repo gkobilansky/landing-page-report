@@ -86,11 +86,11 @@ interface AnalysisResultsProps {
   result: AnalysisResult
 }
 
-function getScoreColor(score: number): string {
-  if (score >= 90) return 'bg-green-100 text-green-800'
-  if (score >= 80) return 'bg-yellow-100 text-yellow-800'
-  if (score >= 70) return 'bg-orange-100 text-orange-800'
-  return 'bg-red-100 text-red-800'
+function getScoreBadgeClass(score: number): string {
+  if (score >= 90) return 'badge-success'
+  if (score >= 80) return 'badge-warning'
+  if (score >= 70) return 'badge-warning'
+  return 'badge-error'
 }
 
 function getScoreGrade(score: number): string {
@@ -103,23 +103,24 @@ function getScoreGrade(score: number): string {
 
 function ScoreBadge({ score, testId }: { score: number; testId?: string }) {
   return (
-    <span 
-      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getScoreColor(score)}`}
-      data-testid={testId}
-    >
-      {score}
-    </span>
+    <div className="badge badge-lg font-bold" data-testid={testId}>
+      <span className={`badge ${getScoreBadgeClass(score)}`}>
+        {score}
+      </span>
+    </div>
   )
 }
 
 function CategoryCard({ title, score, children }: { title: string; score?: number; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        {score !== undefined && <ScoreBadge score={score} testId={`score-badge-${title.toLowerCase().replace(/\s+/g, '-')}`} />}
+    <div className="card bg-base-100 shadow-xl border border-base-300">
+      <div className="card-body">
+        <div className="card-title justify-between items-center">
+          <h3 className="text-lg font-bold">{title}</h3>
+          {score !== undefined && <ScoreBadge score={score} testId={`score-badge-${title.toLowerCase().replace(/\s+/g, '-')}`} />}
+        </div>
+        {children}
       </div>
-      {children}
     </div>
   )
 }
@@ -128,16 +129,22 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Analysis Results</h2>
-            <p className="text-gray-600 mt-1">{result.url}</p>
+      <div className="hero bg-base-100 rounded-lg border border-base-300">
+        <div className="hero-content flex-col lg:flex-row justify-between w-full py-8">
+          <div className="text-center lg:text-left">
+            <h2 className="text-3xl font-bold">Analysis Results</h2>
+            <p className="text-base-content/70 mt-2 max-w-lg">{result.url}</p>
           </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-gray-900 mb-1">{result.overallScore}</div>
-            <div className="text-sm text-gray-600">Overall Score</div>
-            <div className="text-sm text-gray-500 mt-2">Status: {result.status}</div>
+          <div className="stats shadow">
+            <div className="stat place-items-center">
+              <div className="stat-title">Overall Score</div>
+              <div className="stat-value text-primary">{result.overallScore}</div>
+              <div className="stat-desc">
+                <div className={`badge ${getScoreBadgeClass(result.overallScore)}`}>
+                  Grade: {getScoreGrade(result.overallScore)}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -147,37 +154,57 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         {/* Page Load Speed */}
         {result.pageLoadSpeed && (
           <CategoryCard title="Page Load Speed" score={result.pageLoadSpeed.score}>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">LCP:</span> {Math.round(result.pageLoadSpeed.metrics.lcp)}ms
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="stat">
+                  <div className="stat-title text-xs">LCP</div>
+                  <div className="stat-value text-sm">{Math.round(result.pageLoadSpeed.metrics.lcp)}ms</div>
                 </div>
-                <div>
-                  <span className="text-gray-600">FCP:</span> {Math.round(result.pageLoadSpeed.metrics.fcp)}ms
+                <div className="stat">
+                  <div className="stat-title text-xs">FCP</div>
+                  <div className="stat-value text-sm">{Math.round(result.pageLoadSpeed.metrics.fcp)}ms</div>
                 </div>
-                <div>
-                  <span className="text-gray-600">CLS:</span> {result.pageLoadSpeed.metrics.cls.toFixed(3)}
+                <div className="stat">
+                  <div className="stat-title text-xs">CLS</div>
+                  <div className="stat-value text-sm">{result.pageLoadSpeed.metrics.cls.toFixed(3)}</div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Lighthouse:</span> {result.pageLoadSpeed.lighthouseScore}
+                <div className="stat">
+                  <div className="stat-title text-xs">Lighthouse</div>
+                  <div className="stat-value text-sm">{result.pageLoadSpeed.lighthouseScore}</div>
                 </div>
               </div>
               {result.pageLoadSpeed.issues.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-600 space-y-1">
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-error" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Issues
+                  </h4>
+                  <ul className="text-sm space-y-1">
                     {result.pageLoadSpeed.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
+                      <li key={index} className="flex items-start">
+                        <span className="text-error mr-2">•</span>
+                        <span>{issue}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
               )}
               {result.pageLoadSpeed.recommendations.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-600 space-y-1">
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-info" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    Recommendations
+                  </h4>
+                  <ul className="text-sm space-y-1">
                     {result.pageLoadSpeed.recommendations.map((rec, index) => (
-                      <li key={index}>• {rec}</li>
+                      <li key={index} className="flex items-start">
+                        <span className="text-info mr-2">•</span>
+                        <span>{rec}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -189,33 +216,52 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         {/* Font Usage */}
         {result.fontUsage && (
           <CategoryCard title="Font Usage" score={result.fontUsage.score}>
-            <div className="space-y-3">
-              <div className="text-sm">
-                <span className="text-gray-600">Font Families ({result.fontUsage.fontCount}):</span>
-                <div className="mt-1">
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Font Families</span>
+                  <div className="badge badge-neutral">{result.fontUsage.fontCount} fonts</div>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   {result.fontUsage.fontFamilies.map((font, index) => (
-                    <span key={index} className="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded mr-2 mb-1 text-xs">
+                    <div key={index} className="badge badge-outline text-xs">
                       {font}
-                    </span>
+                    </div>
                   ))}
                 </div>
               </div>
               {result.fontUsage.issues.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-600 space-y-1">
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-error" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Issues
+                  </h4>
+                  <ul className="text-sm space-y-1">
                     {result.fontUsage.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
+                      <li key={index} className="flex items-start">
+                        <span className="text-error mr-2">•</span>
+                        <span>{issue}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
               )}
               {result.fontUsage.recommendations.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-600 space-y-1">
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-info" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    Recommendations
+                  </h4>
+                  <ul className="text-sm space-y-1">
                     {result.fontUsage.recommendations.map((rec, index) => (
-                      <li key={index}>• {rec}</li>
+                      <li key={index} className="flex items-start">
+                        <span className="text-info mr-2">•</span>
+                        <span>{rec}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -227,37 +273,57 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         {/* Image Optimization */}
         {result.imageOptimization && (
           <CategoryCard title="Image Optimization" score={result.imageOptimization.score}>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Total Images:</span> {result.imageOptimization.totalImages}
+            <div className="space-y-4">
+              <div className="stats stats-vertical lg:stats-horizontal shadow-sm">
+                <div className="stat">
+                  <div className="stat-title text-xs">Total</div>
+                  <div className="stat-value text-sm">{result.imageOptimization.totalImages}</div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Modern Formats:</span> {result.imageOptimization.modernFormats}
+                <div className="stat">
+                  <div className="stat-title text-xs">Modern</div>
+                  <div className="stat-value text-sm">{result.imageOptimization.modernFormats}</div>
                 </div>
-                <div>
-                  <span className="text-gray-600">With Alt Text:</span> {result.imageOptimization.withAltText}
+                <div className="stat">
+                  <div className="stat-title text-xs">Alt Text</div>
+                  <div className="stat-value text-sm">{result.imageOptimization.withAltText}</div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Properly Sized:</span> {result.imageOptimization.appropriatelySized}
+                <div className="stat">
+                  <div className="stat-title text-xs">Sized</div>
+                  <div className="stat-value text-sm">{result.imageOptimization.appropriatelySized}</div>
                 </div>
               </div>
               {result.imageOptimization.issues.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-600 space-y-1">
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-error" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Issues
+                  </h4>
+                  <ul className="text-sm space-y-1">
                     {result.imageOptimization.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
+                      <li key={index} className="flex items-start">
+                        <span className="text-error mr-2">•</span>
+                        <span>{issue}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
               )}
               {result.imageOptimization.recommendations.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-600 space-y-1">
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-info" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    Recommendations
+                  </h4>
+                  <ul className="text-sm space-y-1">
                     {result.imageOptimization.recommendations.map((rec, index) => (
-                      <li key={index}>• {rec}</li>
+                      <li key={index} className="flex items-start">
+                        <span className="text-info mr-2">•</span>
+                        <span>{rec}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -269,30 +335,32 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         {/* CTA Analysis */}
         {result.ctaAnalysis && (
           <CategoryCard title="CTA Analysis" score={result.ctaAnalysis.score}>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {result.ctaAnalysis.ctas.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">CTAs Found:</h4>
+                  <h4 className="font-semibold mb-3">CTAs Found:</h4>
                   <div className="space-y-2">
                     {result.ctaAnalysis.ctas.slice(0, 5).map((cta, index) => (
-                      <div key={index} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
-                        <span className="font-medium">{cta.text}</span>
-                        <div className="flex items-center space-x-2">
-                          {cta.confidence && (
-                            <span className="text-xs text-gray-600">
-                              {(cta.confidence * 100).toFixed(0)}% confidence
-                            </span>
-                          )}
-                          {cta.actionStrength && (
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                              {cta.actionStrength}
-                            </span>
-                          )}
-                          {(cta.aboveFold || cta.isAboveFold) && (
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                              Above fold
-                            </span>
-                          )}
+                      <div key={index} className="card bg-base-200 p-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <span className="font-medium text-sm">{cta.text}</span>
+                          <div className="flex flex-wrap gap-1">
+                            {cta.confidence && (
+                              <div className="badge badge-neutral badge-xs">
+                                {(cta.confidence * 100).toFixed(0)}%
+                              </div>
+                            )}
+                            {cta.actionStrength && (
+                              <div className="badge badge-info badge-xs">
+                                {cta.actionStrength}
+                              </div>
+                            )}
+                            {(cta.aboveFold || cta.isAboveFold) && (
+                              <div className="badge badge-success badge-xs">
+                                Above fold
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -301,20 +369,36 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
               )}
               {result.ctaAnalysis.issues.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-600 space-y-1">
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-error" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Issues
+                  </h4>
+                  <ul className="text-sm space-y-1">
                     {result.ctaAnalysis.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
+                      <li key={index} className="flex items-start">
+                        <span className="text-error mr-2">•</span>
+                        <span>{issue}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
               )}
               {result.ctaAnalysis.recommendations.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-600 space-y-1">
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-info" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    Recommendations
+                  </h4>
+                  <ul className="text-sm space-y-1">
                     {result.ctaAnalysis.recommendations.map((rec, index) => (
-                      <li key={index}>• {rec}</li>
+                      <li key={index} className="flex items-start">
+                        <span className="text-info mr-2">•</span>
+                        <span>{rec}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -326,37 +410,57 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         {/* Whitespace Assessment */}
         {result.whitespaceAssessment && (
           <CategoryCard title="Whitespace & Layout" score={result.whitespaceAssessment.score}>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Whitespace Ratio:</span> {(result.whitespaceAssessment.metrics.whitespaceRatio * 100).toFixed(0)}%
+            <div className="space-y-4">
+              <div className="stats stats-vertical lg:stats-horizontal shadow-sm">
+                <div className="stat">
+                  <div className="stat-title text-xs">Whitespace</div>
+                  <div className="stat-value text-sm">{(result.whitespaceAssessment.metrics.whitespaceRatio * 100).toFixed(0)}%</div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Clutter Score:</span> {result.whitespaceAssessment.metrics.clutterScore}
+                <div className="stat">
+                  <div className="stat-title text-xs">Clutter</div>
+                  <div className="stat-value text-sm">{result.whitespaceAssessment.metrics.clutterScore}</div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Max Density:</span> {result.whitespaceAssessment.metrics.elementDensityPerSection.maxDensity}
+                <div className="stat">
+                  <div className="stat-title text-xs">Max Density</div>
+                  <div className="stat-value text-sm">{result.whitespaceAssessment.metrics.elementDensityPerSection.maxDensity}</div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Total Elements:</span> {result.whitespaceAssessment.metrics.elementDensityPerSection.totalElements}
+                <div className="stat">
+                  <div className="stat-title text-xs">Elements</div>
+                  <div className="stat-value text-sm">{result.whitespaceAssessment.metrics.elementDensityPerSection.totalElements}</div>
                 </div>
               </div>
               {result.whitespaceAssessment.issues.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-600 space-y-1">
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-error" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Issues
+                  </h4>
+                  <ul className="text-sm space-y-1">
                     {result.whitespaceAssessment.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
+                      <li key={index} className="flex items-start">
+                        <span className="text-error mr-2">•</span>
+                        <span>{issue}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
               )}
               {result.whitespaceAssessment.recommendations.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-600 space-y-1">
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-info" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    Recommendations
+                  </h4>
+                  <ul className="text-sm space-y-1">
                     {result.whitespaceAssessment.recommendations.map((rec, index) => (
-                      <li key={index}>• {rec}</li>
+                      <li key={index} className="flex items-start">
+                        <span className="text-info mr-2">•</span>
+                        <span>{rec}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -368,15 +472,15 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         {/* Social Proof */}
         {result.socialProof && (
           <CategoryCard title="Social Proof" score={result.socialProof.score}>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {result.socialProof.elements.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Elements Found:</h4>
-                  <div className="space-y-1 text-sm">
+                  <h4 className="font-semibold mb-3">Elements Found:</h4>
+                  <div className="space-y-2">
                     {result.socialProof.elements.map((element, index) => (
-                      <div key={index} className="flex justify-between">
-                        <span className="capitalize">{element.type}:</span>
-                        <span>{element.count}</span>
+                      <div key={index} className="flex justify-between items-center p-2 bg-base-200 rounded">
+                        <span className="capitalize text-sm">{element.type}:</span>
+                        <div className="badge badge-primary">{element.count}</div>
                       </div>
                     ))}
                   </div>
@@ -384,10 +488,18 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
               )}
               {result.socialProof.issues.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-600 space-y-1">
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-error" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Issues
+                  </h4>
+                  <ul className="text-sm space-y-1">
                     {result.socialProof.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
+                      <li key={index} className="flex items-start">
+                        <span className="text-error mr-2">•</span>
+                        <span>{issue}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>

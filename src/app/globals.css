@@ -1,1 +1,130 @@
 @import "tailwindcss";
+@plugin "daisyui";
+
+@plugin "daisyui/theme" {
+    name: "lansky";
+    default: true;
+    prefersdark: false;
+    color-scheme: "light";
+    --color-base-100: oklch(100% 0 0);
+    --color-base-200: oklch(98% 0 0);
+    --color-base-300: oklch(95% 0 0);
+    --color-base-content: oklch(21% 0.006 285.885);
+    --color-primary: #0066CC;
+    --color-primary-content: oklch(93% 0.034 272.788);
+    --color-secondary: #FFCC00;
+    --color-secondary-content: oklch(94% 0.028 342.258);
+    --color-accent: oklch(70% 0.165 254.624);
+    --color-accent-content: oklch(38% 0.063 188.416);
+    --color-neutral: oklch(21% 0.006 285.885);
+    --color-neutral-content: oklch(92% 0.004 286.32);
+    --color-info: oklch(74% 0.16 232.661);
+    --color-info-content: oklch(29% 0.066 243.157);
+    --color-success: oklch(76% 0.177 163.223);
+    --color-success-content: oklch(37% 0.077 168.94);
+    --color-warning: oklch(82% 0.189 84.429);
+    --color-warning-content: oklch(41% 0.112 45.904);
+    --color-error: oklch(71% 0.194 13.428);
+    --color-error-content: oklch(27% 0.105 12.094);
+    --radius-selector: 0.25rem;
+    --radius-field: 0.25rem;
+    --radius-box: 0.25rem;
+    --size-selector: 0.28125rem;
+    --size-field: 0.28125rem;
+    --border: 1px;
+    --depth: 0;
+    --noise: 1;
+}
+
+:root {
+    --primary: #0066CC;
+    --secondary: #FFCC00;
+    --neutral: 240 240 240;
+    --gradient: linear-gradient(60deg, #f79533, #f37055, #ef4e7b, #a166ab, #5073b8, #1098ad, #07b39b, #6fba82);
+}
+
+html,
+body {
+    scroll-behavior: smooth !important;
+}
+
+/* It makes the HTML progress bar filling smooth when value change. */
+progress::-webkit-progress-value {
+    transition: 0.6s width ease-out;
+}
+
+@layer base {
+    .link-accent:hover {
+        filter: brightness(1.1);
+    }
+
+    [data-theme="dark"] .text-primary {
+        color: var(--primary);
+    }
+
+    [data-theme="dark"] .link-accent {
+        color: var(--secondary);
+
+        &:hover {
+            color: var(--secondary);
+            filter: brightness(1.1);
+        }
+    }
+}
+
+@layer utilities {
+    .animate-shimmer {
+        animation: shimmer 8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    .animate-hue {
+        animation: hue 8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes hue {
+        0% {
+            filter: hue-rotate(0deg);
+            background-position: 0% 50%;
+        }
+
+        50% {
+            filter: hue-rotate(-180deg);
+            background-position: 200% 50%;
+        }
+
+        100% {
+            filter: hue-rotate(0deg);
+            background-position: 0% 50%;
+        }
+    }
+
+    @keyframes shimmer {
+        0% {
+            background-position: 200% 50%;
+        }
+
+        15% {
+            background-position: 150% 45%;
+        }
+
+        30% {
+            background-position: 50% 55%;
+        }
+
+        45% {
+            background-position: 0% 50%;
+        }
+
+        65% {
+            background-position: 50% 45%;
+        }
+
+        85% {
+            background-position: 150% 55%;
+        }
+
+        100% {
+            background-position: 200% 50%;
+        }
+    }
+}

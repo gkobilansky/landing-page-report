@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import UrlInput from '@/components/UrlInput'
 import AnalysisResults from '@/components/AnalysisResults'
+import ThemeController from '@/components/ThemeController'
 
 interface AnalysisState {
   result: any
@@ -64,62 +65,70 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-base-200">
+      {/* Navbar */}
+      <div className="navbar bg-base-100 shadow-lg">
+        <div className="navbar-start">
+          <div className="btn btn-ghost text-xl">by lansky.tech</div>
+        </div>
+        <div className="navbar-end">
+          {/* <ThemeController /> */}
+        </div>
+      </div>
+
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Landing Page Analyzer
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Get detailed insights into your landing page performance across 6 key criteria: 
-            page speed, fonts, images, CTAs, whitespace, and social proof.
-          </p>
+        <div className="hero min-h-[300px]">
+          <div className="hero-content text-center">
+            <div className="max-w-4xl">
+              <h1 className="text-5xl font-bold text-base-content mb-6">
+                Landing Page Analyzer
+              </h1>
+              <p className="text-xl text-base-content/70 leading-relaxed">
+                Get detailed insights into your landing page performance across 6 key criteria: 
+                page speed, fonts, images, CTAs, whitespace, and social proof.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* URL Input Section */}
-        <div className="mb-12">
-          <UrlInput 
-            onAnalyze={handleAnalyze} 
-            isLoading={analysisState.isLoading}
-          />
+        <div className="flex justify-center mb-12">
+          <div className="w-full max-w-2xl">
+            <UrlInput 
+              onAnalyze={handleAnalyze} 
+              isLoading={analysisState.isLoading}
+            />
+          </div>
         </div>
 
         {/* Loading State */}
         {analysisState.isLoading && (
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600 text-lg">Analyzing your landing page...</p>
-            <p className="text-gray-500 text-sm mt-2">This may take 10-30 seconds</p>
+            <div className="loading loading-spinner loading-lg text-primary mb-4"></div>
+            <p className="text-base-content text-lg font-medium">Analyzing your landing page...</p>
+            <p className="text-base-content/60 text-sm mt-2">This may take 10-30 seconds</p>
           </div>
         )}
 
         {/* Error State */}
         {analysisState.error && (
-          <div className="max-w-2xl mx-auto mb-8">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">
-                    Analysis Failed
-                  </h3>
-                  <div className="mt-2 text-sm text-red-700">
-                    <p>{analysisState.error}</p>
-                  </div>
-                  <div className="mt-4">
-                    <button
-                      onClick={handleReset}
-                      className="bg-red-100 text-red-800 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
-                    >
-                      Try Again
-                    </button>
-                  </div>
-                </div>
+          <div className="flex justify-center mb-8">
+            <div className="alert alert-error max-w-2xl">
+              <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <h3 className="font-bold">Analysis Failed</h3>
+                <div className="text-xs">{analysisState.error}</div>
+              </div>
+              <div>
+                <button
+                  onClick={handleReset}
+                  className="btn btn-sm btn-outline"
+                >
+                  Try Again
+                </button>
               </div>
             </div>
           </div>
@@ -131,7 +140,7 @@ export default function Home() {
             <div className="flex justify-center">
               <button
                 onClick={handleReset}
-                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                className="btn btn-outline btn-wide"
               >
                 Analyze Another Page
               </button>
@@ -142,36 +151,48 @@ export default function Home() {
 
         {/* Footer/Info Section - Only show when no results */}
         {!analysisState.result && !analysisState.isLoading && !analysisState.error && (
-          <div className="mt-16 max-w-4xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
+          <div className="mt-16">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="card bg-base-100 shadow-xl">
+                <div className="card-body items-center text-center">
+                  <div className="flex items-center justify-center w-16 h-16 bg-primary text-primary-content rounded-full mb-4">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <h2 className="card-title text-lg">Page Speed</h2>
+                  <p className="text-base-content/70 text-sm">
+                    Analyze Core Web Vitals and loading performance metrics
+                  </p>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Page Speed</h3>
-                <p className="text-gray-600 text-sm">Analyze Core Web Vitals and loading performance metrics</p>
               </div>
               
-              <div className="text-center">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
+              <div className="card bg-base-100 shadow-xl">
+                <div className="card-body items-center text-center">
+                  <div className="flex items-center justify-center w-16 h-16 bg-secondary text-secondary-content rounded-full mb-4">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h2 className="card-title text-lg">Images & Fonts</h2>
+                  <p className="text-base-content/70 text-sm">
+                    Check image optimization and font usage best practices
+                  </p>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Images & Fonts</h3>
-                <p className="text-gray-600 text-sm">Check image optimization and font usage best practices</p>
               </div>
               
-              <div className="text-center">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-                  </svg>
+              <div className="card bg-base-100 shadow-xl">
+                <div className="card-body items-center text-center">
+                  <div className="flex items-center justify-center w-16 h-16 bg-accent text-accent-content rounded-full mb-4">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                    </svg>
+                  </div>
+                  <h2 className="card-title text-lg">CTAs & Layout</h2>
+                  <p className="text-base-content/70 text-sm">
+                    Evaluate call-to-action effectiveness and whitespace usage
+                  </p>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">CTAs & Layout</h3>
-                <p className="text-gray-600 text-sm">Evaluate call-to-action effectiveness and whitespace usage</p>
               </div>
             </div>
           </div>

@@ -50,35 +50,46 @@ export default function UrlInput({ onAnalyze, isLoading = false }: UrlInputProps
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto">
-      <div className="flex flex-col gap-4">
-        <div>
-          <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-2">
-            Enter your landing page URL
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              id="url"
-              value={url}
-              onChange={handleUrlChange}
-              placeholder="https://example.com"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              disabled={isLoading}
-            />
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isLoading ? 'Analyzing...' : 'Analyze'}
-            </button>
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        <form onSubmit={handleSubmit} className="w-full">
+          <div className="form-control w-full">
+            <label className="label">
+              <span className="label-text text-lg font-medium">Enter your landing page URL</span>
+            </label>
+            <div className="join w-full">
+              <input
+                type="text"
+                id="url"
+                value={url}
+                onChange={handleUrlChange}
+                placeholder="https://example.com"
+                className={`input input-bordered join-item flex-1 ${error ? 'input-error' : ''}`}
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="btn btn-primary join-item"
+              >
+                {isLoading ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Analyzing...
+                  </>
+                ) : (
+                  'Analyze'
+                )}
+              </button>
+            </div>
+            {error && (
+              <label className="label">
+                <span className="label-text-alt text-error">{error}</span>
+              </label>
+            )}
           </div>
-        </div>
-        {error && (
-          <p className="text-red-600 text-sm">{error}</p>
-        )}
+        </form>
       </div>
-    </form>
+    </div>
   )
 }
