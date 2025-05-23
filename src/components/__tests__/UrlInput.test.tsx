@@ -118,4 +118,46 @@ describe('UrlInput Component', () => {
       expect(mockOnAnalyze).toHaveBeenCalledWith('http://example.com')
     })
   })
+
+  it('should reject incomplete URLs without proper domain', async () => {
+    render(<UrlInput onAnalyze={mockOnAnalyze} />)
+    
+    fireEvent.change(screen.getByPlaceholderText('https://example.com'), {
+      target: { value: 'https://stripe' }
+    })
+    fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
+    
+    await waitFor(() => {
+      expect(screen.getByText('Please enter a valid URL')).toBeInTheDocument()
+    })
+    expect(mockOnAnalyze).not.toHaveBeenCalled()
+  })
+
+  it('should reject URLs without domain extension', async () => {
+    render(<UrlInput onAnalyze={mockOnAnalyze} />)
+    
+    fireEvent.change(screen.getByPlaceholderText('https://example.com'), {
+      target: { value: 'github' }
+    })
+    fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
+    
+    await waitFor(() => {
+      expect(screen.getByText('Please enter a valid URL')).toBeInTheDocument()
+    })
+    expect(mockOnAnalyze).not.toHaveBeenCalled()
+  })
+
+  it('should reject URLs ending with dot', async () => {
+    render(<UrlInput onAnalyze={mockOnAnalyze} />)
+    
+    fireEvent.change(screen.getByPlaceholderText('https://example.com'), {
+      target: { value: 'https://example.com.' }
+    })
+    fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
+    
+    await waitFor(() => {
+      expect(screen.getByText('Please enter a valid URL')).toBeInTheDocument()
+    })
+    expect(mockOnAnalyze).not.toHaveBeenCalled()
+  })
 })

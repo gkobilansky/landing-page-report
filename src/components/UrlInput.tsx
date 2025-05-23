@@ -14,7 +14,23 @@ export default function UrlInput({ onAnalyze, isLoading = false }: UrlInputProps
   const validateUrl = (input: string): boolean => {
     try {
       const url = new URL(input)
-      return url.protocol === 'http:' || url.protocol === 'https:'
+      // Check protocol
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        return false
+      }
+      // Check hostname exists and is not empty
+      if (!url.hostname || url.hostname.trim() === '') {
+        return false
+      }
+      // Check hostname contains at least one dot (domain.tld)
+      if (!url.hostname.includes('.')) {
+        return false
+      }
+      // Check hostname doesn't end with just a dot
+      if (url.hostname.endsWith('.')) {
+        return false
+      }
+      return true
     } catch {
       return false
     }

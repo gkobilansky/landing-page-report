@@ -13,6 +13,8 @@ interface AnalysisResult {
     score: number
     fontFamilies: string[]
     fontCount: number
+    systemFontCount?: number
+    webFontCount?: number
     issues: string[]
     recommendations: string[]
   }
@@ -75,8 +77,35 @@ interface AnalysisResult {
   }
   socialProof?: {
     score: number
-    elements: Array<{ type: string; count: number }>
+    elements: Array<{ 
+      type: string; 
+      text: string;
+      score: number;
+      isAboveFold: boolean;
+      hasImage: boolean;
+      hasName: boolean;
+      hasCompany: boolean;
+      hasRating: boolean;
+      credibilityScore: number;
+      visibility: string;
+      context: string;
+    }>
+    summary: {
+      totalElements: number;
+      aboveFoldElements: number;
+      testimonials: number;
+      reviews: number;
+      ratings: number;
+      trustBadges: number;
+      customerCounts: number;
+      socialMedia: number;
+      certifications: number;
+      partnerships: number;
+      caseStudies: number;
+      newsMentions: number;
+    }
     issues: string[]
+    recommendations: string[]
   }
   overallScore: number
   status: string
@@ -190,14 +219,24 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         {result.fontUsage && (
           <CategoryCard title="Font Usage" score={result.fontUsage.score}>
             <div className="space-y-3 text-gray-300">
-              <div className="text-sm">
-                <span className="text-gray-400">Font Families ({result.fontUsage.fontCount}):</span>
-                <div className="mt-1">
-                  {result.fontUsage.fontFamilies.map((font, index) => (
-                    <span key={index} className="inline-block bg-gray-700 text-gray-200 px-2 py-1 rounded mr-2 mb-1 text-xs">
-                      {font}
+              <div className="text-sm space-y-2">
+                <div>
+                  <span className="text-gray-400">Total Font Families: {result.fontUsage.fontCount}</span>
+                  {result.fontUsage.systemFontCount !== undefined && result.fontUsage.webFontCount !== undefined && (
+                    <span className="text-gray-500 ml-2">
+                      ({result.fontUsage.systemFontCount} system, {result.fontUsage.webFontCount} web)
                     </span>
-                  ))}
+                  )}
+                </div>
+                <div>
+                  <span className="text-gray-400">Font Families:</span>
+                  <div className="mt-1">
+                    {result.fontUsage.fontFamilies.map((font, index) => (
+                      <span key={index} className="inline-block bg-gray-700 text-gray-200 px-2 py-1 rounded mr-2 mb-1 text-xs">
+                        {font}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
               {result.fontUsage.issues.length > 0 && (
@@ -366,24 +405,70 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         {result.socialProof && (
           <CategoryCard title="Social Proof" score={result.socialProof.score}>
             <div className="space-y-3 text-gray-300">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Total Elements:</span> {result.socialProof.summary.totalElements}
+                </div>
+                <div>
+                  <span className="text-gray-400">Above Fold:</span> {result.socialProof.summary.aboveFoldElements}
+                </div>
+                <div>
+                  <span className="text-gray-400">Testimonials:</span> {result.socialProof.summary.testimonials}
+                </div>
+                <div>
+                  <span className="text-gray-400">Reviews:</span> {result.socialProof.summary.reviews}
+                </div>
+                <div>
+                  <span className="text-gray-400">Trust Badges:</span> {result.socialProof.summary.trustBadges}
+                </div>
+                <div>
+                  <span className="text-gray-400">Customer Counts:</span> {result.socialProof.summary.customerCounts}
+                </div>
+              </div>
+              
               {result.socialProof.elements.length > 0 ? (
                 <div>
-                  <h4 className="font-medium text-gray-100 mb-2">Elements Detected:</h4>
-                  <ul className="text-sm space-y-1">
+                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Social Proof Elements:</h4>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
                     {result.socialProof.elements.map((element, index) => (
-                      <li key={index}>• {element.type} ({element.count})</li>
+                      <div key={index} className="border-b border-gray-700 py-2 last:border-b-0">
+                        <div className="text-sm">
+                          <span className="inline-block bg-gray-700 text-gray-200 px-2 py-1 rounded mr-2 text-xs capitalize">
+                            {element.type.replace('-', ' ')}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            ({element.isAboveFold ? 'Above Fold' : 'Below Fold'}, 
+                            Credibility: {element.credibilityScore}/100)
+                          </span>
+                        </div>
+                        <p className="text-sm mt-1 text-gray-300">
+                          {element.text.length > 80 ? element.text.substring(0, 80) + '...' : element.text}
+                        </p>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               ) : (
                 <p className="text-sm">No social proof elements detected.</p>
               )}
+              
               {result.socialProof.issues.length > 0 && (
                 <div>
                   <h4 className="font-medium text-gray-100 mb-2 mt-3">Issues:</h4>
                   <ul className="text-sm text-red-400 space-y-1">
                     {result.socialProof.issues.map((issue, index) => (
                       <li key={index}>• {issue}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {result.socialProof.recommendations.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Recommendations:</h4>
+                  <ul className="text-sm text-blue-400 space-y-1">
+                    {result.socialProof.recommendations.map((rec, index) => (
+                      <li key={index}>• {rec}</li>
                     ))}
                   </ul>
                 </div>

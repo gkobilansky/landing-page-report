@@ -18,6 +18,8 @@ const mockAnalysisResult = {
     score: 100,
     fontFamilies: ['Inter', 'Georgia'],
     fontCount: 2,
+    systemFontCount: 1,
+    webFontCount: 1,
     issues: [],
     recommendations: ['Great font selection!']
   },
@@ -67,10 +69,36 @@ const mockAnalysisResult = {
   socialProof: {
     score: 60,
     elements: [
-      { type: 'testimonial', count: 3 },
-      { type: 'trustBadge', count: 1 }
+      { 
+        type: 'testimonial', 
+        text: 'Great product!',
+        score: 75,
+        isAboveFold: true,
+        hasImage: false,
+        hasName: true,
+        hasCompany: false,
+        hasRating: false,
+        credibilityScore: 75,
+        visibility: 'high',
+        context: 'content'
+      }
     ],
-    issues: ['Limited social proof elements']
+    summary: {
+      totalElements: 1,
+      aboveFoldElements: 1,
+      testimonials: 1,
+      reviews: 0,
+      ratings: 0,
+      trustBadges: 0,
+      customerCounts: 0,
+      socialMedia: 0,
+      certifications: 0,
+      partnerships: 0,
+      caseStudies: 0,
+      newsMentions: 0
+    },
+    issues: ['Limited social proof elements'],
+    recommendations: ['Add more testimonials']
   },
   overallScore: 78,
   status: 'completed'
@@ -97,7 +125,7 @@ describe('AnalysisResults Component', () => {
     expect(screen.getByText('Font Usage')).toBeInTheDocument()
     expect(screen.getByText('Image Optimization')).toBeInTheDocument()
     expect(screen.getByText('CTA Analysis')).toBeInTheDocument()
-    expect(screen.getByText('Whitespace & Layout')).toBeInTheDocument()
+    expect(screen.getByText('Whitespace Assessment')).toBeInTheDocument()
     expect(screen.getByText('Social Proof')).toBeInTheDocument()
   })
 
@@ -108,7 +136,7 @@ describe('AnalysisResults Component', () => {
     expect(screen.getByTestId('score-badge-font-usage')).toHaveTextContent('100')
     expect(screen.getByTestId('score-badge-image-optimization')).toHaveTextContent('75')
     expect(screen.getByTestId('score-badge-cta-analysis')).toHaveTextContent('90')
-    expect(screen.getByTestId('score-badge-whitespace-&-layout')).toHaveTextContent('78')
+    expect(screen.getByTestId('score-badge-whitespace-assessment')).toHaveTextContent('78')
     expect(screen.getByTestId('score-badge-social-proof')).toHaveTextContent('60')
   })
 
@@ -159,7 +187,7 @@ describe('AnalysisResults Component', () => {
     
     render(<AnalysisResults result={poorResult} />)
     
-    expect(screen.getByText('0')).toBeInTheDocument()
+    expect(screen.getByTestId('score-badge-page-load-speed')).toHaveTextContent('0')
     expect(screen.getByText('15')).toBeInTheDocument()
   })
 
@@ -179,11 +207,13 @@ describe('AnalysisResults Component', () => {
     expect(screen.getByText('Learn More')).toBeInTheDocument()
   })
 
-  it('should display load times where available', () => {
+  it('should display page speed metrics correctly', () => {
     render(<AnalysisResults result={mockAnalysisResult} />)
     
-    expect(screen.getByText('Load Time:')).toBeInTheDocument() // Load time label
-    expect(screen.getAllByText(/2\.1s/).length).toBeGreaterThanOrEqual(1) // Load time value appears multiple times
+    expect(screen.getByText(/LCP:/)).toBeInTheDocument()
+    expect(screen.getByText(/FCP:/)).toBeInTheDocument()
+    expect(screen.getByText(/CLS:/)).toBeInTheDocument()
+    expect(screen.getAllByText('2ms')).toHaveLength(2) // LCP and FCP both round to 2ms
   })
 
   it('should handle missing or incomplete data gracefully', () => {

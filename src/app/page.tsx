@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import UrlInput from '@/components/UrlInput'
 import AnalysisResults from '@/components/AnalysisResults'
+import ProgressiveLoader from '@/components/ProgressiveLoader'
 
 interface AnalysisState {
   result: any
@@ -86,13 +87,7 @@ export default function Home() {
         </div>
 
         {/* Loading State */}
-        {analysisState.isLoading && (
-          <div className="flex flex-col items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600 text-lg">Analyzing your landing page...</p>
-            <p className="text-gray-500 text-sm mt-2">This may take 10-30 seconds</p>
-          </div>
-        )}
+        <ProgressiveLoader isLoading={analysisState.isLoading} />
 
         {/* Error State */}
         {analysisState.error && (

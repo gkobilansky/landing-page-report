@@ -5,6 +5,7 @@ import { analyzeImageOptimization } from '@/lib/image-optimization';
 import { analyzeCTA } from '@/lib/cta-analysis';
 import { analyzePageSpeed } from '@/lib/page-speed-analysis';
 import { analyzeWhitespace } from '@/lib/whitespace-assessment';
+import { analyzeSocialProof } from '@/lib/social-proof-analysis';
 import puppeteer from 'puppeteer';
 
 export async function POST(request: NextRequest) {
@@ -30,14 +31,27 @@ export async function POST(request: NextRequest) {
     let validatedUrl: URL;
     try {
       validatedUrl = new URL(url);
+      // Check protocol
       if (!['http:', 'https:'].includes(validatedUrl.protocol)) {
         throw new Error('Invalid protocol');
       }
+      // Check hostname exists and is not empty
+      if (!validatedUrl.hostname || validatedUrl.hostname.trim() === '') {
+        throw new Error('Invalid hostname');
+      }
+      // Check hostname contains at least one dot (domain.tld)
+      if (!validatedUrl.hostname.includes('.')) {
+        throw new Error('Invalid hostname format');
+      }
+      // Check hostname doesn't end with just a dot
+      if (validatedUrl.hostname.endsWith('.')) {
+        throw new Error('Invalid hostname format');
+      }
       console.log(`✅ URL validation passed: ${validatedUrl.toString()}`)
-    } catch {
-      console.log('❌ URL validation failed: invalid format')
+    } catch (error) {
+      console.log(`❌ URL validation failed: ${error instanceof Error ? error.message : 'invalid format'}`)
       return NextResponse.json(
-        { error: 'Invalid URL format' },
+        { error: 'Invalid URL format. Please provide a complete URL with a valid domain.' },
         { status: 400 }
       );
     }
@@ -54,7 +68,7 @@ export async function POST(request: NextRequest) {
         recommendations: [],
         loadTime: 0
       },
-      fontUsage: { score: 0, fontFamilies: [], fontCount: 0, issues: [], recommendations: [] },
+      fontUsage: { score: 0, fontFamilies: [], fontCount: 0, systemFontCount: 0, webFontCount: 0, issues: [], recommendations: [] },
       imageOptimization: { score: 0, totalImages: 0, modernFormats: 0, withAltText: 0, appropriatelySized: 0, issues: [], recommendations: [], details: {} },
       ctaAnalysis: { score: 0, ctas: [], issues: [], recommendations: [] },
       whitespaceAssessment: { 
@@ -81,7 +95,26 @@ export async function POST(request: NextRequest) {
         recommendations: [],
         loadTime: 0
       },
-      socialProof: { score: 0, elements: [], issues: [] },
+      socialProof: { 
+        score: 0, 
+        elements: [], 
+        summary: {
+          totalElements: 0,
+          aboveFoldElements: 0,
+          testimonials: 0,
+          reviews: 0,
+          ratings: 0,
+          trustBadges: 0,
+          customerCounts: 0,
+          socialMedia: 0,
+          certifications: 0,
+          partnerships: 0,
+          caseStudies: 0,
+          newsMentions: 0
+        },
+        issues: [], 
+        recommendations: [] 
+      },
       overallScore: 0,
       status: 'completed'
     };
@@ -127,6 +160,8 @@ export async function POST(request: NextRequest) {
         score: fontUsageResult.score,
         fontFamilies: fontUsageResult.fontFamilies,
         fontCount: fontUsageResult.fontCount,
+        systemFontCount: fontUsageResult.systemFontCount,
+        webFontCount: fontUsageResult.webFontCount,
         issues: fontUsageResult.issues,
         recommendations: fontUsageResult.recommendations
       };
@@ -245,6 +280,56 @@ export async function POST(request: NextRequest) {
           issues: ['Whitespace assessment failed due to error'],
           recommendations: [],
           loadTime: 0
+        };
+      }
+    }
+
+    if (shouldRun('social') || shouldRun('socialProof')) {
+      console.log('🔄 Starting social proof analysis...')
+      try {
+        const socialProofResult = await analyzeSocialProof(validatedUrl.toString());
+        analysisResult.socialProof = {
+          score: socialProofResult.score,
+          elements: socialProofResult.elements.map(element => ({
+            type: element.type,
+            text: element.text,
+            score: element.score,
+            isAboveFold: element.isAboveFold,
+            hasImage: element.hasImage,
+            hasName: element.hasName,
+            hasCompany: element.hasCompany,
+            hasRating: element.hasRating,
+            credibilityScore: element.credibilityScore,
+            visibility: element.visibility,
+            context: element.context
+          })),
+          summary: socialProofResult.summary,
+          issues: socialProofResult.issues,
+          recommendations: socialProofResult.recommendations
+        };
+        scores.push(socialProofResult.score);
+        console.log(`✅ Social proof analysis complete: ${socialProofResult.elements.length} elements found, score: ${socialProofResult.score}`);
+      } catch (error) {
+        console.error('❌ Social proof analysis failed:', error);
+        analysisResult.socialProof = {
+          score: 0,
+          elements: [],
+          summary: {
+            totalElements: 0,
+            aboveFoldElements: 0,
+            testimonials: 0,
+            reviews: 0,
+            ratings: 0,
+            trustBadges: 0,
+            customerCounts: 0,
+            socialMedia: 0,
+            certifications: 0,
+            partnerships: 0,
+            caseStudies: 0,
+            newsMentions: 0
+          },
+          issues: ['Social proof analysis failed due to error'],
+          recommendations: []
         };
       }
     }

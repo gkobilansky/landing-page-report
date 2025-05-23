@@ -15,7 +15,7 @@ async function loadLighthouse() {
       }
     } catch (error) {
       console.error('Failed to load Lighthouse:', error);
-      throw new Error(`Lighthouse is not available in this environment: ${error.message}`);
+      throw new Error(`Lighthouse is not available in this environment: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
   return lighthouse;

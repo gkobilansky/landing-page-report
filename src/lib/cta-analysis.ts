@@ -94,12 +94,29 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
 
       // Helper functions (moved inside evaluate)
       const determineContext = (element: Element): string => {
-        const parent = element.closest('header, nav, .header, .navigation') ? 'header' :
-                       element.closest('footer, .footer') ? 'footer' :
-                       element.closest('.hero, .banner, .jumbotron') ? 'hero' :
-                       element.closest('aside, .sidebar') ? 'sidebar' :
-                       element.closest('form') ? 'form' : 'content';
-        return parent;
+        // Check for hero/main section first (more specific patterns)
+        if (element.closest('.hero, .banner, .jumbotron, .main-hero, [class*="hero"], [class*="banner"]')) {
+          return 'hero';
+        }
+        
+        // Check if element is in main content area above fold and not in header/footer
+        const rect = element.getBoundingClientRect();
+        const isInMainArea = rect.top > 100 && rect.top < viewport.height * 0.8; // Between header and fold
+        const notInNavigation = !element.closest('nav, .nav, .navigation, .menu');
+        const notInFooter = !element.closest('footer, .footer');
+        const notInHeader = !element.closest('header, .header');
+        
+        if (isInMainArea && notInNavigation && notInFooter && notInHeader) {
+          return 'hero';
+        }
+        
+        // Standard context detection
+        if (element.closest('header, nav, .header, .navigation, .nav, .menu')) return 'header';
+        if (element.closest('footer, .footer')) return 'footer';
+        if (element.closest('aside, .sidebar')) return 'sidebar';
+        if (element.closest('form')) return 'form';
+        
+        return 'content';
       };
       
       const analyzeActionStrength = (text: string): string => {
@@ -212,9 +229,33 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
           if (text.match(/^[A-Z][a-z]+$/)) return;
           if (text.match(/^[A-Z]{1,3}$/)) return;
           
-          // Skip navigation-like text
+          // Skip logos and brand names (generic patterns)
+          const logoPatterns = [
+            /logo$/i,
+            /^[A-Z][a-z]+ logo$/i,
+            /^[A-Z]+ logo$/i,
+            /^[A-Z]{2,}$/,  // All caps brand names
+            /^[A-Z][a-z]+\s+[A-Z][a-z]+$/  // Title Case Brand Names
+          ];
+          if (logoPatterns.some(pattern => pattern.test(text))) return;
+          
+          // Skip if element has logo-related attributes or classes
+          const hasLogoClass = element.className.toLowerCase().includes('logo') || 
+                              element.closest('[class*="logo"], [alt*="logo"], [title*="logo"]');
+          if (hasLogoClass) return;
+          
+          // Skip navigation-like text and non-actionable elements
           const navigationWords = ['home', 'about', 'contact', 'help', 'faq', 'blog', 'news', 'terms', 'privacy'];
           if (navigationWords.includes(text.toLowerCase())) return;
+          
+          // Skip elements that are likely decorative or non-actionable
+          const decorativePatterns = [
+            /^(next|previous|prev)$/i,
+            /^(slide|tab) \d+$/i,
+            /^\d+\/\d+$/,
+            /^page \d+$/i
+          ];
+          if (decorativePatterns.some(pattern => pattern.test(text))) return;
 
           const rect = element.getBoundingClientRect();
           const computedStyle = window.getComputedStyle(element);
@@ -256,21 +297,41 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
         });
       }
 
-      // Additional text-based search for price CTAs and action phrases
-      const allElements = document.querySelectorAll('span, div, p, a, button');
-      allElements.forEach(element => {
+      // Additional search for clickable elements with action phrases that might have been missed
+      const additionalClickableElements = document.querySelectorAll('a, button, input[type="submit"], [onclick], [role="button"]');
+      additionalClickableElements.forEach(element => {
         if (processedElements.has(element)) return;
         
         const text = element.textContent?.trim() || '';
         
-        if (text.length < 5 || text.length > 200) return;
+        // For input elements, get the value instead
+        if (element.tagName === 'INPUT' && (element as HTMLInputElement).value) {
+          const inputText = (element as HTMLInputElement).value.trim();
+          if (inputText) text = inputText;
+        }
+        
+        if (text.length < 2 || text.length > 200) return;
         
         // Filter out single names and testimonial patterns
         if (text.match(/^[A-Z][a-z]+ ?[A-Z]?\.?$/)) return;
         if (text.match(/^[A-Z][a-z]+$/)) return;
         
-        // Look for price indicators and strong action phrases
-        const hasPrice = text.match(/\$\d+/);
+        // Skip logos and brand names in additional search too
+        const logoPatterns = [
+          /logo$/i,
+          /^[A-Z][a-z]+ logo$/i,
+          /^[A-Z]+ logo$/i,
+          /^[A-Z]{2,}$/,  // All caps brand names
+          /^[A-Z][a-z]+\s+[A-Z][a-z]+$/  // Title Case Brand Names
+        ];
+        if (logoPatterns.some(pattern => pattern.test(text))) return;
+        
+        // Skip if element has logo-related attributes or classes
+        const hasLogoClass = element.className.toLowerCase().includes('logo') || 
+                            element.closest('[class*="logo"], [alt*="logo"], [title*="logo"]');
+        if (hasLogoClass) return;
+        
+        // Look for action phrases in clickable elements only
         const hasActionPhrase = text.toLowerCase().includes('build your') ||
                                text.toLowerCase().includes('get started') ||
                                text.toLowerCase().includes('start free') ||
@@ -278,11 +339,12 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
                                text.toLowerCase().includes('sign up') ||
                                text.toLowerCase().includes('try free') ||
                                text.toLowerCase().includes('buy now') ||
-                               text.toLowerCase().includes('get ') ||
-                               text.toLowerCase().includes('start ') ||
-                               text.toLowerCase().includes('access');
+                               text.toLowerCase().includes('learn more') ||
+                               text.toLowerCase().includes('contact') ||
+                               text.toLowerCase().includes('demo') ||
+                               text.toLowerCase().includes('subscribe');
         
-        if (hasPrice || hasActionPhrase) {
+        if (hasActionPhrase) {
           const rect = element.getBoundingClientRect();
           const computedStyle = window.getComputedStyle(element);
           
@@ -299,7 +361,7 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
           
           const cta = {
             text: text.length > 100 ? text.substring(0, 100) + '...' : text,
-            type: text.match(/\$\d+/) ? 'primary' : refineCTAType(element, 'secondary', text),
+            type: refineCTAType(element, 'secondary', text),
             isAboveFold,
             actionStrength,
             urgency,
@@ -401,11 +463,14 @@ function identifyPrimaryCTA(ctas: CTAElement[]): CTAElement | undefined {
   const scoreCTA = (cta: CTAElement): number => {
     let score = 0;
     
-    // Higher score for checkout/purchase URLs (highest priority)
-    if (cta.text.includes('checkout') || cta.text.includes('purchase') || cta.text.includes('cart')) score += 50;
+    // Hero section CTAs get highest priority (main conversion action)
+    if (cta.context === 'hero') score += 50;
     
-    // Price CTAs get high priority
-    if (cta.text.match(/\$\d+/)) score += 40;
+    // Form submissions are typically primary actions
+    if (cta.type === 'form-submit') score += 40;
+    
+    // Higher score for checkout/purchase URLs (but lower than hero CTAs)
+    if (cta.text.includes('checkout') || cta.text.includes('purchase') || cta.text.includes('cart')) score += 35;
     
     // Explicit CTA classes get priority
     if (cta.type === 'primary') score += 30;
@@ -421,9 +486,11 @@ function identifyPrimaryCTA(ctas: CTAElement[]): CTAElement | undefined {
     if (cta.visibility === 'high') score += 15;
     else if (cta.visibility === 'medium') score += 10;
     
-    // Hero context gets priority
-    if (cta.context === 'hero') score += 10;
-    else if (cta.context === 'header') score += 5;
+    // Penalize header navigation links (they're typically secondary)
+    if (cta.context === 'header' && !cta.text.toLowerCase().includes('start') && !cta.text.toLowerCase().includes('get')) score -= 10;
+    
+    // Content area CTAs are better than header navigation
+    if (cta.context === 'content') score += 8;
     
     // Urgency indicators
     if (cta.urgency === 'high') score += 5;
