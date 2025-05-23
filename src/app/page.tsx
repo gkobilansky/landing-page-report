@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import UrlInput from '@/components/UrlInput'
 import AnalysisResults from '@/components/AnalysisResults'
 import ProgressiveLoader from '@/components/ProgressiveLoader'
@@ -259,28 +260,32 @@ export default function Home() {
                    {/* Letter Style Section */}
             <div className="max-w-3xl mx-auto text-left my-12 p-8 rounded-lg shadow-xl" style={{backgroundColor: 'var(--color-bg-card)'}}>
               <div className="flex items-start space-x-6 mb-6">
-                <img 
-                  src="/gene-kobilansky-headshot-yellow-bg.png" 
-                  alt="Gene Kobilansky" 
+                <Image
+                  src="/gene-kobilansky-headshot-yellow-bg.png"
+                  alt="Gene Kobilansky"
+                  width={96}
+                  height={96}
                   className="w-24 h-24 rounded-full object-cover border-4 border-yellow-400"
                 />
                 <div>
                   <p className="text-xl text-gray-200 leading-relaxed">
-                    Hi, I'm Gene. I've been working on landing pages for almost 20 years and there's a few things I've found that quickly and easily improve any landing page.
+                    Hi, I&apos;m Gene. I&apos;ve been working on landing pages for almost 20 years and there&apos;s a few things I&apos;ve found that quickly and easily improve any landing page.
                   </p>
                 </div>
               </div>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Fast pages mean happy customers. An action oriented CTA in the header is a must. Too many fonts confuse the reader and slow down load - simplify your fonts. Most pages on the internet don't have enough whitespace, they'll give your visitors claustrophbia unless you add more breathing room than you think you need. And don't forget your social proof! Trust is the most valuable comodity we have.
+                Fast pages mean happy customers. An action oriented CTA in the header is a must. Too many fonts confuse the reader and slow down load - simplify your fonts. Most pages on the internet don&apos;t have enough whitespace, they&apos;ll give your visitors claustrophbia unless you add more breathing room than you think you need. And don&apos;t forget your social proof! Trust is the most valuable comodity we have.
               </p>
               <p className="text-gray-300 leading-relaxed mb-8">
                 I built this tool to make it easier to test your pages and make em awesome.
               </p>
               <div className="text-right">
-                <img 
-                  src="/gk-initials-white.png" 
-                  alt="GK Signature" 
-                  className="w-32 h-auto inline-block" 
+                <Image
+                  src="/gk-initials-white.png"
+                  alt="GK Signature"
+                  width={128}
+                  height={128}
+                  className="w-32 h-auto inline-block"
                 />
               </div>
             </div>
