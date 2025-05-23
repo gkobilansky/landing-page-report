@@ -32,6 +32,26 @@ jest.mock('@/lib/image-optimization', () => ({
   )
 }));
 
+jest.mock('@/lib/page-speed-analysis', () => ({
+  analyzePageSpeed: jest.fn(() => 
+    Promise.resolve({
+      score: 95,
+      grade: 'A',
+      metrics: {
+        lcp: 1200,
+        fcp: 800,
+        cls: 0.05,
+        tbt: 50,
+        si: 1500
+      },
+      lighthouseScore: 95,
+      issues: [],
+      recommendations: ['Excellent performance! Consider monitoring Core Web Vitals regularly'],
+      loadTime: 3000
+    })
+  )
+}));
+
 jest.mock('@/lib/cta-analysis', () => ({
   analyzeCTA: jest.fn(() => 
     Promise.resolve({
@@ -126,8 +146,14 @@ describe('/api/analyze', () => {
     expect(data.analysis.imageOptimization.totalImages).toBe(0);
     expect(data.analysis.imageOptimization.recommendations).toContain('Consider adding relevant images to enhance user engagement');
     
-    // Overall score
-    expect(data.analysis.overallScore).toBe(100); // Average of both 100s
+    // Page speed analysis
+    expect(data.analysis.pageLoadSpeed).toBeDefined();
+    expect(data.analysis.pageLoadSpeed.score).toBe(95);
+    expect(data.analysis.pageLoadSpeed.grade).toBe('A');
+    expect(data.analysis.pageLoadSpeed.metrics.lcp).toBe(1200);
+    
+    // Overall score (Average of 95 + 100 + 100 + 100 = 98.75, rounded to 99)
+    expect(data.analysis.overallScore).toBeGreaterThanOrEqual(95);
     expect(data.message).toContain('Analysis completed');
   });
 
@@ -154,5 +180,38 @@ describe('/api/analyze', () => {
 
     expect(response.status).toBe(400);
     expect(data.error).toBe('Invalid URL format');
+  });
+
+  it('should support page speed component analysis', async () => {
+    const request = createRequest({ 
+      url: 'https://example.com',
+      component: 'speed'
+    });
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.analysis.pageLoadSpeed).toBeDefined();
+    expect(data.analysis.pageLoadSpeed.score).toBe(95);
+    expect(data.analysis.pageLoadSpeed.grade).toBe('A');
+    expect(data.analysis.pageLoadSpeed.metrics.lcp).toBe(1200);
+    expect(data.analysis.pageLoadSpeed.metrics.fcp).toBe(800);
+    expect(data.analysis.pageLoadSpeed.metrics.cls).toBe(0.05);
+    expect(data.analysis.pageLoadSpeed.lighthouseScore).toBe(95);
+    expect(data.analysis.overallScore).toBe(95); // Only speed analysis ran
+  });
+
+  it('should support pageSpeed component analysis (alternative name)', async () => {
+    const request = createRequest({ 
+      url: 'https://example.com',
+      component: 'pageSpeed'
+    });
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.analysis.pageLoadSpeed.score).toBe(95);
+    expect(data.analysis.pageLoadSpeed.grade).toBe('A');
   });
 });

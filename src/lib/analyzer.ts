@@ -2,18 +2,25 @@ import puppeteer, { Browser, Page } from 'puppeteer';
 import lighthouse, { RunnerResult } from 'lighthouse';
 import { analyzeFontUsage, FontAnalysisResult } from './font-analysis';
 import { analyzeCTA, CTAAnalysisResult } from './cta-analysis';
+import { analyzePageSpeed, PageSpeedAnalysisResult } from './page-speed-analysis';
 
 export interface AnalysisResult {
   url: string;
   email: string;
   pageLoadSpeed: {
     score: number;
+    grade: 'A' | 'B' | 'C' | 'D' | 'F';
     metrics: {
-      firstContentfulPaint?: number;
-      largestContentfulPaint?: number;
-      cumulativeLayoutShift?: number;
-      totalBlockingTime?: number;
+      lcp: number;
+      fcp: number;
+      cls: number;
+      tbt: number;
+      si: number;
     };
+    lighthouseScore: number;
+    issues: string[];
+    recommendations: string[];
+    loadTime: number;
   };
   fontUsage: {
     score: number;
@@ -146,34 +153,26 @@ export class LandingPageAnalyzer {
 
   private async analyzePageLoadSpeed(url: string) {
     try {
-      const result = await lighthouse(url, {
-        onlyCategories: ['performance'],
-        port: 0
-      });
-      
-      if (!result || !result.lhr) {
-        throw new Error('Lighthouse analysis failed');
-      }
-      
-      const { lhr } = result;
-
-      const metrics = lhr.audits;
-      const performanceScore = (lhr.categories.performance.score || 0) * 100;
-
-      return {
-        score: Math.round(performanceScore),
-        metrics: {
-          firstContentfulPaint: metrics['first-contentful-paint']?.numericValue,
-          largestContentfulPaint: metrics['largest-contentful-paint']?.numericValue,
-          cumulativeLayoutShift: metrics['cumulative-layout-shift']?.numericValue,
-          totalBlockingTime: metrics['total-blocking-time']?.numericValue
-        }
-      };
+      console.log('🚀 Starting comprehensive page speed analysis...');
+      const result = await analyzePageSpeed(url);
+      console.log(`✅ Page speed analysis complete. Score: ${result.score}, Grade: ${result.grade}`);
+      return result;
     } catch (error) {
-      console.error('Lighthouse analysis failed:', error);
+      console.error('❌ Page speed analysis failed:', error);
       return {
         score: 0,
-        metrics: {}
+        grade: 'F' as const,
+        metrics: {
+          lcp: 0,
+          fcp: 0,
+          cls: 0,
+          tbt: 0,
+          si: 0
+        },
+        lighthouseScore: 0,
+        issues: ['Page speed analysis failed'],
+        recommendations: ['Unable to analyze page speed'],
+        loadTime: 0
       };
     }
   }

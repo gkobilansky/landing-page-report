@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { analyzeFontUsage } from '@/lib/font-analysis';
 import { analyzeImageOptimization } from '@/lib/image-optimization';
 import { analyzeCTA } from '@/lib/cta-analysis';
+import { analyzePageSpeed } from '@/lib/page-speed-analysis';
 import puppeteer from 'puppeteer';
 
 export async function POST(request: NextRequest) {
@@ -43,7 +44,15 @@ export async function POST(request: NextRequest) {
     // Initialize results object
     let analysisResult: any = {
       url: validatedUrl.toString(),
-      pageLoadSpeed: { score: 0, metrics: {} },
+      pageLoadSpeed: { 
+        score: 0, 
+        grade: 'F',
+        metrics: { lcp: 0, fcp: 0, cls: 0, tbt: 0, si: 0 },
+        lighthouseScore: 0,
+        issues: [],
+        recommendations: [],
+        loadTime: 0
+      },
       fontUsage: { score: 0, fontFamilies: [], fontCount: 0, issues: [], recommendations: [] },
       imageOptimization: { score: 0, totalImages: 0, modernFormats: 0, withAltText: 0, appropriatelySized: 0, issues: [], recommendations: [], details: {} },
       ctaAnalysis: { score: 0, ctas: [], issues: [], recommendations: [] },
@@ -57,6 +66,35 @@ export async function POST(request: NextRequest) {
 
     // Component-based analysis
     const shouldRun = (componentName: string) => !component || component === 'all' || component === componentName;
+
+    if (shouldRun('speed') || shouldRun('pageSpeed')) {
+      console.log('🔄 Starting page speed analysis...')
+      try {
+        const pageSpeedResult = await analyzePageSpeed(validatedUrl.toString());
+        analysisResult.pageLoadSpeed = {
+          score: pageSpeedResult.score,
+          grade: pageSpeedResult.grade,
+          metrics: pageSpeedResult.metrics,
+          lighthouseScore: pageSpeedResult.lighthouseScore,
+          issues: pageSpeedResult.issues,
+          recommendations: pageSpeedResult.recommendations,
+          loadTime: pageSpeedResult.loadTime
+        };
+        scores.push(pageSpeedResult.score);
+        console.log(`✅ Page speed analysis complete: Score ${pageSpeedResult.score}, Grade ${pageSpeedResult.grade}`);
+      } catch (error) {
+        console.error('❌ Page speed analysis failed:', error);
+        analysisResult.pageLoadSpeed = {
+          score: 0,
+          grade: 'F',
+          metrics: { lcp: 0, fcp: 0, cls: 0, tbt: 0, si: 0 },
+          lighthouseScore: 0,
+          issues: ['Page speed analysis failed due to error'],
+          recommendations: [],
+          loadTime: 0
+        };
+      }
+    }
 
     if (shouldRun('font')) {
       console.log('🔄 Starting font usage analysis...')

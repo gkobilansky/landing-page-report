@@ -113,9 +113,19 @@ src/
 - **Test Coverage**: 14 comprehensive test cases including customer name filtering
 - **Testing Support**: Dual-mode function accepts both URLs and HTML strings for testing
 
+#### 4. Page Speed Analysis (`src/lib/page-speed-analysis.ts`) - ✅ *Production ready*
+- **Purpose**: Comprehensive Core Web Vitals and performance analysis
+- **Algorithm**: Smart fallback system - Lighthouse first, then Puppeteer-based analysis
+- **Core Metrics**: LCP, FCP, CLS, TBT with native browser Performance APIs
+- **Scoring**: 0-100 scale with letter grades (A-F) and performance boost for excellent metrics
+- **Real-World Performance**: Successfully tested with GMB.io (95/100, Grade A)
+- **Fallback System**: Puppeteer-based analyzer (`src/lib/page-speed-puppeteer.ts`) when Lighthouse fails
+- **Server-Side Compatibility**: Handles Next.js environment constraints gracefully
+- **Test Coverage**: 9 comprehensive test cases plus live API validation
+
 ### API Architecture (`src/app/api/analyze/route.ts`)
 - **Endpoint**: `POST /api/analyze`
-- **Parameters**: `url` (required), `component` (optional: 'cta'|'font'|'image'|'all')
+- **Parameters**: `url` (required), `component` (optional: 'speed'|'pageSpeed'|'cta'|'font'|'image'|'all')
 - **Response**: JSON with individual module scores and overall analysis
 - **Features**: Component-based testing, error handling, progress logging
 
@@ -142,7 +152,13 @@ src/
   - ✅ API route for URL analysis (`/api/analyze`) - URL-only, no email required, component-based testing
   - ✅ Base analysis engine structure (`src/lib/analyzer.ts`)
   - 🚧 Individual criteria implementation:
-    1. ⏳ Page Load Speed analysis (Lighthouse integration)
+    1. ✅ **Page Load Speed analysis** - Fully implemented with Lighthouse integration
+       - Comprehensive Core Web Vitals analysis (LCP, FCP, CLS, TBT, Speed Index)
+       - Letter grade scoring (A-F) with performance boost for excellent metrics
+       - Detailed recommendations based on industry-standard thresholds
+       - Mobile/desktop throttling support with graceful error handling
+       - Dynamic Lighthouse import for Next.js compatibility
+       - Component testing via API with `{"component": "speed"}` or `{"component": "pageSpeed"}`
     2. ✅ **Font Usage analysis** - Fully implemented with correct logic
        - Detects unique font-family declarations (not individual fonts in stacks)
        - Scores: ≤2 families = 100pts, 3 families = 85pts, >3 penalized
@@ -179,6 +195,11 @@ src/
 The API supports selective analysis for faster development and debugging:
 
 ```bash
+# Test only page speed analysis (Core Web Vitals)
+curl -X POST http://localhost:3000/api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com", "component": "speed"}'
+
 # Test only CTA analysis
 curl -X POST http://localhost:3000/api/analyze \
   -H "Content-Type: application/json" \
@@ -203,7 +224,8 @@ curl -X POST http://localhost:3000/api/analyze \
 ### Real-World Testing Results
 - **GMB.io CTA Analysis**: Successfully detects "$150 – Build Your Physical Autonomy" 
 - **Noise Reduction**: 198 raw CTAs → 31 relevant CTAs after filtering
-- **Performance**: ~3-5 seconds for full analysis on typical landing pages
+- **GMB.io Page Speed**: 95/100 (Grade A) - LCP: 940ms, FCP: 420ms, CLS: 0
+- **Performance**: ~3-8 seconds for full analysis on typical landing pages
 
 ## Future Improvements & Ideas
 
@@ -211,14 +233,14 @@ curl -X POST http://localhost:3000/api/analyze \
 1. **LLM CTA Validation**: Run detected CTAs through a lightweight LLM (e.g., OpenAI GPT-3.5) to double-check relevance and eliminate false positives
 2. **Advanced Whitespace Analysis**: Implement visual density algorithms and whitespace ratio calculations
 3. **Enhanced Social Proof Detection**: ML-based testimonial and trust signal recognition
-4. **Lighthouse Integration**: Complete page speed analysis with Core Web Vitals
-5. **Database Storage**: Optional result persistence for analytics and comparison
+4. **Database Storage**: Optional result persistence for analytics and comparison
+5. **Performance Monitoring**: Add historical tracking and Core Web Vitals trending
 
 ### Technical Debt
 - Add comprehensive error handling for edge cases
 - Implement rate limiting for production API
 - Add result caching for repeated analysis
-- Optimize Puppeteer resource usage
+- Optimize Puppeteer resource usage and browser instance management
 
 ## Deployment Configuration
 
