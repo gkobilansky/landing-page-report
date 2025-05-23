@@ -17,11 +17,12 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@sparticuz/chromium": "^131.0.0",
     "@supabase/supabase-js": "^2.49.8",
     "@tailwindcss/postcss": "^4.1.7",
     "lighthouse": "^12.6.0",
     "next": "^15.3.2",
-    "puppeteer": "^24.9.0",
+    "puppeteer-core": "^24.9.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
@@ -39,6 +40,7 @@
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "postcss": "^8.5.3",
+    "puppeteer": "^24.9.0",
     "tailwindcss": "^4.1.7",
     "ts-jest": "^29.3.4",
     "typescript": "^5.8.3",

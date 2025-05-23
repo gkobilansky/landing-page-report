@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer'
+import { createPuppeteerBrowser } from './puppeteer-config';
 
 export interface FontAnalysisResult {
   fontFamilies: string[]
@@ -14,10 +14,8 @@ export async function analyzeFontUsage(url: string): Promise<FontAnalysisResult>
   console.log(`🚀 Starting font analysis for: ${url}`)
   
   console.log('📱 Launching Puppeteer browser...')
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  })
+  
+  const browser = await createPuppeteerBrowser()
   
   try {
     console.log('🌐 Creating new page and navigating to URL...')

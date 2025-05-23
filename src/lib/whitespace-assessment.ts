@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import { createPuppeteerBrowser } from './puppeteer-config';
 
 export interface ElementDensityAnalysis {
   gridSections: number;
@@ -74,10 +74,8 @@ export async function analyzeWhitespace(
     const gridRows = options.gridRows || 4;
 
     console.log('📱 Launching Puppeteer browser...');
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    
+    browser = await createPuppeteerBrowser();
 
     const page = await browser.newPage();
     await page.setViewport(viewport);

@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import { createPuppeteerBrowser } from './puppeteer-config';
 
 // Dynamic import for Lighthouse to handle server-side module loading issues
 let lighthouse: any;
@@ -79,10 +79,8 @@ async function analyzeWithLighthouse(
     const timeout = options.timeout || 60000;
 
     console.log('📱 Launching Puppeteer browser for Lighthouse...');
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    
+    browser = await createPuppeteerBrowser();
 
     console.log('🔍 Running Lighthouse performance audit...');
     const lighthouseModule = await loadLighthouse();

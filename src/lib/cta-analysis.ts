@@ -1,4 +1,5 @@
-import puppeteer, { Page } from 'puppeteer';
+import { Page } from 'puppeteer-core';
+import { createPuppeteerBrowser } from './puppeteer-config';
 
 export interface CTAElement {
   text: string;
@@ -48,10 +49,8 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
     const isHtml = options.isHtml || false;
     
     console.log('📱 Launching Puppeteer browser...');
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    
+    browser = await createPuppeteerBrowser();
     
     const page = await browser.newPage();
     await page.setViewport(viewport);

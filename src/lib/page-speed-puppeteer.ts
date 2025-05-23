@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import { createPuppeteerBrowser } from './puppeteer-config';
 
 export interface PageSpeedMetrics {
   lcp: number; // Largest Contentful Paint (ms)
@@ -43,10 +43,8 @@ export async function analyzePageSpeedPuppeteer(
     const timeout = options.timeout || 60000;
 
     console.log('📱 Launching Puppeteer browser...');
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    
+    browser = await createPuppeteerBrowser();
 
     const page = await browser.newPage();
     await page.setViewport(viewport);

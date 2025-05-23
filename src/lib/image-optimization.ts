@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import { createPuppeteerBrowser } from './puppeteer-config';
 
 export interface ImageOptimizationResult {
   score: number;
@@ -33,10 +33,7 @@ export async function analyzeImageOptimization(url: string): Promise<ImageOptimi
   let browser;
   
   try {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    browser = await createPuppeteerBrowser();
     
     const page = await browser.newPage();
     

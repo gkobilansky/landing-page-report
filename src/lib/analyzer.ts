@@ -1,4 +1,5 @@
-import puppeteer, { Browser, Page } from 'puppeteer';
+import { Browser, Page } from 'puppeteer-core';
+import { createPuppeteerBrowser } from './puppeteer-config';
 import lighthouse, { RunnerResult } from 'lighthouse';
 import { analyzeFontUsage, FontAnalysisResult } from './font-analysis';
 import { analyzeCTA, CTAAnalysisResult } from './cta-analysis';
@@ -101,10 +102,7 @@ export class LandingPageAnalyzer {
   private browser: Browser | null = null;
 
   async initialize() {
-    this.browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    this.browser = await createPuppeteerBrowser();
   }
 
   async analyze(url: string, email: string): Promise<AnalysisResult> {

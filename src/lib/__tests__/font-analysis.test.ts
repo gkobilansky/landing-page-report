@@ -1,8 +1,8 @@
 import { analyzeFontUsage } from '../font-analysis'
 
-// Mock puppeteer to avoid browser launching in tests
-jest.mock('puppeteer', () => ({
-  launch: jest.fn(() => 
+// Mock puppeteer config to avoid browser launching in tests
+jest.mock('../puppeteer-config', () => ({
+  createPuppeteerBrowser: jest.fn(() => 
     Promise.resolve({
       newPage: jest.fn(() => 
         Promise.resolve({
@@ -77,7 +77,7 @@ describe('Font Usage Analysis', () => {
 })
 
 // Test font classification function directly
-import puppeteer from 'puppeteer'
+import puppeteer from 'puppeteer-core'
 
 const mockPuppeteer = puppeteer as jest.Mocked<typeof puppeteer>
 

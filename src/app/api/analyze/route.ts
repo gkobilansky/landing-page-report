@@ -6,7 +6,6 @@ import { analyzeCTA } from '@/lib/cta-analysis';
 import { analyzePageSpeed } from '@/lib/page-speed-analysis';
 import { analyzeWhitespace } from '@/lib/whitespace-assessment';
 import { analyzeSocialProof } from '@/lib/social-proof-analysis';
-import puppeteer from 'puppeteer';
 
 export async function POST(request: NextRequest) {
   console.log('🔥 API /analyze endpoint called')
