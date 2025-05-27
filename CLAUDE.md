@@ -296,3 +296,18 @@ These enhancements are based on analysis of high-performing landing pages and in
 
 ## Development Notes
 - Assume server is already running
+
+### Puppeteer Configuration
+**IMPORTANT**: Always use the `createPuppeteerBrowser()` function from `src/lib/puppeteer-config.ts` instead of directly importing Puppeteer. This ensures:
+- Consistent browser configuration across all analysis modules
+- Proper handling of production vs development environments
+- Centralized browser settings and error handling
+- When writing tests, mock `../puppeteer-config` module, not the raw `puppeteer` module
+
+```typescript
+// ✅ Correct - Use puppeteer-config
+import { createPuppeteerBrowser } from './puppeteer-config';
+
+// ❌ Incorrect - Don't use direct puppeteer import
+import puppeteer from 'puppeteer';
+```

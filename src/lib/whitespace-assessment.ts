@@ -267,38 +267,102 @@ export async function analyzeWhitespace(
 
     console.log('🔍 Calculating overall whitespace metrics...');
     
-    // 3. Overall whitespace calculation
+    // 3. Overall whitespace calculation using point sampling approach
     const overallMetrics = await page.evaluate(() => {
-      const body = document.body;
       const viewportArea = window.innerWidth * window.innerHeight;
       
-      // Estimate content area vs whitespace
-      const elements = Array.from(document.querySelectorAll('*')).filter(el => {
+      // Filter to actual content elements, excluding structural containers
+      const contentElements = Array.from(document.querySelectorAll('*')).filter(el => {
+        const tagName = el.tagName.toLowerCase();
         const rect = el.getBoundingClientRect();
-        return rect.width > 0 && rect.height > 0 && 
-               rect.top >= 0 && rect.top < window.innerHeight;
+        
+        // Exclude structural elements
+        if (['html', 'body', 'head', 'script', 'style', 'meta', 'link', 'title'].includes(tagName)) {
+          return false;
+        }
+        
+        // Only visible elements in viewport
+        if (rect.width <= 0 || rect.height <= 0 || rect.top >= window.innerHeight || rect.bottom < 0) {
+          return false;
+        }
+        
+        // Exclude large container elements that span most of the viewport
+        const isLargeContainer = (rect.width / window.innerWidth > 0.8 && rect.height / window.innerHeight > 0.5);
+        if (isLargeContainer && !el.textContent?.trim()) {
+          return false;
+        }
+        
+        return true;
       });
 
-      let totalContentArea = 0;
-      elements.forEach(el => {
+      // Improved whitespace calculation: find actual visible content areas
+      const contentRects: { x: number; y: number; width: number; height: number; area: number }[] = [];
+      contentElements.forEach(el => {
         const rect = el.getBoundingClientRect();
-        if (rect.top >= 0 && rect.top < window.innerHeight) {
-          totalContentArea += (rect.width * rect.height);
+        const tagName = el.tagName.toLowerCase();
+        
+        // Only count elements with meaningful content
+        const hasText = el.textContent?.trim() && el.textContent.trim().length > 3;
+        const isContentElement = ['img', 'video', 'canvas', 'svg', 'button', 'input', 'iframe'].includes(tagName);
+        
+        if ((hasText || isContentElement) && 
+            rect.top >= 0 && rect.top < window.innerHeight && 
+            rect.width > 10 && rect.height > 10) {
+          
+          // For text elements, use a more conservative height
+          if (hasText && !isContentElement) {
+            const lines = Math.ceil((el.textContent?.trim() || '').length / 80); // Rough estimate
+            const estimatedHeight = Math.min(rect.height, lines * 20);
+            contentRects.push({
+              x: rect.left,
+              y: rect.top,
+              width: rect.width,
+              height: estimatedHeight,
+              area: rect.width * estimatedHeight
+            });
+          } else {
+            contentRects.push({
+              x: rect.left,
+              y: rect.top,
+              width: rect.width,
+              height: rect.height,
+              area: rect.width * rect.height
+            });
+          }
         }
       });
-
-      // Account for overlapping elements (rough estimation)
-      totalContentArea = totalContentArea * 0.6; // Overlap factor
+      
+      // Calculate total content area accounting for overlaps
+      let totalContentArea = 0;
+      const processedRects: { x: number; y: number; width: number; height: number; area: number }[] = [];
+      
+      contentRects.sort((a, b) => b.area - a.area); // Process largest first
+      
+      for (const rect of contentRects) {
+        let overlap = 0;
+        for (const processed of processedRects) {
+          const overlapX = Math.max(0, Math.min(rect.x + rect.width, processed.x + processed.width) - Math.max(rect.x, processed.x));
+          const overlapY = Math.max(0, Math.min(rect.y + rect.height, processed.y + processed.height) - Math.max(rect.y, processed.y));
+          overlap += overlapX * overlapY;
+        }
+        
+        const uniqueArea = Math.max(0, rect.area - overlap);
+        totalContentArea += uniqueArea;
+        processedRects.push(rect);
+      }
       
       const whitespaceArea = Math.max(0, viewportArea - totalContentArea);
       const whitespaceRatio = whitespaceArea / viewportArea;
+      
+      console.log(`Content calculation: ${contentRects.length} content elements, total area: ${totalContentArea}, viewport: ${viewportArea}, whitespace ratio: ${whitespaceRatio}`);
 
       return {
-        totalElements: elements.length,
+        totalElements: contentElements.length,
         whitespaceRatio: Math.round(whitespaceRatio * 100) / 100,
         viewportArea,
         contentArea: totalContentArea,
-        whitespaceArea
+        whitespaceArea: whitespaceArea,
+        contentElementsFound: contentRects.length
       };
     });
 
