@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { analyzeFontUsage } from '@/lib/font-analysis';
 import { analyzeImageOptimization } from '@/lib/image-optimization';
 import { analyzeCTA } from '@/lib/cta-analysis';
@@ -54,6 +53,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
 
     // Initialize results object
     let analysisResult: any = {
