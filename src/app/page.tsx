@@ -159,8 +159,11 @@ export default function Home() {
           {/* Header */}
           <div className="text-center pt-2">
             <h1 className="text-4xl font-bold text-gray-50 mb-4">
-              Landing Page Analyzer
+              <span className="text-primary">Landing Page Review</span>
             </h1>
+            <p className="text-gray-300 text-sm">
+              Is your landing page up to snuff? Let&apos;s find out.
+            </p>
           </div>
         </div>
 
