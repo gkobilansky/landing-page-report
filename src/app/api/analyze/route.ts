@@ -5,16 +5,22 @@ import { analyzeCTA } from '@/lib/cta-analysis';
 import { analyzePageSpeed } from '@/lib/page-speed-analysis';
 import { analyzeWhitespace } from '@/lib/whitespace-assessment';
 import { analyzeSocialProof } from '@/lib/social-proof-analysis';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   console.log('🔥 API /analyze endpoint called')
   
+  const startTime = Date.now();
+  let analysisId: string | null = null;
+  
   try {
     console.log('📥 Parsing request body...')
     const body = await request.json();
-    const { url, component } = body; // Add component parameter for selective testing
+    const { url, component, email, forceRescan = false } = body; // Add email parameter for database storage
     console.log(`📋 Received URL: ${url}`)
     console.log(`🎯 Component filter: ${component || 'all'}`)
+    console.log(`📧 Email: ${email || 'anonymous'}`)
+    console.log(`🔄 Force rescan: ${forceRescan}`)
 
     // Validate input
     if (!url) {
@@ -51,6 +57,144 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Invalid URL format. Please provide a complete URL with a valid domain.' },
         { status: 400 }
+      );
+    }
+
+    // Create or find user and analysis record in database
+    console.log('💾 Creating user and analysis record in database...')
+    try {
+      // First, find or create user
+      const userEmail = email || 'anonymous@temp.com';
+      let userId: string;
+      
+      const { data: existingUser } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('email', userEmail)
+        .single();
+
+      if (existingUser) {
+        userId = existingUser.id;
+        console.log(`✅ Found existing user: ${userId}`);
+      } else {
+        const { data: newUser, error: userError } = await supabaseAdmin
+          .from('users')
+          .insert({
+            email: userEmail,
+            marketing_consent: true
+          })
+          .select('id')
+          .single();
+
+        if (userError) {
+          console.error('❌ Failed to create user:', userError);
+          return NextResponse.json(
+            { error: 'Failed to create user record' },
+            { status: 500 }
+          );
+        }
+
+        userId = newUser.id;
+        console.log(`✅ Created new user: ${userId}`);
+      }
+
+      // Check if analysis already exists for this user/URL combination
+      const { data: existingAnalysis } = await supabaseAdmin
+        .from('analyses')
+        .select('id, status, created_at')
+        .eq('user_id', userId)
+        .eq('url', validatedUrl.toString())
+        .single();
+
+      if (existingAnalysis) {
+        const analysisAge = Date.now() - new Date(existingAnalysis.created_at).getTime();
+        const oneDayMs = 24 * 60 * 60 * 1000;
+        
+        // If analysis is less than 24 hours old and completed, return existing (unless force rescan)
+        if (analysisAge < oneDayMs && existingAnalysis.status === 'completed' && !forceRescan) {
+          console.log(`✅ Found recent completed analysis: ${existingAnalysis.id}`);
+          const { data: existingData } = await supabaseAdmin
+            .from('analyses')
+            .select('*')
+            .eq('id', existingAnalysis.id)
+            .single();
+          
+          if (existingData) {
+            return NextResponse.json({
+              success: true,
+              analysis: {
+                url: existingData.url,
+                pageLoadSpeed: existingData.page_speed_analysis,
+                fontUsage: existingData.font_analysis,
+                imageOptimization: existingData.image_analysis,
+                ctaAnalysis: existingData.cta_analysis,
+                whitespaceAssessment: existingData.whitespace_analysis,
+                socialProof: existingData.social_proof_analysis,
+                overallScore: existingData.overall_score,
+                status: existingData.status
+              },
+              analysisId: existingData.id,
+              fromCache: true,
+              message: 'Returning cached analysis from within 24 hours.'
+            });
+          }
+        }
+        
+        // If analysis exists but is old or failed, update it
+        console.log(`🔄 Updating existing analysis: ${existingAnalysis.id}`);
+        const { error: updateError } = await supabaseAdmin
+          .from('analyses')
+          .update({
+            status: 'processing',
+            retry_count: 0,
+            started_at: new Date().toISOString(),
+            error_message: null
+          })
+          .eq('id', existingAnalysis.id);
+
+        if (updateError) {
+          console.error('❌ Failed to update existing analysis:', updateError);
+          return NextResponse.json(
+            { error: 'Failed to update existing analysis record' },
+            { status: 500 }
+          );
+        }
+
+        analysisId = existingAnalysis.id;
+        console.log(`✅ Updated existing analysis record: ${analysisId}`);
+      } else {
+        // Create new analysis record
+        const { data: analysisRecord, error: insertError } = await supabaseAdmin
+          .from('analyses')
+          .insert({
+            user_id: userId,
+            url: validatedUrl.toString(),
+            status: 'processing',
+            algorithm_version: '1.0.0',
+            lighthouse_available: true, // Will be updated based on actual availability
+            retry_count: 0,
+            is_baseline: true,
+            started_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('❌ Failed to create analysis record:', insertError);
+          return NextResponse.json(
+            { error: 'Failed to initialize analysis record' },
+            { status: 500 }
+          );
+        }
+
+        analysisId = analysisRecord.id;
+        console.log(`✅ Analysis record created with ID: ${analysisId}`);
+      }
+    } catch (error) {
+      console.error('❌ Database error:', error);
+      return NextResponse.json(
+        { error: 'Database error occurred' },
+        { status: 500 }
       );
     }
 
@@ -336,17 +480,72 @@ export async function POST(request: NextRequest) {
     console.log('📊 Building analysis result object...')
     analysisResult.overallScore = scores.length > 0 ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : 0;
 
+    // Update database record with final results
+    if (analysisId) {
+      console.log('💾 Updating analysis record with results...')
+      const analysisTimeMs = Date.now() - startTime;
+      
+      try {
+        const { error: updateError } = await supabaseAdmin
+          .from('analyses')
+          .update({
+            status: 'completed',
+            page_speed_analysis: analysisResult.pageLoadSpeed,
+            font_analysis: analysisResult.fontUsage,
+            image_analysis: analysisResult.imageOptimization,
+            cta_analysis: analysisResult.ctaAnalysis,
+            whitespace_analysis: analysisResult.whitespaceAssessment,
+            social_proof_analysis: analysisResult.socialProof,
+            overall_score: analysisResult.overallScore,
+            grade: analysisResult.pageLoadSpeed.grade || 'F',
+            analysis_duration_ms: analysisTimeMs,
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', analysisId);
+
+        if (updateError) {
+          console.error('❌ Failed to update analysis record:', updateError);
+        } else {
+          console.log(`✅ Analysis record updated successfully (${analysisTimeMs}ms)`);
+        }
+      } catch (error) {
+        console.error('❌ Database update error:', error);
+      }
+    }
+
     console.log(`🎉 Analysis complete! Overall score: ${analysisResult.overallScore}/100`)
     console.log('📤 Sending response to client...')
     
     return NextResponse.json({
       success: true,
       analysis: analysisResult,
+      analysisId,
+      fromCache: false,
       message: 'Analysis completed successfully.'
     });
 
   } catch (error) {
     console.error('💥 Analysis API error:', error);
+    
+    // Update database record with error status
+    if (analysisId) {
+      try {
+        const analysisTimeMs = Date.now() - startTime;
+        await supabaseAdmin
+          .from('analyses')
+          .update({
+            status: 'failed',
+            error_message: error instanceof Error ? error.message : 'Unknown error occurred',
+            analysis_duration_ms: analysisTimeMs,
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', analysisId);
+        console.log('💾 Analysis record updated with error status');
+      } catch (dbError) {
+        console.error('❌ Failed to update error status in database:', dbError);
+      }
+    }
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

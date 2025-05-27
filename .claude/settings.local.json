@@ -28,7 +28,8 @@
       "Bash(node:*)",
       "Bash(npx tsc:*)",
       "Bash(npm run dev:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(supabase status:*)"
     ],
     "deny": []
   }

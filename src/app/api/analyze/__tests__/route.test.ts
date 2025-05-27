@@ -25,31 +25,8 @@ jest.mock('@/lib/social-proof-analysis', () => ({
   analyzeSocialProof: jest.fn()
 }));
 
-// Mock Supabase to avoid database calls in tests
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            single: jest.fn(() => Promise.resolve({ data: null, error: { code: 'PGRST116' } }))
-          }))
-        }))
-      })),
-      insert: jest.fn(() => ({
-        select: jest.fn(() => ({
-          single: jest.fn(() => Promise.resolve({ 
-            data: { id: 'test-analysis-id' }, 
-            error: null 
-          }))
-        }))
-      })),
-      update: jest.fn(() => ({
-        eq: jest.fn(() => Promise.resolve({ error: null }))
-      }))
-    }))
-  }
-}));
+// Note: Using real Supabase connection for integration testing
+// This tests that database storage actually works with the local Supabase instance
 
 describe('/api/analyze', () => {
   // Get the mocked functions
@@ -166,6 +143,10 @@ describe('/api/analyze', () => {
     });
     const response = await POST(request);
     const data = await response.json();
+
+    if (response.status !== 200) {
+      console.error('API Error:', data);
+    }
 
     expect(response.status).toBe(200);
     expect(data.success).toBe(true);
@@ -308,5 +289,167 @@ describe('/api/analyze', () => {
     // Overall score should be average: (90+80+70+60+50+40)/6 = 65, but may round to 66
     expect(data.analysis.overallScore).toBeGreaterThanOrEqual(65);
     expect(data.analysis.overallScore).toBeLessThanOrEqual(66);
+  });
+
+  describe('Caching functionality', () => {
+    it('should return fromCache: false for fresh analysis', async () => {
+      const request = createRequest({ 
+        url: 'https://fresh-example.com'
+      });
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.fromCache).toBe(false);
+      expect(data.message).toContain('Analysis completed successfully');
+    });
+
+    it('should handle forceRescan parameter', async () => {
+      const request = createRequest({ 
+        url: 'https://example.com',
+        forceRescan: true
+      });
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.fromCache).toBe(false);
+      expect(data.message).toContain('Analysis completed successfully');
+    });
+
+    it('should accept forceRescan: false parameter', async () => {
+      const request = createRequest({ 
+        url: 'https://example.com',
+        forceRescan: false
+      });
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      // fromCache could be true or false depending on if there's existing data
+      expect(typeof data.fromCache).toBe('boolean');
+    });
+
+    it('should include fromCache field in all successful responses', async () => {
+      const request = createRequest({ 
+        url: 'https://example.com'
+      });
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data).toHaveProperty('fromCache');
+      expect(typeof data.fromCache).toBe('boolean');
+    });
+
+    it('should include email parameter in request body', async () => {
+      const request = createRequest({ 
+        url: 'https://example.com',
+        email: 'test@example.com'
+      });
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data).toHaveProperty('analysisId');
+    });
+
+    it('should handle missing email parameter gracefully', async () => {
+      const request = createRequest({ 
+        url: 'https://example.com'
+        // No email provided
+      });
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data).toHaveProperty('analysisId');
+    });
+  });
+
+  describe('Database integration with caching', () => {
+    it('should handle component-based analysis with caching parameters', async () => {
+      const request = createRequest({ 
+        url: 'https://example.com',
+        component: 'speed',
+        email: 'test@example.com',
+        forceRescan: true
+      });
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.fromCache).toBe(false);
+      
+      // Only page speed analysis should run
+      expect(mockAnalyzePageSpeed).toHaveBeenCalledWith('https://example.com/');
+      expect(mockAnalyzeFontUsage).not.toHaveBeenCalled();
+      
+      expect(data.analysis.pageLoadSpeed).toBeDefined();
+      expect(data.analysis.overallScore).toBe(75); // Should be the speed score only
+    });
+
+    it('should include analysisId in response for database tracking', async () => {
+      const request = createRequest({ 
+        url: 'https://unique-test-url.com',
+        email: 'tracker@example.com'
+      });
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data).toHaveProperty('analysisId');
+      expect(typeof data.analysisId).toBe('string');
+      expect(data.analysisId).toBeTruthy();
+    });
+  });
+
+  describe('Error handling with cache parameters', () => {
+    it('should handle analysis errors gracefully even with forceRescan', async () => {
+      // Mock one function to throw an error
+      mockAnalyzePageSpeed.mockRejectedValue(new Error('Network timeout'));
+      
+      const request = createRequest({ 
+        url: 'https://example.com',
+        forceRescan: true,
+        email: 'error-test@example.com'
+      });
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.fromCache).toBe(false);
+      
+      // Should continue with other analyses even if one fails
+      expect(data.analysis.pageLoadSpeed.score).toBe(0); // Default for failed analysis
+      expect(data.analysis.fontUsage.score).toBe(95); // Should still have this
+    });
+
+    it('should maintain response structure consistency with cache fields', async () => {
+      const request = createRequest({ 
+        url: 'https://example.com',
+        forceRescan: false
+      });
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toMatchObject({
+        success: true,
+        analysis: expect.any(Object),
+        analysisId: expect.any(String),
+        fromCache: expect.any(Boolean),
+        message: expect.any(String)
+      });
+    });
   });
 });
