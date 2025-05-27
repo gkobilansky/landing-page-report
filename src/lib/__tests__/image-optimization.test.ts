@@ -1,33 +1,27 @@
 import { analyzeImageOptimization } from '../image-optimization';
 
-// Mock Puppeteer
-jest.mock('puppeteer', () => ({
-  launch: jest.fn(() => ({
-    newPage: jest.fn(() => ({
-      goto: jest.fn(),
-      evaluate: jest.fn(),
-      close: jest.fn(),
-    })),
-    close: jest.fn(),
-  })),
+// Mock the puppeteer-config module
+jest.mock('../puppeteer-config', () => ({
+  createPuppeteerBrowser: jest.fn(),
 }));
 
+const { createPuppeteerBrowser } = require('../puppeteer-config');
+
+const mockPage = {
+  goto: jest.fn(),
+  evaluate: jest.fn(),
+  close: jest.fn(),
+};
+
+const mockBrowser = {
+  newPage: jest.fn().mockResolvedValue(mockPage),
+  close: jest.fn(),
+};
+
 describe('Image Optimization Analysis', () => {
-  const mockPage = {
-    goto: jest.fn(),
-    evaluate: jest.fn(),
-    close: jest.fn(),
-  };
-
-  const mockBrowser = {
-    newPage: jest.fn(() => mockPage),
-    close: jest.fn(),
-  };
-
   beforeEach(() => {
     jest.clearAllMocks();
-    const puppeteer = require('puppeteer');
-    puppeteer.launch.mockResolvedValue(mockBrowser);
+    createPuppeteerBrowser.mockResolvedValue(mockBrowser);
   });
 
   describe('Modern Image Formats', () => {

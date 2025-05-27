@@ -1,25 +1,32 @@
 import { analyzeFontUsage } from '../font-analysis'
 
-// Mock puppeteer config to avoid browser launching in tests
+// Mock the puppeteer-config module
 jest.mock('../puppeteer-config', () => ({
-  createPuppeteerBrowser: jest.fn(() => 
-    Promise.resolve({
-      newPage: jest.fn(() => 
-        Promise.resolve({
-          goto: jest.fn(() => Promise.resolve()),
-          evaluate: jest.fn(() => 
-            // Mock example.com's single font-family declaration
-            Promise.resolve(['-apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif'])
-          )
-        })
-      ),
-      close: jest.fn(() => Promise.resolve())
-    })
-  )
-}))
+  createPuppeteerBrowser: jest.fn(),
+}));
+
+const { createPuppeteerBrowser } = require('../puppeteer-config');
+
+const mockPage = {
+  goto: jest.fn(),
+  evaluate: jest.fn(),
+};
+
+const mockBrowser = {
+  newPage: jest.fn().mockResolvedValue(mockPage),
+  close: jest.fn(),
+};
 
 describe('Font Usage Analysis', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    createPuppeteerBrowser.mockResolvedValue(mockBrowser);
+  });
+
   test('should detect font families from example.com', async () => {
+    // Mock example.com's single font-family declaration
+    mockPage.evaluate.mockResolvedValue(['-apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif']);
+    
     const result = await analyzeFontUsage('https://example.com')
     
     expect(result).toEqual({
@@ -52,23 +59,19 @@ describe('Font Usage Analysis', () => {
   }, 10000)
 
   test('should differentiate between system and web fonts in scoring', async () => {
-    // Test that system fonts get better scores than web fonts
-    const systemFontResult = await analyzeFontUsage('https://test.com') // This should return system fonts
+    // Test system fonts first
+    mockPage.evaluate.mockResolvedValueOnce(['-apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", sans-serif']);
+    const systemFontResult = await analyzeFontUsage('https://test.com')
     
-    // Mock a scenario with many web fonts for comparison
-    const mockPuppeteer = require('puppeteer-core')
-    mockPuppeteer.launch.mockResolvedValueOnce({
-      newPage: jest.fn().mockResolvedValueOnce({
-        goto: jest.fn().mockResolvedValueOnce(undefined),
-        evaluate: jest.fn().mockResolvedValueOnce([
-          '"Roboto", sans-serif',
-          '"Open Sans", Arial',
-          '"Poppins", serif',
-          '"Montserrat", sans-serif'
-        ])
-      }),
-      close: jest.fn().mockResolvedValueOnce(undefined)
-    } as any)
+    // Reset and test web fonts
+    jest.clearAllMocks();
+    createPuppeteerBrowser.mockResolvedValue(mockBrowser);
+    mockPage.evaluate.mockResolvedValueOnce([
+      '"Roboto", sans-serif',
+      '"Open Sans", Arial',
+      '"Poppins", serif',
+      '"Montserrat", sans-serif'
+    ]);
     
     const webFontResult = await analyzeFontUsage('https://web-font-heavy.com')
     
@@ -95,25 +98,19 @@ describe('Font Usage Analysis', () => {
   }, 10000)
 })
 
-// Test font classification function directly
-import puppeteer from 'puppeteer-core'
-
-const mockPuppeteer = puppeteer as jest.Mocked<typeof puppeteer>
-
 describe('Font Classification', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    createPuppeteerBrowser.mockResolvedValue(mockBrowser);
+  });
+
   test('should classify system fonts correctly', async () => {
     // Mock different font scenarios
-    mockPuppeteer.launch.mockResolvedValueOnce({
-      newPage: jest.fn().mockResolvedValueOnce({
-        goto: jest.fn().mockResolvedValueOnce(undefined),
-        evaluate: jest.fn().mockResolvedValueOnce([
-          'Arial, sans-serif',
-          'system-ui, sans-serif', 
-          'Georgia, serif'
-        ])
-      }),
-      close: jest.fn().mockResolvedValueOnce(undefined)
-    } as any)
+    mockPage.evaluate.mockResolvedValue([
+      'Arial, sans-serif',
+      'system-ui, sans-serif', 
+      'Georgia, serif'
+    ]);
 
     const result = await analyzeFontUsage('https://test.com')
     
@@ -123,17 +120,11 @@ describe('Font Classification', () => {
   })
 
   test('should classify web fonts correctly', async () => {
-    mockPuppeteer.launch.mockResolvedValueOnce({
-      newPage: jest.fn().mockResolvedValueOnce({
-        goto: jest.fn().mockResolvedValueOnce(undefined),
-        evaluate: jest.fn().mockResolvedValueOnce([
-          '"Roboto", sans-serif',
-          '"Open Sans", Arial, sans-serif',
-          '"Poppins", system-ui, sans-serif'
-        ])
-      }),
-      close: jest.fn().mockResolvedValueOnce(undefined)
-    } as any)
+    mockPage.evaluate.mockResolvedValue([
+      '"Roboto", sans-serif',
+      '"Open Sans", Arial, sans-serif',
+      '"Poppins", system-ui, sans-serif'
+    ]);
 
     const result = await analyzeFontUsage('https://test.com')
     
@@ -143,16 +134,10 @@ describe('Font Classification', () => {
   })
 
   test('should handle mixed system and web fonts', async () => {
-    mockPuppeteer.launch.mockResolvedValueOnce({
-      newPage: jest.fn().mockResolvedValueOnce({
-        goto: jest.fn().mockResolvedValueOnce(undefined),
-        evaluate: jest.fn().mockResolvedValueOnce([
-          'system-ui, sans-serif',  // system
-          '"Roboto", Arial, sans-serif'  // web (Roboto) but contains system fallback
-        ])
-      }),
-      close: jest.fn().mockResolvedValueOnce(undefined)
-    } as any)
+    mockPage.evaluate.mockResolvedValue([
+      'system-ui, sans-serif',  // system
+      '"Roboto", Arial, sans-serif'  // web (Roboto) but contains system fallback
+    ]);
 
     const result = await analyzeFontUsage('https://test.com')
     

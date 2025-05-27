@@ -6,18 +6,23 @@ jest.mock('lighthouse', () => ({
   default: jest.fn()
 }));
 
-jest.mock('puppeteer', () => ({
-  launch: jest.fn(() => Promise.resolve({
-    close: jest.fn(),
-    wsEndpoint: jest.fn(() => 'ws://127.0.0.1:9222/devtools/browser/12345')
-  }))
+// Mock the puppeteer-config module
+jest.mock('../puppeteer-config', () => ({
+  createPuppeteerBrowser: jest.fn(),
 }));
 
+const { createPuppeteerBrowser } = require('../puppeteer-config');
 const mockLighthouse = require('lighthouse').default as jest.MockedFunction<any>;
+
+const mockBrowser = {
+  close: jest.fn(),
+  wsEndpoint: jest.fn(() => 'ws://127.0.0.1:9222/devtools/browser/12345')
+};
 
 describe('Page Speed Analysis', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    createPuppeteerBrowser.mockResolvedValue(mockBrowser);
     console.log = jest.fn(); // Suppress console logs in tests
   });
 
@@ -182,7 +187,7 @@ describe('Page Speed Analysis', () => {
       
       expect(result.score).toBe(0);
       expect(result.grade).toBe('F');
-      expect(result.issues).toContain('Both Lighthouse and Puppeteer analysis failed');
+      expect(result.issues).toContain('Page speed analysis unavailable');
     });
 
     it('should respect custom options', async () => {
@@ -208,7 +213,7 @@ describe('Page Speed Analysis', () => {
         expect.objectContaining({
           onlyCategories: ['performance'],
           formFactor: 'mobile',
-          port: 0
+          port: "9222"  // Port is extracted from browser.wsEndpoint()
         })
       );
     });

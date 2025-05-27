@@ -1,17 +1,23 @@
 import { LandingPageAnalyzer } from '../analyzer';
 
-// Mock puppeteer and lighthouse
-jest.mock('puppeteer', () => ({
-  launch: jest.fn(() => Promise.resolve({
-    newPage: jest.fn(() => Promise.resolve({
-      setViewport: jest.fn(),
-      goto: jest.fn(),
-      evaluate: jest.fn(),
-      close: jest.fn(),
-    })),
-    close: jest.fn(),
-  })),
+// Mock the puppeteer-config module
+jest.mock('../puppeteer-config', () => ({
+  createPuppeteerBrowser: jest.fn(),
 }));
+
+const { createPuppeteerBrowser } = require('../puppeteer-config');
+
+const mockPage = {
+  setViewport: jest.fn(),
+  goto: jest.fn(),
+  evaluate: jest.fn(),
+  close: jest.fn(),
+};
+
+const mockBrowser = {
+  newPage: jest.fn().mockResolvedValue(mockPage),
+  close: jest.fn(),
+};
 
 jest.mock('lighthouse', () => jest.fn(() => Promise.resolve({
   lhr: {
@@ -31,6 +37,7 @@ describe('LandingPageAnalyzer', () => {
   let analyzer: LandingPageAnalyzer;
 
   beforeEach(() => {
+    createPuppeteerBrowser.mockResolvedValue(mockBrowser);
     analyzer = new LandingPageAnalyzer();
   });
 
