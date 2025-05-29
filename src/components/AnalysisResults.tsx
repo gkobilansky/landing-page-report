@@ -1,10 +1,16 @@
+import React from 'react'
+
 interface AnalysisResult {
   url: string
   pageLoadSpeed?: {
     score: number
     grade: string
-    metrics: { lcp: number; fcp: number; cls: number; tbt: number; si: number }
-    lighthouseScore: number
+    metrics: {
+      loadTime: number; // Page load time in seconds (marketing-friendly)
+      performanceGrade: string; // A, B, C, D, F
+      speedDescription: string; // Marketing-friendly description
+      relativeTo: string; // Comparison to other websites
+    }
     issues: string[]
     recommendations: string[]
     loadTime: number
@@ -154,6 +160,8 @@ function CategoryCard({ title, score, children }: { title: string; score?: numbe
 }
 
 export default function AnalysisResults({ result }: AnalysisResultsProps) {
+  const [showAllCtas, setShowAllCtas] = React.useState(false)
+
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
       {/* Header */}
@@ -177,18 +185,18 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         {result.pageLoadSpeed && (
           <CategoryCard title="Page Load Speed" score={result.pageLoadSpeed.score}>
             <div className="space-y-3 text-gray-300">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-400">LCP:</span> {Math.round(result.pageLoadSpeed.metrics.lcp)}ms
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Load Time:</span> 
+                  <span className="font-medium">{result.pageLoadSpeed.metrics.loadTime}s</span>
                 </div>
-                <div>
-                  <span className="text-gray-400">FCP:</span> {Math.round(result.pageLoadSpeed.metrics.fcp)}ms
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Performance:</span> 
+                  <span className="font-medium">{result.pageLoadSpeed.metrics.speedDescription}</span>
                 </div>
-                <div>
-                  <span className="text-gray-400">CLS:</span> {result.pageLoadSpeed.metrics.cls.toFixed(3)}
-                </div>
-                <div>
-                  <span className="text-gray-400">Lighthouse:</span> {result.pageLoadSpeed.lighthouseScore}
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Compared to others:</span> 
+                  <span className="font-medium text-blue-400">{result.pageLoadSpeed.metrics.relativeTo}</span>
                 </div>
               </div>
               {result.pageLoadSpeed.issues.length > 0 && (
@@ -322,9 +330,19 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
               )}
               {result.ctaAnalysis.ctas && result.ctaAnalysis.ctas.length > 0 && (
                  <div>
-                    <h4 className="font-medium text-gray-100 mb-1 mt-3">All CTAs ({result.ctaAnalysis.ctas.length}):</h4>
+                    <div className="flex items-center justify-between mb-1 mt-3">
+                      <h4 className="font-medium text-gray-100">All CTAs ({result.ctaAnalysis.ctas.length}):</h4>
+                      {result.ctaAnalysis.ctas.length > 5 && (
+                        <button
+                          onClick={() => setShowAllCtas(!showAllCtas)}
+                          className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                        >
+                          {showAllCtas ? 'Show Less' : `Show All (${result.ctaAnalysis.ctas.length})`}
+                        </button>
+                      )}
+                    </div>
                     <ul className="space-y-1 text-sm">
-                        {result.ctaAnalysis.ctas.map((cta, index) => (
+                        {(showAllCtas ? result.ctaAnalysis.ctas : result.ctaAnalysis.ctas.slice(0, 5)).map((cta, index) => (
                             <li key={index} className="border-b border-gray-700 py-1 last:border-b-0">
                                 {cta.text}
                                 <span className="text-xs text-gray-500 ml-2">
