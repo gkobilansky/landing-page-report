@@ -1,7 +1,29 @@
 export default function SocialFooter() {
   return (
     <footer className="fixed bottom-4 right-4 z-50">
-      <div className="flex items-center space-x-3 bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-lg px-4 py-2">
+      <div className="group flex items-center space-x-4 bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-lg pl-2 pr-4 py-2">
+        {/* Links Section - Hidden by default, shown on hover */}
+        <div className="flex items-center space-x-2 border-r border-gray-600 pr-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 max-w-0 group-hover:max-w-xs overflow-hidden">
+          <span className="text-gray-400 text-sm hidden sm:block whitespace-nowrap">Links:</span>
+          <div className="flex space-x-2">
+            <a
+              href="https://lansky.tech"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors text-xs px-2 py-1 rounded whitespace-nowrap"
+            >
+              lansky.tech
+            </a>
+            <a
+              href="/report"
+              className="text-gray-400 hover:text-white transition-colors text-xs px-2 py-1 rounded whitespace-nowrap"
+            >
+              2025 Report
+            </a>
+          </div>
+        </div>
+        
+        {/* Social Section */}
         <span className="text-gray-400 text-sm hidden sm:block">Follow:</span>
         <div className="flex space-x-2">
           <a

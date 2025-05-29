@@ -82,6 +82,16 @@ export default function Header() {
         </div>
       </div>
 
+      {/* Navigation */}
+      <nav className="flex justify-end mb-8">
+        <a 
+          href="/report" 
+          className="text-gray-300 hover:text-primary hover:underline transition-colors text-sm font-medium"
+        >
+          Report: Landing Pages in 2025
+        </a>
+      </nav>
+
       {/* Header */}
       <div className="text-center pt-2">
         <h1 className="text-4xl font-bold text-gray-50 mb-4">

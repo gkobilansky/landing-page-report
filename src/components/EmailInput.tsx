@@ -68,7 +68,7 @@ export default function EmailInput({ onEmailSubmit, isLoading = false, isAnalysi
         <div className="text-center mb-4">
           {isAnalysisComplete ? (
             <p className="text-gray-300 text-lg mb-2">
-              We&apos;re working on more advanced testing, add your email to automatically receive more advanced features once they're ready.
+              We&apos;re working on more advanced testing, add your email to automatically receive updates once they're out.
             </p>
           ) : (
               <>
