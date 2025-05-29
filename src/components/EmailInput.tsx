@@ -6,12 +6,13 @@ interface EmailInputProps {
   onEmailSubmit: (email: string) => void
   isLoading?: boolean
   isAnalysisComplete?: boolean
+  initialSubmittedState?: boolean
 }
 
-export default function EmailInput({ onEmailSubmit, isLoading = false, isAnalysisComplete = false }: EmailInputProps) {
+export default function EmailInput({ onEmailSubmit, isLoading = false, isAnalysisComplete = false, initialSubmittedState = false }: EmailInputProps) {
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
-  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitted, setIsSubmitted] = useState(initialSubmittedState)
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -54,7 +55,7 @@ export default function EmailInput({ onEmailSubmit, isLoading = false, isAnalysi
             <span className="text-green-400 font-medium">Thanks!</span>
           </div>
           <p className="text-gray-300 text-sm">
-            I&apos;ll send you a note when your report is ready.
+            I'll keep you posted as we add more testing capabilities to this tool.
           </p>
         </div>
       </div>
@@ -67,15 +68,15 @@ export default function EmailInput({ onEmailSubmit, isLoading = false, isAnalysi
         <div className="text-center mb-4">
           {isAnalysisComplete ? (
             <p className="text-gray-300 text-lg mb-2">
-              We&apos;re working on more advanced testing, add your email to automatically receive the advanced report once it&apos;s ready
+              We&apos;re working on more advanced testing, add your email to automatically receive more advanced features once they're ready.
             </p>
           ) : (
-            <>
-              <p className="text-gray-300 text-lg mb-2">
-                I&apos;ll send you a note when your report is ready
-              </p>
+              <>
+                <p className="text-gray-300 text-lg mb-2">
+                  No need to wait, we can send the report to your email. 
+                </p>
               <p className="text-gray-400 text-sm">
-                (Takes about 2-3 minutes to analyze your page)
+                (Takes about 45 sec - 1 min to analyze your page)
               </p>
             </>
           )}

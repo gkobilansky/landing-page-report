@@ -175,9 +175,6 @@ export default function ProgressiveLoader({ isLoading }: ProgressiveLoaderProps)
         <p className="text-gray-300 text-sm mb-2">
           Step {currentStepIndex + 1} of {steps.length}
         </p>
-        <p className="text-gray-500 text-xs">
-          This typically takes 15-30 seconds
-        </p>
       </div>
 
       {/* Steps List */}

@@ -15,6 +15,7 @@ interface AnalysisState {
   email: string | null
   currentUrl: string | null
   fromCache: boolean
+  emailSubmitted: boolean
 }
 
 export default function Home() {
@@ -25,7 +26,8 @@ export default function Home() {
     showEmailInput: false,
     email: null,
     currentUrl: null,
-    fromCache: false
+    fromCache: false,
+    emailSubmitted: false
   })
 
   const handleAnalyze = async (url: string, forceRescan = false) => {
@@ -36,7 +38,8 @@ export default function Home() {
       showEmailInput: true,
       email: null,
       currentUrl: url,
-      fromCache: false
+      fromCache: false,
+      emailSubmitted: false
     })
 
     try {
@@ -76,7 +79,8 @@ export default function Home() {
   const handleEmailSubmit = async (email: string) => {
     setAnalysisState(prev => ({
       ...prev,
-      email
+      email,
+      emailSubmitted: true
     }))
   }
 
@@ -88,7 +92,8 @@ export default function Home() {
       showEmailInput: false,
       email: null,
       currentUrl: null,
-      fromCache: false
+      fromCache: false,
+      emailSubmitted: false
     })
   }
 
@@ -302,6 +307,7 @@ export default function Home() {
                 onEmailSubmit={handleEmailSubmit}
                 isLoading={false}
                 isAnalysisComplete={true}
+                initialSubmittedState={analysisState.emailSubmitted}
               />
             </div>
           </div>
@@ -309,7 +315,7 @@ export default function Home() {
 
         {/* Footer/Info Section - Only show when no results */}
         {!analysisState.result && !analysisState.isLoading && !analysisState.error && !analysisState.showEmailInput && (
-          <>
+          
           <div className="mt-16 max-w-4xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               <div className="text-center">
@@ -352,7 +358,9 @@ export default function Home() {
                 <p className="text-gray-300 text-sm">Assess the use of testimonials, reviews, and other trust-building signals.</p>
               </div>
             </div>
-            </div>
+          </div>
+          )}
+   
                    {/* Letter Style Section */}
             <div className="max-w-3xl mx-auto text-left my-16 p-8 rounded-lg shadow-xl" style={{backgroundColor: 'var(--color-bg-card)'}}>
               <div className="flex items-start space-x-6 mb-8">
@@ -390,7 +398,7 @@ export default function Home() {
                 </ul>
               </div>
               <p className="text-gray-300 leading-relaxed mb-10">
-                I built this tool to make it easier to test your pages and make &apos;em awesome. Have ideas on how to impprove it? Send me a note to <a href="mailto:gene@lansky.tech" className='text-yellow-300'>gene@lansky.tech</a>
+                I built this tool to make it easier to test your pages and make &apos;em awesome. Have ideas on how to improve it? Want some help help improving your Landing Page? Send me a note <a href="mailto:gene@lansky.tech" className='text-yellow-300'>gene@lansky.tech</a>
               </p>
               <div className="text-right">
                 <Image
@@ -402,9 +410,68 @@ export default function Home() {
                 />
               </div>
             </div>
-          </>
-        )}
       </div>
+
+      {/* Footer with Social Links */}
+      <footer className="fixed bottom-4 right-4 z-50">
+        <div className="flex items-center space-x-3 bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-lg px-4 py-2">
+          <span className="text-gray-400 text-sm hidden sm:block">Follow:</span>
+          <div className="flex space-x-2">
+            <a
+              href="https://github.com/gkobilansky"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors p-1 rounded"
+              aria-label="GitHub"
+            >
+              <Image
+                src="/github-logo.svg"
+                alt="GitHub"
+                width={20}
+                height={20}
+                className="w-5 h-5"
+              />
+            </a>
+            <a
+              href="https://threads.net/@lansky.tech"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors p-1 rounded"
+              aria-label="Threads"
+            >
+              <Image
+                src="/threads_logo.svg"
+                alt="Threads"
+                width={20}
+                height={20}
+                className="w-5 h-5"
+              />
+            </a>
+            <a
+              href="https://youtube.com/@lansky.tech"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors p-1 rounded"
+              aria-label="YouTube"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+            </a>
+            <a
+              href="https://linkedin.com/in/gkobilansky"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors p-1 rounded"
+              aria-label="LinkedIn"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </footer>
     </main>
   )
 }

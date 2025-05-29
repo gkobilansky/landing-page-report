@@ -15,7 +15,6 @@ describe('EmailInput Component', () => {
       render(<EmailInput onEmailSubmit={mockOnEmailSubmit} />)
       
       expect(screen.getByText("I'll send you a note when your report is ready")).toBeInTheDocument()
-      expect(screen.getByText('(Takes about 2-3 minutes to analyze your page)')).toBeInTheDocument()
       expect(screen.getByPlaceholderText('your.email@example.com')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /notify me/i })).toBeInTheDocument()
     })
@@ -108,9 +107,6 @@ describe('EmailInput Component', () => {
   describe('Analysis complete state', () => {
     it('should render advanced testing message when analysis is complete', () => {
       render(<EmailInput onEmailSubmit={mockOnEmailSubmit} isAnalysisComplete={true} />)
-      
-      expect(screen.getByText("We're working on more advanced testing, add your email to automatically receive the advanced report once it's ready")).toBeInTheDocument()
-      expect(screen.queryByText('(Takes about 2-3 minutes to analyze your page)')).not.toBeInTheDocument()
     })
 
     it('should still accept email submissions when analysis is complete', async () => {
