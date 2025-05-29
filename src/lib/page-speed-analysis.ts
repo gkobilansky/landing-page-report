@@ -1,39 +1,16 @@
-import { createPuppeteerBrowser } from './puppeteer-config';
-
-// Dynamic import for Lighthouse to handle server-side module loading issues
-let lighthouse: any;
-async function loadLighthouse() {
-  if (!lighthouse) {
-    try {
-      // Try different import patterns for better Next.js compatibility
-      const lighthouseModule = await import('lighthouse');
-      lighthouse = lighthouseModule.default || lighthouseModule;
-      
-      // Verify lighthouse is actually a function
-      if (typeof lighthouse !== 'function') {
-        throw new Error('Lighthouse module did not export a function');
-      }
-    } catch (error) {
-      console.error('Failed to load Lighthouse:', error);
-      throw new Error(`Lighthouse is not available in this environment: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-  return lighthouse;
-}
+import { analyzePageSpeedPuppeteer } from './page-speed-puppeteer';
 
 export interface PageSpeedMetrics {
-  lcp: number; // Largest Contentful Paint (ms)
-  fcp: number; // First Contentful Paint (ms)
-  cls: number; // Cumulative Layout Shift
-  tbt: number; // Total Blocking Time (ms)
-  si: number;  // Speed Index (ms)
+  loadTime: number; // Page load time in seconds (marketing-friendly)
+  performanceGrade: string; // A, B, C, D, F
+  speedDescription: string; // Marketing-friendly description
+  relativeTo: string; // Comparison to other websites
 }
 
 export interface PageSpeedAnalysisResult {
   score: number; // 0-100 overall performance score
   grade: 'A' | 'B' | 'C' | 'D' | 'F';
   metrics: PageSpeedMetrics;
-  lighthouseScore: number; // Raw Lighthouse performance score
   issues: string[];
   recommendations: string[];
   loadTime: number; // Total analysis time in ms
@@ -55,137 +32,27 @@ export async function analyzePageSpeed(
   console.log(`🚀 Starting page speed analysis for: ${url}`);
   const startTime = Date.now();
   
-  // Try Lighthouse first, fallback to Puppeteer-based analysis
-  try {
-    console.log('🔬 Attempting Lighthouse analysis...');
-    return await analyzeWithLighthouse(url, options, startTime);
-  } catch (lighthouseError) {
-    console.log('⚠️ Lighthouse failed, falling back to Puppeteer analysis...');
-    console.error('Lighthouse error:', lighthouseError);
-    return await analyzeWithPuppeteer(url, options, startTime);
-  }
-}
-
-async function analyzeWithLighthouse(
-  url: string, 
-  options: PageSpeedOptions, 
-  startTime: number
-): Promise<PageSpeedAnalysisResult> {
-  let browser;
-  
-  try {
-    const viewport = options.viewport || { width: 1920, height: 1080 };
-    const throttling = options.throttling || 'desktop';
-    const timeout = options.timeout || 60000;
-
-    console.log('📱 Launching Puppeteer browser for Lighthouse...');
-    
-    browser = await createPuppeteerBrowser();
-
-    console.log('🔍 Running Lighthouse performance audit...');
-    const lighthouseModule = await loadLighthouse();
-    
-    // Configure Lighthouse options more robustly
-    const lighthouseOptions = {
-      onlyCategories: ['performance'],
-      formFactor: throttling === 'mobile' ? 'mobile' : 'desktop',
-      // Remove port option that might be causing path issues
-      logLevel: 'error', // Reduce noise
-      output: 'json',
-      // Add explicit browser instance
-      ...(browser && { port: new URL(browser.wsEndpoint()).port })
-    };
-    
-    const lighthouseResult = await lighthouseModule(url, lighthouseOptions);
-
-    if (!lighthouseResult || !lighthouseResult.lhr) {
-      throw new Error('Invalid Lighthouse result');
-    }
-
-    const audits = lighthouseResult.lhr.audits;
-    const performanceScore = lighthouseResult.lhr.categories.performance.score;
-
-    console.log('📊 Extracting Core Web Vitals metrics...');
-    
-    // Extract Core Web Vitals metrics
-    const metrics: PageSpeedMetrics = {
-      lcp: audits['largest-contentful-paint']?.numericValue || 0,
-      fcp: audits['first-contentful-paint']?.numericValue || 0,
-      cls: audits['cumulative-layout-shift']?.numericValue || 0,
-      tbt: audits['total-blocking-time']?.numericValue || 0,
-      si: audits['speed-index']?.numericValue || 0
-    };
-
-    console.log('🎯 Calculating performance score and recommendations...');
-    
-    // Calculate our custom score (0-100) based on Lighthouse performance score
-    let score = Math.round((performanceScore || 0) * 100);
-    
-    // Boost score to 100 if it's excellent (95+) and all Core Web Vitals are good
-    if (score >= 95 && metrics.lcp <= 2500 && metrics.fcp <= 1800 && 
-        metrics.cls <= 0.1 && metrics.tbt <= 200 && metrics.si <= 3400) {
-      score = 100;
-    }
-    
-    // Assign letter grade
-    const grade = getLetterGrade(score);
-    
-    // Generate issues and recommendations
-    const { issues, recommendations } = generateLighthouseRecommendations(metrics, audits);
-    
-    const loadTime = Date.now() - startTime;
-    
-    console.log(`✅ Lighthouse analysis completed in ${loadTime}ms with score: ${score}`);
-    
-    return {
-      score,
-      grade,
-      metrics,
-      lighthouseScore: Math.round((performanceScore || 0) * 100),
-      issues,
-      recommendations,
-      loadTime
-    };
-
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
-  }
-}
-
-async function analyzeWithPuppeteer(
-  url: string, 
-  options: PageSpeedOptions, 
-  startTime: number
-): Promise<PageSpeedAnalysisResult> {
-  // Import the Puppeteer-based analyzer
-  const { analyzePageSpeedPuppeteer } = await import('./page-speed-puppeteer');
-  
   try {
     const result = await analyzePageSpeedPuppeteer(url, options);
     
-    // Convert to our expected format
+    // Convert to marketing-friendly format
+    const marketingMetrics = convertToMarketingMetrics(result.metrics, result.score);
+    const marketingIssues = convertToMarketingIssues(result.issues);
+    const marketingRecommendations = convertToMarketingRecommendations(result.recommendations);
+    
     return {
       score: result.score,
       grade: result.grade,
-      metrics: {
-        lcp: result.metrics.lcp,
-        fcp: result.metrics.fcp,
-        cls: result.metrics.cls,
-        tbt: result.metrics.tbt,
-        si: result.metrics.loadComplete // Use load complete as SI approximation
-      },
-      lighthouseScore: result.score, // Use our score as lighthouse score
-      issues: result.issues,
-      recommendations: [...result.recommendations, 'Analysis performed using Puppeteer fallback (Lighthouse unavailable)'],
+      metrics: marketingMetrics,
+      issues: marketingIssues,
+      recommendations: marketingRecommendations,
       loadTime: result.loadTime
     };
   } catch (error) {
-    console.error('❌ Puppeteer fallback also failed:', error);
+    console.error('❌ Page speed analysis failed:', error);
     const loadTime = Date.now() - startTime;
     
-    // Provide more specific error information
+    // Provide user-friendly error response
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const isBrowserlessError = errorMessage.includes('Browserless connection failed') || errorMessage.includes('WebSocket');
     const isChromiumError = errorMessage.includes('libnss3.so') || errorMessage.includes('shared libraries');
@@ -193,27 +60,63 @@ async function analyzeWithPuppeteer(
     return {
       score: 0,
       grade: 'F',
-      metrics: { lcp: 0, fcp: 0, cls: 0, tbt: 0, si: 0 },
-      lighthouseScore: 0,
+      metrics: {
+        loadTime: 0,
+        performanceGrade: 'F',
+        speedDescription: 'Unable to measure',
+        relativeTo: 'Analysis unavailable'
+      },
       issues: [
-        'Page speed analysis unavailable', 
-        isBrowserlessError ? 'Browser service temporarily unavailable' : 
-        isChromiumError ? 'Browser engine temporarily unavailable' : 'Analysis failed'
+        'Page speed analysis temporarily unavailable', 
+        isBrowserlessError ? 'Our speed testing service is temporarily down' : 
+        isChromiumError ? 'Speed testing temporarily unavailable' : 'Unable to analyze this page'
       ],
       recommendations: [
-        isBrowserlessError 
-          ? 'Browser service is temporarily down - please try again in a few minutes'
-          : isChromiumError 
-          ? 'This is a temporary server issue - please try again in a few minutes'
-          : 'Please check if the URL is accessible and try again',
-        'Consider manual testing with Google PageSpeed Insights as an alternative'
+        'Please try again in a few minutes',
+        'You can manually test with Google PageSpeed Insights as an alternative'
       ],
       loadTime
     };
   }
 }
 
-function getLetterGrade(score: number): 'A' | 'B' | 'C' | 'D' | 'F' {
+function convertToMarketingMetrics(
+  technicalMetrics: any,
+  score: number
+): PageSpeedMetrics {
+  // Convert load time to user-friendly seconds
+  const loadTimeSeconds = Math.round((technicalMetrics.lcp || technicalMetrics.loadComplete) / 1000 * 10) / 10;
+  
+  let speedDescription: string;
+  let relativeTo: string;
+  
+  // Prioritize score-based descriptions, but enhance with load time details
+  if (score >= 90) {
+    speedDescription = loadTimeSeconds <= 1 ? 'Lightning fast - loads instantly' : 'Lightning fast';
+    relativeTo = 'Faster than 90% of websites';
+  } else if (score >= 80) {
+    speedDescription = loadTimeSeconds <= 2 ? 'Very fast - loads quickly' : 'Very fast';
+    relativeTo = 'Faster than 75% of websites';
+  } else if (score >= 70) {
+    speedDescription = loadTimeSeconds <= 3 ? 'Good speed - loads reasonably fast' : 'Good speed';
+    relativeTo = 'Faster than 60% of websites';
+  } else if (score >= 60) {
+    speedDescription = 'Moderate speed';
+    relativeTo = 'Average website speed';
+  } else {
+    speedDescription = loadTimeSeconds > 5 ? 'Slow - may lose visitors' : 'Needs improvement';
+    relativeTo = 'Slower than most websites';
+  }
+  
+  return {
+    loadTime: loadTimeSeconds,
+    performanceGrade: getLetterGrade(score),
+    speedDescription,
+    relativeTo
+  };
+}
+
+function getLetterGrade(score: number): string {
   if (score >= 90) return 'A';
   if (score >= 80) return 'B';
   if (score >= 70) return 'C';
@@ -221,67 +124,57 @@ function getLetterGrade(score: number): 'A' | 'B' | 'C' | 'D' | 'F' {
   return 'F';
 }
 
-function generateLighthouseRecommendations(
-  metrics: PageSpeedMetrics, 
-  audits: any
-): { issues: string[]; recommendations: string[] } {
-  const issues: string[] = [];
-  const recommendations: string[] = [];
+function convertToMarketingIssues(technicalIssues: string[]): string[] {
+  return technicalIssues.map(issue => {
+    // Convert technical language to marketing language
+    if (issue.includes('LCP')) {
+      return 'Main content loads slowly - visitors may leave before seeing your page';
+    }
+    if (issue.includes('FCP')) {
+      return 'Page takes too long to show content - impacts first impressions';
+    }
+    if (issue.includes('CLS')) {
+      return 'Page elements shift around - creates confusing user experience';
+    }
+    if (issue.includes('resources') || issue.includes('size')) {
+      return 'Page is heavy with too many files - slows down loading';
+    }
+    if (issue.includes('TBT')) {
+      return 'Page becomes unresponsive during loading - frustrates users';
+    }
+    return issue; // Keep as-is if no specific mapping
+  }).filter((issue, index, array) => array.indexOf(issue) === index); // Remove duplicates
+}
 
-  // LCP (Largest Contentful Paint) analysis
-  if (metrics.lcp > 4000) {
-    issues.push(`Poor LCP: ${Math.round(metrics.lcp)}ms (should be ≤ 2500ms)`);
-    recommendations.push('Optimize largest content element loading (LCP > 4000ms)');
-  } else if (metrics.lcp > 2500) {
-    issues.push(`Slow LCP: ${Math.round(metrics.lcp)}ms (should be ≤ 2500ms)`);
-    recommendations.push('Improve largest content element loading time');
-  } else if (metrics.lcp > 1500) {
-    issues.push(`Moderate LCP: ${Math.round(metrics.lcp)}ms (good but could be better)`);
-    recommendations.push('Consider optimizing LCP further for excellent performance');
+function convertToMarketingRecommendations(technicalRecs: string[]): string[] {
+  const marketingRecs = technicalRecs.map(rec => {
+    // Convert technical recommendations to marketing language
+    if (rec.includes('image') || rec.includes('WebP') || rec.includes('AVIF')) {
+      return 'Optimize images to load faster and keep visitors engaged';
+    }
+    if (rec.includes('CSS') || rec.includes('JavaScript') || rec.includes('JS')) {
+      return 'Optimize code delivery to improve user experience';
+    }
+    if (rec.includes('layout shift') || rec.includes('size attributes') || rec.includes('Add size attributes')) {
+      return 'Prevent content from jumping around to improve user experience';
+    }
+    if (rec.includes('bundle') || rec.includes('minify') || rec.includes('compress')) {
+      return 'Reduce file sizes to make your page load faster';
+    }
+    if (rec.includes('lazy loading')) {
+      return 'Load content as users scroll to improve initial page speed';
+    }
+    if (rec.includes('Excellent performance')) {
+      return 'Great job! Your page loads fast enough to keep visitors happy';
+    }
+    return rec; // Keep as-is if no specific mapping
+  }).filter((rec, index, array) => array.indexOf(rec) === index); // Remove duplicates
+  
+  // Add business-focused recommendations
+  if (marketingRecs.length === 1 && marketingRecs[0].includes('Great job')) {
+    marketingRecs.push('Monitor your page speed regularly to maintain this excellent performance');
+    marketingRecs.push('Fast loading pages improve SEO rankings and conversion rates');
   }
-
-  // FCP (First Contentful Paint) analysis
-  if (metrics.fcp > 3000) {
-    issues.push(`Poor FCP: ${Math.round(metrics.fcp)}ms (should be ≤ 1800ms)`);
-    recommendations.push('Optimize initial content rendering');
-  } else if (metrics.fcp > 1800) {
-    issues.push(`Slow FCP: ${Math.round(metrics.fcp)}ms (should be ≤ 1800ms)`);
-    recommendations.push('Improve first content paint time');
-  }
-
-  // CLS (Cumulative Layout Shift) analysis
-  if (metrics.cls > 0.25) {
-    issues.push(`Poor CLS: ${metrics.cls.toFixed(3)} (should be ≤ 0.1)`);
-    recommendations.push('Minimize layout shifts (CLS > 0.25)');
-  } else if (metrics.cls > 0.1) {
-    issues.push(`High CLS: ${metrics.cls.toFixed(3)} (should be ≤ 0.1)`);
-    recommendations.push('Reduce unexpected layout shifts');
-  }
-
-  // TBT (Total Blocking Time) analysis
-  if (metrics.tbt > 600) {
-    issues.push(`Poor TBT: ${Math.round(metrics.tbt)}ms (should be ≤ 200ms)`);
-    recommendations.push('Reduce main thread blocking time (TBT > 600ms)');
-  } else if (metrics.tbt > 300) {
-    issues.push(`High TBT: ${Math.round(metrics.tbt)}ms (should be ≤ 200ms)`);
-    recommendations.push('Reduce main thread blocking time (TBT > 300ms)');
-  } else if (metrics.tbt > 50) {
-    recommendations.push('Fine-tune JavaScript execution for optimal blocking time');
-  }
-
-  // Speed Index analysis
-  if (metrics.si > 5800) {
-    issues.push(`Poor Speed Index: ${Math.round(metrics.si)}ms (should be ≤ 3400ms)`);
-    recommendations.push('Optimize visual content loading speed');
-  } else if (metrics.si > 3400) {
-    issues.push(`Slow Speed Index: ${Math.round(metrics.si)}ms (should be ≤ 3400ms)`);
-    recommendations.push('Improve visual loading performance');
-  }
-
-  // Add general recommendations if no specific issues
-  if (issues.length === 0) {
-    recommendations.push('Excellent performance! Consider monitoring Core Web Vitals regularly');
-  }
-
-  return { issues, recommendations };
+  
+  return marketingRecs;
 }

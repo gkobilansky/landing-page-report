@@ -13,13 +13,11 @@ export interface AnalysisResult {
     score: number;
     grade: 'A' | 'B' | 'C' | 'D' | 'F';
     metrics: {
-      lcp: number;
-      fcp: number;
-      cls: number;
-      tbt: number;
-      si: number;
+      loadTime: number; // Page load time in seconds (marketing-friendly)
+      performanceGrade: string; // A, B, C, D, F
+      speedDescription: string; // Marketing-friendly description
+      relativeTo: string; // Comparison to other websites
     };
-    lighthouseScore: number;
     issues: string[];
     recommendations: string[];
     loadTime: number;
@@ -182,13 +180,11 @@ export class LandingPageAnalyzer {
         score: 0,
         grade: 'F' as const,
         metrics: {
-          lcp: 0,
-          fcp: 0,
-          cls: 0,
-          tbt: 0,
-          si: 0
+          loadTime: 0,
+          performanceGrade: 'F',
+          speedDescription: 'Unable to measure',
+          relativeTo: 'Analysis unavailable'
         },
-        lighthouseScore: 0,
         issues: ['Page speed analysis failed'],
         recommendations: ['Unable to analyze page speed'],
         loadTime: 0

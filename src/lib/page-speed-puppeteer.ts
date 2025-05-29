@@ -240,59 +240,64 @@ function generateRecommendations(
   const issues: string[] = [];
   const recommendations: string[] = [];
 
-  // LCP analysis
+  // Convert load time to seconds for easier understanding
+  const loadTimeSeconds = Math.round(metrics.lcp / 1000 * 10) / 10;
+
+  // LCP analysis with marketing language
   if (metrics.lcp > 4000) {
-    issues.push(`Poor LCP: ${metrics.lcp}ms (should be ≤ 2500ms)`);
-    recommendations.push('Optimize largest content element (images, hero sections)');
-    recommendations.push('Use image optimization and modern formats (WebP/AVIF)');
-    recommendations.push('Implement lazy loading for below-fold content');
+    issues.push(`Slow loading - visitors may leave before seeing your content`);
+    recommendations.push('Optimize your main images and content to load faster');
+    recommendations.push('Use modern image formats to reduce loading time');
+    recommendations.push('Consider professional image optimization services');
   } else if (metrics.lcp > 2500) {
-    issues.push(`Slow LCP: ${metrics.lcp}ms (should be ≤ 2500ms)`);
-    recommendations.push('Consider optimizing above-fold images and content');
+    issues.push(`Moderate loading speed - room for improvement`);
+    recommendations.push('Optimize above-the-fold content to improve first impressions');
   }
 
-  // FCP analysis
+  // FCP analysis with marketing focus
   if (metrics.fcp > 3000) {
-    issues.push(`Poor FCP: ${metrics.fcp}ms (should be ≤ 1800ms)`);
-    recommendations.push('Minimize render-blocking resources (CSS/JS)');
-    recommendations.push('Use critical CSS inlining');
+    issues.push(`Takes too long to show content - impacts user experience`);
+    recommendations.push('Streamline your page code to show content faster');
+    recommendations.push('Remove unnecessary scripts that slow down loading');
   } else if (metrics.fcp > 1800) {
-    issues.push(`Slow FCP: ${metrics.fcp}ms (should be ≤ 1800ms)`);
-    recommendations.push('Optimize CSS delivery and reduce JavaScript execution time');
+    issues.push(`Content appears slowly - could be faster`);
+    recommendations.push('Optimize code delivery for better user experience');
   }
 
-  // CLS analysis
+  // CLS analysis with user experience focus
   if (metrics.cls > 0.25) {
-    issues.push(`Poor CLS: ${metrics.cls.toFixed(3)} (should be ≤ 0.1)`);
-    recommendations.push('Add size attributes to images and videos');
-    recommendations.push('Reserve space for dynamic content and ads');
+    issues.push(`Page content jumps around - creates confusing experience`);
+    recommendations.push('Fix layout shifts to improve user experience');
+    recommendations.push('Reserve proper space for images and dynamic content');
   } else if (metrics.cls > 0.1) {
-    issues.push(`High CLS: ${metrics.cls.toFixed(3)} (should be ≤ 0.1)`);
-    recommendations.push('Minimize layout shifts from dynamic content');
+    issues.push(`Some content shifting detected - minor user experience issue`);
+    recommendations.push('Minimize unexpected content movements');
   }
 
   // Resource count analysis
   if (metrics.resourceCount > 100) {
-    issues.push(`Too many resources: ${metrics.resourceCount} (consider bundling)`);
-    recommendations.push('Bundle and minify CSS/JS files');
-    recommendations.push('Use image sprites for small icons');
+    issues.push(`Too many files slow down your page - simplify for better performance`);
+    recommendations.push('Combine and optimize your website files');
+    recommendations.push('Remove unnecessary plugins and scripts');
   }
 
-  // Page size analysis
+  // Page size analysis with business impact
   const sizeMB = Math.round((metrics.totalSize / (1024 * 1024)) * 10) / 10;
   if (sizeMB > 5) {
-    issues.push(`Large page size: ${sizeMB}MB (should be < 3MB)`);
-    recommendations.push('Optimize and compress images');
-    recommendations.push('Minify and compress CSS/JS files');
-    recommendations.push('Enable gzip/brotli compression');
+    issues.push(`Heavy page (${sizeMB}MB) - visitors on mobile may struggle`);
+    recommendations.push('Compress images and files to improve mobile experience');
+    recommendations.push('Consider a faster hosting solution');
+    recommendations.push('Mobile users may abandon slow-loading pages');
   } else if (sizeMB > 3) {
-    issues.push(`Moderate page size: ${sizeMB}MB (could be optimized)`);
-    recommendations.push('Consider further image optimization');
+    issues.push(`Moderate page size (${sizeMB}MB) - could be lighter`);
+    recommendations.push('Further optimize images for better mobile performance');
   }
 
-  // Add general recommendations if performance is good
+  // Add business-focused recommendations for good performance
   if (issues.length === 0) {
-    recommendations.push('Excellent performance! Monitor regularly and maintain optimization practices');
+    recommendations.push('Excellent performance! Your page loads fast enough to keep visitors engaged');
+    recommendations.push('Fast loading pages improve SEO rankings and conversion rates');
+    recommendations.push('Monitor performance regularly to maintain this competitive advantage');
   }
 
   return { issues, recommendations };
