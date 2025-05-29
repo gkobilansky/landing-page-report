@@ -29,8 +29,10 @@
       "Bash(npx tsc:*)",
       "Bash(npm run dev:*)",
       "Bash(rg:*)",
-      "Bash(supabase status:*)"
+      "Bash(supabase status:*)",
+      "Bash(psql:*)"
     ],
     "deny": []
-  }
+  },
+  "enableAllProjectMcpServers": false
 }
