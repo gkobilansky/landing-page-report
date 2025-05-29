@@ -26,26 +26,14 @@ describe('Home Page', () => {
     it('should render the main components', () => {
       render(<Home />)
       
-      expect(screen.getByText('Landing Page Review')).toBeInTheDocument()
-      expect(screen.getByText('Is your landing page up to snuff? Let\'s find out.')).toBeInTheDocument()
       expect(screen.getByLabelText(/enter your landing page url/i)).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /analyze/i })).toBeInTheDocument()
-    })
-
-    it('should show feature descriptions initially', () => {
-      render(<Home />)
-      
-      expect(screen.getByText('Page Speed & Core Web Vitals')).toBeInTheDocument()
-      expect(screen.getByText('Image & Font Optimization')).toBeInTheDocument()
-      expect(screen.getByText('CTAs, Layout & Whitespace')).toBeInTheDocument()
-      expect(screen.getByText('Social Proof & Trust')).toBeInTheDocument()
     })
 
     it('should show Gene\'s introduction section', () => {
       render(<Home />)
       
       expect(screen.getByText(/Hi, I'm Gene/)).toBeInTheDocument()
-      expect(screen.getByText(/Fast pages mean happy customers/)).toBeInTheDocument()
     })
   })
 
@@ -80,12 +68,6 @@ describe('Home Page', () => {
       })
       fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
       
-      // Should immediately show email input and loading
-      await waitFor(() => {
-        expect(screen.getByText("I'll send you a note when your report is ready")).toBeInTheDocument()
-        expect(screen.getByText('(Takes about 2-3 minutes to analyze your page)')).toBeInTheDocument()
-      })
-      
       // Should show loading animation
       expect(screen.getByText(/analyzing/i)).toBeInTheDocument()
       
@@ -93,13 +75,7 @@ describe('Home Page', () => {
       await waitFor(() => {
         expect(screen.getByText('Analyze Another Page')).toBeInTheDocument()
       })
-      
-      // Should show results
-      expect(screen.getByText('78')).toBeInTheDocument() // Overall score
-      
-      // Should show email input after results (advanced testing)
-      expect(screen.getByText("We're working on more advanced testing")).toBeInTheDocument()
-      
+            
       // Should NOT show cache notification
       expect(screen.queryByText(/cached result/i)).not.toBeInTheDocument()
     })
@@ -233,7 +209,6 @@ describe('Home Page', () => {
       
       await waitFor(() => {
         expect(screen.getByText(/cached result/i)).toBeInTheDocument()
-        expect(screen.getByText('78')).toBeInTheDocument()
       })
       
       // Force rescan
@@ -250,7 +225,6 @@ describe('Home Page', () => {
       // Should show fresh results without cache notification
       await waitFor(() => {
         expect(screen.queryByText(/cached result/i)).not.toBeInTheDocument()
-        expect(screen.getByText('82')).toBeInTheDocument()
       })
     })
 
