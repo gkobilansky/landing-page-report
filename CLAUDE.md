@@ -137,12 +137,27 @@ src/
 - **Scoring**: Multi-factor scoring based on element types, positioning, and credibility indicators
 - **Test Coverage**: 12 comprehensive test cases covering all social proof types
 
-### API Architecture (`src/app/api/analyze/route.ts`)
+### API Architecture
+
+#### Main Analysis Endpoint (`src/app/api/analyze/route.ts`)
 - **Endpoint**: `POST /api/analyze`
-- **Parameters**: `url` (required), `component` (optional for selective testing)
-- **Response**: JSON with individual module scores and overall analysis
-- **Features**: Component-based testing, robust URL validation, error handling, progress logging
+- **Parameters**: 
+  - `url` (required): The URL to analyze
+  - `component` (optional): Selective testing for specific modules (`speed`, `fonts`, `images`, `cta`, `whitespace`, `social`)
+  - `forceRescan` (optional): Boolean to bypass 24-hour cache and force fresh analysis
+- **Response**: JSON with individual module scores, overall analysis, and screenshot URL
+- **Features**: Component-based testing, robust URL validation, error handling, progress logging, 24-hour caching, screenshot capture
 - **URL Validation**: Enhanced validation requires proper domain extensions, rejects incomplete URLs
+- **Caching**: Results cached for 24 hours per URL - use `forceRescan: true` to bypass
+
+#### Screenshot Endpoint (`src/app/api/screenshot/route.ts`)
+- **Endpoint**: `POST /api/screenshot`
+- **Parameters**:
+  - `url` (required): The URL to capture
+- **Response**: JSON with screenshot URL and metadata
+- **Features**: Fast screenshot capture, Vercel Blob storage, full-page screenshots
+- **Storage**: Screenshots stored in Vercel Blob with public access
+- **Format**: PNG format, 1920x1080 viewport, full-page capture
 
 ### Frontend Components
 - **Main Page** (`src/app/page.tsx`): URL input and results display with proper API response handling
@@ -186,6 +201,21 @@ curl -X POST http://localhost:3000/api/analyze \
 curl -X POST http://localhost:3000/api/analyze \
   -H "Content-Type: application/json" \
   -d '{"url": "https://stripe"}'
+
+# Force rescan (bypass 24-hour cache)
+curl -X POST http://localhost:3000/api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com", "forceRescan": true}'
+
+# Force rescan with component testing
+curl -X POST http://localhost:3000/api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com", "component": "whitespace", "forceRescan": true}'
+
+# Capture screenshot only (for quick preview)
+curl -X POST http://localhost:3000/api/screenshot \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com"}'
 ```
 
 ### Real-World Testing Results
