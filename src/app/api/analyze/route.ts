@@ -6,6 +6,7 @@ import { analyzePageSpeed } from '@/lib/page-speed-analysis';
 import { analyzeWhitespace } from '@/lib/whitespace-assessment';
 import { analyzeSocialProof } from '@/lib/social-proof-analysis';
 import { supabaseAdmin } from '@/lib/supabase';
+import { captureAndStoreScreenshot } from '@/lib/screenshot-storage';
 
 export async function POST(request: NextRequest) {
   console.log('🔥 API /analyze endpoint called')
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     const { url, component, email, forceRescan = false } = body; // Add email parameter for database storage
     console.log(`📋 Received URL: ${url}`)
     console.log(`🎯 Component filter: ${component || 'all'}`)
-    console.log(`📧 Email: ${email || 'anonymous'}`)
+    console.log(`📧 Email: ${email || 'anonymous request'}`)
     console.log(`🔄 Force rescan: ${forceRescan}`)
 
     // Validate input
@@ -63,133 +64,155 @@ export async function POST(request: NextRequest) {
     // Create or find user and analysis record in database
     console.log('💾 Creating user and analysis record in database...')
     try {
-      // First, find or create user
-      const userEmail = email || 'anonymous@temp.com';
       let userId: string;
       
-      const { data: existingUser } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .eq('email', userEmail)
-        .single();
-
-      if (existingUser) {
-        userId = existingUser.id;
-        console.log(`✅ Found existing user: ${userId}`);
-      } else {
-        const { data: newUser, error: userError } = await supabaseAdmin
+      if (email) {
+        // Handle registered user
+        const { data: existingUser } = await supabaseAdmin
           .from('users')
-          .insert({
-            email: userEmail,
-            marketing_consent: true
-          })
           .select('id')
+          .eq('email', email)
           .single();
 
-        if (userError) {
-          console.error('❌ Failed to create user:', userError);
-          return NextResponse.json(
-            { error: 'Failed to create user record' },
-            { status: 500 }
-          );
-        }
+        if (existingUser) {
+          userId = existingUser.id;
+          console.log(`✅ Found existing user: ${userId}`);
+        } else {
+          const { data: newUser, error: userError } = await supabaseAdmin
+            .from('users')
+            .insert({
+              email: email,
+              marketing_consent: true
+            })
+            .select('id')
+            .single();
 
-        userId = newUser.id;
-        console.log(`✅ Created new user: ${userId}`);
+          if (userError) {
+            console.error('❌ Failed to create user:', userError);
+            return NextResponse.json(
+              { error: 'Failed to create user record' },
+              { status: 500 }
+            );
+          }
+
+          userId = newUser.id;
+          console.log(`✅ Created new user: ${userId}`);
+        }
+      } else {
+        // Handle anonymous user - use or create system user
+        const systemEmail = 'system.anonymous@lansky.tech';
+        const { data: systemUser } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .eq('email', systemEmail)
+          .single();
+
+        if (systemUser) {
+          userId = systemUser.id;
+          console.log(`✅ Using system anonymous user: ${userId}`);
+        } else {
+          const { data: newSystemUser, error: systemUserError } = await supabaseAdmin
+            .from('users')
+            .insert({
+              email: systemEmail,
+              marketing_consent: false,
+              first_name: 'Anonymous',
+              last_name: 'User',
+              lead_score: 0
+            })
+            .select('id')
+            .single();
+
+          if (systemUserError) {
+            console.error('❌ Failed to create system user:', systemUserError);
+            return NextResponse.json(
+              { error: 'Failed to create system user record' },
+              { status: 500 }
+            );
+          }
+
+          userId = newSystemUser.id;
+          console.log(`✅ Created system anonymous user: ${userId}`);
+        }
       }
 
-      // Check if analysis already exists for this user/URL combination
-      const { data: existingAnalysis } = await supabaseAdmin
+      // Option 2: Check for cacheable analysis (only return cache if recent AND not forced)
+      const { data: existingAnalyses } = await supabaseAdmin
         .from('analyses')
         .select('id, status, created_at')
-        .eq('user_id', userId)
         .eq('url', validatedUrl.toString())
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      console.log('🔍 Existing analyses:', existingAnalyses);
+
+      const existingAnalysis = existingAnalyses?.[0];
+      const shouldUseCache = existingAnalysis && 
+        !forceRescan && 
+        existingAnalysis.status === 'completed' &&
+        (Date.now() - new Date(existingAnalysis.created_at).getTime()) < (24 * 60 * 60 * 1000);
+
+      if (shouldUseCache) {
+        const analysisAge = Date.now() - new Date(existingAnalysis.created_at).getTime();
+        console.log(`✅ Using cached analysis: ${existingAnalysis.id}, Age: ${Math.round(analysisAge / 1000)}s`);
+        
+        const { data: existingData, error: fetchError } = await supabaseAdmin
+          .from('analyses')
+          .select('*')
+          .eq('id', existingAnalysis.id)
+          .single();
+        
+        if (existingData) {
+          return NextResponse.json({
+            success: true,
+            analysis: {
+              url: existingData.url,
+              pageLoadSpeed: existingData.page_speed_analysis,
+              fontUsage: existingData.font_analysis,
+              imageOptimization: existingData.image_analysis,
+              ctaAnalysis: existingData.cta_analysis,
+              whitespaceAssessment: existingData.whitespace_analysis,
+              socialProof: existingData.social_proof_analysis,
+              overallScore: existingData.overall_score,
+              status: existingData.status,
+              screenshotUrl: existingData.screenshot_url || null
+            },
+            analysisId: existingData.id,
+            fromCache: true,
+            message: 'Returning cached analysis from within 24 hours.'
+          });
+        }
+      }
+
+      // Create new analysis record (Option 2: Always create new for forced refresh or old/missing analysis)
+      console.log(`🆕 Creating new analysis record for URL: ${validatedUrl.toString()}`);
+      console.log(`📝 Reason: ${forceRescan ? 'Force rescan requested' : existingAnalysis ? 'Analysis too old or failed' : 'No existing analysis'}`);
+      
+      const { data: analysisRecord, error: insertError } = await supabaseAdmin
+        .from('analyses')
+        .insert({
+          user_id: userId,
+          url: validatedUrl.toString(),
+          status: 'processing',
+          algorithm_version: '1.0.0',
+          lighthouse_available: true, // Will be updated based on actual availability
+          retry_count: 0,
+          is_baseline: false, // Only first analysis is baseline
+          started_at: new Date().toISOString()
+        })
+        .select()
         .single();
 
-      if (existingAnalysis) {
-        const analysisAge = Date.now() - new Date(existingAnalysis.created_at).getTime();
-        const oneDayMs = 24 * 60 * 60 * 1000;
-        
-        // If analysis is less than 24 hours old and completed, return existing (unless force rescan)
-        if (analysisAge < oneDayMs && existingAnalysis.status === 'completed' && !forceRescan) {
-          console.log(`✅ Found recent completed analysis: ${existingAnalysis.id}`);
-          const { data: existingData } = await supabaseAdmin
-            .from('analyses')
-            .select('*')
-            .eq('id', existingAnalysis.id)
-            .single();
-          
-          if (existingData) {
-            return NextResponse.json({
-              success: true,
-              analysis: {
-                url: existingData.url,
-                pageLoadSpeed: existingData.page_speed_analysis,
-                fontUsage: existingData.font_analysis,
-                imageOptimization: existingData.image_analysis,
-                ctaAnalysis: existingData.cta_analysis,
-                whitespaceAssessment: existingData.whitespace_analysis,
-                socialProof: existingData.social_proof_analysis,
-                overallScore: existingData.overall_score,
-                status: existingData.status
-              },
-              analysisId: existingData.id,
-              fromCache: true,
-              message: 'Returning cached analysis from within 24 hours.'
-            });
-          }
-        }
-        
-        // If analysis exists but is old or failed, update it
-        console.log(`🔄 Updating existing analysis: ${existingAnalysis.id}`);
-        const { error: updateError } = await supabaseAdmin
-          .from('analyses')
-          .update({
-            status: 'processing',
-            retry_count: 0,
-            started_at: new Date().toISOString(),
-            error_message: null
-          })
-          .eq('id', existingAnalysis.id);
-
-        if (updateError) {
-          console.error('❌ Failed to update existing analysis:', updateError);
-          return NextResponse.json(
-            { error: 'Failed to update existing analysis record' },
-            { status: 500 }
-          );
-        }
-
-        analysisId = existingAnalysis.id;
-        console.log(`✅ Updated existing analysis record: ${analysisId}`);
-      } else {
-        // Create new analysis record
-        const { data: analysisRecord, error: insertError } = await supabaseAdmin
-          .from('analyses')
-          .insert({
-            user_id: userId,
-            url: validatedUrl.toString(),
-            status: 'processing',
-            algorithm_version: '1.0.0',
-            lighthouse_available: true, // Will be updated based on actual availability
-            retry_count: 0,
-            is_baseline: true,
-            started_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('❌ Failed to create analysis record:', insertError);
-          return NextResponse.json(
-            { error: 'Failed to initialize analysis record' },
-            { status: 500 }
-          );
-        }
-
-        analysisId = analysisRecord.id;
-        console.log(`✅ Analysis record created with ID: ${analysisId}`);
+      if (insertError) {
+        console.error('❌ Failed to create analysis record:', insertError);
+        return NextResponse.json(
+          { error: 'Failed to initialize analysis record' },
+          { status: 500 }
+        );
       }
+
+      analysisId = analysisRecord.id;
+      console.log(`✅ New analysis record created with ID: ${analysisId}`);
     } catch (error) {
       console.error('❌ Database error:', error);
       return NextResponse.json(
@@ -262,6 +285,33 @@ export async function POST(request: NextRequest) {
       status: 'completed'
     };
 
+    // Capture screenshot early for visual analysis and user feedback
+    let screenshotResult = null;
+    try {
+      console.log('📸 Capturing page screenshot for analysis...');
+      screenshotResult = await captureAndStoreScreenshot(validatedUrl.toString(), {
+        fullPage: true,
+        format: 'png',
+        quality: 80,
+        viewport: { width: 1920, height: 1080 }
+      });
+      console.log(`✅ Screenshot captured and stored: ${screenshotResult.blobUrl}`);
+      
+      // Store screenshot URL in analysis record
+      if (analysisId) {
+        await supabaseAdmin
+          .from('analyses')
+          .update({ 
+            screenshot_url: screenshotResult.blobUrl,
+            screenshot_size: screenshotResult.size 
+          })
+          .eq('id', analysisId);
+      }
+    } catch (error) {
+      console.error('⚠️ Screenshot capture failed, continuing with analysis:', error);
+      // Don't fail the entire analysis if screenshot fails
+    }
+
     const scores: number[] = [];
 
     // Component-based analysis
@@ -275,7 +325,6 @@ export async function POST(request: NextRequest) {
           score: pageSpeedResult.score,
           grade: pageSpeedResult.grade,
           metrics: pageSpeedResult.metrics,
-          lighthouseScore: pageSpeedResult.lighthouseScore,
           issues: pageSpeedResult.issues,
           recommendations: pageSpeedResult.recommendations,
           loadTime: pageSpeedResult.loadTime
@@ -287,8 +336,12 @@ export async function POST(request: NextRequest) {
         analysisResult.pageLoadSpeed = {
           score: 0,
           grade: 'F',
-          metrics: { lcp: 0, fcp: 0, cls: 0, tbt: 0, si: 0 },
-          lighthouseScore: 0,
+          metrics: {
+            loadTime: 0,
+            performanceGrade: 'F',
+            speedDescription: 'Unable to measure',
+            relativeTo: 'Analysis unavailable'
+          },
           issues: ['Page speed analysis failed due to error'],
           recommendations: [],
           loadTime: 0
@@ -371,7 +424,9 @@ export async function POST(request: NextRequest) {
     if (shouldRun('whitespace') || shouldRun('spacing')) {
       console.log('🔄 Starting whitespace assessment...')
       try {
-        const whitespaceResult = await analyzeWhitespace(validatedUrl.toString());
+        const whitespaceResult = await analyzeWhitespace(validatedUrl.toString(), {
+          screenshotUrl: screenshotResult?.blobUrl // Use the captured screenshot
+        });
         analysisResult.whitespaceAssessment = {
           score: whitespaceResult.score,
           grade: whitespaceResult.grade,
@@ -478,7 +533,45 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('📊 Building analysis result object...')
-    analysisResult.overallScore = scores.length > 0 ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : 0;
+    // Calculate weighted overall score based on conversion impact
+    const weights = {
+      speed: 0.25,        // Highest - page speed directly impacts conversions
+      cta: 0.25,          // Highest - CTA effectiveness is critical for conversions  
+      socialProof: 0.20,  // High - builds trust and credibility
+      whitespace: 0.15,   // Medium - affects user experience and readability
+      images: 0.10,       // Lower - optimization is important but less conversion-critical
+      fonts: 0.05        // Lowest - mainly affects polish and professionalism
+    };
+    
+    let weightedSum = 0;
+    let totalWeight = 0;
+    
+    if (analysisResult.pageSpeed?.score !== undefined) {
+      weightedSum += analysisResult.pageSpeed.score * weights.speed;
+      totalWeight += weights.speed;
+    }
+    if (analysisResult.ctaAnalysis?.score !== undefined) {
+      weightedSum += analysisResult.ctaAnalysis.score * weights.cta;
+      totalWeight += weights.cta;
+    }
+    if (analysisResult.socialProof?.score !== undefined) {
+      weightedSum += analysisResult.socialProof.score * weights.socialProof;
+      totalWeight += weights.socialProof;
+    }
+    if (analysisResult.whitespace?.score !== undefined) {
+      weightedSum += analysisResult.whitespace.score * weights.whitespace;
+      totalWeight += weights.whitespace;
+    }
+    if (analysisResult.images?.score !== undefined) {
+      weightedSum += analysisResult.images.score * weights.images;
+      totalWeight += weights.images;
+    }
+    if (analysisResult.fonts?.score !== undefined) {
+      weightedSum += analysisResult.fonts.score * weights.fonts;
+      totalWeight += weights.fonts;
+    }
+    
+    analysisResult.overallScore = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
 
     // Update database record with final results
     if (analysisId) {
@@ -518,7 +611,10 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      analysis: analysisResult,
+      analysis: {
+        ...analysisResult,
+        screenshotUrl: screenshotResult?.blobUrl || null
+      },
       analysisId,
       fromCache: false,
       message: 'Analysis completed successfully.'

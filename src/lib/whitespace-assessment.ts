@@ -1,4 +1,5 @@
 import { createPuppeteerBrowser } from './puppeteer-config';
+import { createCanvas, loadImage } from 'canvas';
 
 export interface ElementDensityAnalysis {
   gridSections: number;
@@ -31,10 +32,19 @@ export interface SpacingAnalysis {
   };
 }
 
+export interface ScreenshotAnalysis {
+  totalPixels: number;
+  contentPixels: number;
+  whitespacePixels: number;
+  visualWhitespaceRatio: number;
+  threshold: number;
+}
+
 export interface WhitespaceMetrics {
   whitespaceRatio: number; // Percentage of page that is whitespace
   elementDensityPerSection: ElementDensityAnalysis;
   spacingAnalysis: SpacingAnalysis;
+  screenshotAnalysis: ScreenshotAnalysis;
   clutterScore: number; // 0-100, higher = more cluttered
   hasAdequateSpacing: boolean;
 }
@@ -56,6 +66,116 @@ interface WhitespaceOptions {
   isHtml?: boolean; // Flag to indicate if input is HTML instead of URL
   gridColumns?: number; // Number of grid columns for density analysis
   gridRows?: number; // Number of grid rows for density analysis
+  useScreenshot?: boolean; // Use screenshot-based analysis (default: true)
+  pixelThreshold?: number; // Pixel intensity threshold for content detection (0-255, default: 240)
+  screenshotUrl?: string; // Use existing screenshot instead of capturing new one
+}
+
+async function analyzeScreenshotWhitespace(
+  pageOrScreenshotUrl: any | string, 
+  threshold: number = 240,
+  isScreenshotUrl: boolean = false
+): Promise<ScreenshotAnalysis> {
+  console.log(`📸 Analyzing screenshot for pixel-level whitespace analysis (threshold: ${threshold})...`);
+  
+  let screenshotBuffer: Buffer;
+  
+  if (isScreenshotUrl && typeof pageOrScreenshotUrl === 'string') {
+    // Use existing screenshot from URL
+    console.log(`🔗 Fetching existing screenshot from: ${pageOrScreenshotUrl}`);
+    const response = await fetch(pageOrScreenshotUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch screenshot: ${response.statusText}`);
+    }
+    screenshotBuffer = Buffer.from(await response.arrayBuffer());
+  } else {
+    // Capture new screenshot from page
+    const page = pageOrScreenshotUrl;
+    const isProduction = process.env.NODE_ENV === 'production';
+    const browserlessKey = process.env.BLESS_KEY;
+    
+    if (isProduction && browserlessKey) {
+      // Use Browserless screenshot API for production
+      const url = await page.url();
+      const viewport = page.viewport();
+      
+      const screenshotResponse = await fetch(`https://chrome.browserless.io/screenshot?token=${browserlessKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: url,
+          options: {
+            viewport: {
+              width: viewport?.width || 1920,
+              height: viewport?.height || 1080
+            },
+            type: 'png',
+            fullPage: true // Use full page for better whitespace analysis
+          }
+        })
+      });
+      
+      if (!screenshotResponse.ok) {
+        throw new Error(`Screenshot API failed: ${screenshotResponse.statusText}`);
+      }
+      
+      screenshotBuffer = Buffer.from(await screenshotResponse.arrayBuffer());
+    } else {
+      // Use Puppeteer screenshot for local development
+      screenshotBuffer = await page.screenshot({ 
+        type: 'png',
+        fullPage: true // Use full page for better whitespace analysis
+      });
+    }
+  }
+  
+  console.log('🔍 Processing screenshot for pixel analysis...');
+  
+  // Load and process the image
+  const img = await loadImage(screenshotBuffer);
+  const canvas = createCanvas(img.width, img.height);
+  const ctx = canvas.getContext('2d');
+  
+  // Draw image to canvas
+  ctx.drawImage(img, 0, 0);
+  
+  // Get image data for pixel analysis
+  const imageData = ctx.getImageData(0, 0, img.width, img.height);
+  const pixels = imageData.data;
+  
+  let contentPixels = 0;
+  const totalPixels = img.width * img.height;
+  
+  // Process every pixel (RGBA format)
+  for (let i = 0; i < pixels.length; i += 4) {
+    const r = pixels[i];
+    const g = pixels[i + 1];
+    const b = pixels[i + 2];
+    // Skip alpha channel (pixels[i + 3])
+    
+    // Convert to grayscale using luminance formula
+    const grayscale = 0.299 * r + 0.587 * g + 0.114 * b;
+    
+    // If pixel is darker than threshold, it's "content"
+    if (grayscale < threshold) {
+      contentPixels++;
+    }
+  }
+  
+  const whitespacePixels = totalPixels - contentPixels;
+  const visualWhitespaceRatio = whitespacePixels / totalPixels;
+  
+  console.log(`📊 Screenshot analysis: ${totalPixels} total pixels, ${contentPixels} content pixels (${Math.round((1 - visualWhitespaceRatio) * 100)}% content), ${Math.round(visualWhitespaceRatio * 100)}% whitespace`);
+  
+  return {
+    totalPixels,
+    contentPixels,
+    whitespacePixels,
+    visualWhitespaceRatio,
+    threshold
+  };
 }
 
 export async function analyzeWhitespace(
@@ -265,9 +385,52 @@ export async function analyzeWhitespace(
       };
     });
 
+    console.log('📸 Taking screenshot for visual analysis...');
+    
+    // 3. Screenshot-based whitespace analysis (more accurate than DOM-based)
+    let screenshotAnalysis: ScreenshotAnalysis;
+    
+    if (options.useScreenshot !== false) {
+      try {
+        if (options.screenshotUrl) {
+          // Use existing screenshot
+          console.log(`📷 Using existing screenshot: ${options.screenshotUrl}`);
+          screenshotAnalysis = await analyzeScreenshotWhitespace(
+            options.screenshotUrl, 
+            options.pixelThreshold || 240, 
+            true
+          );
+        } else {
+          // Capture new screenshot
+          screenshotAnalysis = await analyzeScreenshotWhitespace(
+            page, 
+            options.pixelThreshold || 240, 
+            false
+          );
+        }
+      } catch (error) {
+        console.warn('⚠️ Screenshot analysis failed, falling back to DOM-based analysis:', error);
+        screenshotAnalysis = {
+          totalPixels: viewport.width * viewport.height,
+          contentPixels: 0,
+          whitespacePixels: 0,
+          visualWhitespaceRatio: 0,
+          threshold: options.pixelThreshold || 240
+        };
+      }
+    } else {
+      screenshotAnalysis = {
+        totalPixels: viewport.width * viewport.height,
+        contentPixels: 0,
+        whitespacePixels: 0,
+        visualWhitespaceRatio: 0,
+        threshold: options.pixelThreshold || 240
+      };
+    }
+
     console.log('🔍 Calculating overall whitespace metrics...');
     
-    // 3. Overall whitespace calculation using point sampling approach
+    // 4. Overall whitespace calculation using point sampling approach (fallback)
     const overallMetrics = await page.evaluate(() => {
       const viewportArea = window.innerWidth * window.innerHeight;
       
@@ -367,7 +530,7 @@ export async function analyzeWhitespace(
     });
 
     // Calculate clutter score and final assessment
-    const metrics = calculateWhitespaceMetrics(densityAnalysis, spacingAnalysis, overallMetrics);
+    const metrics = calculateWhitespaceMetrics(densityAnalysis, spacingAnalysis, overallMetrics, screenshotAnalysis);
     const score = calculateWhitespaceScore(metrics);
     const grade = getLetterGrade(score);
     const { issues, recommendations } = generateWhitespaceRecommendations(metrics);
@@ -408,6 +571,13 @@ export async function analyzeWhitespace(
           contentBlockSpacing: { averageMarginBetween: 0, adequate: false },
           lineHeight: { average: 0, adequate: false }
         },
+        screenshotAnalysis: {
+          totalPixels: 0,
+          contentPixels: 0,
+          whitespacePixels: 0,
+          visualWhitespaceRatio: 0,
+          threshold: 240
+        },
         clutterScore: 100,
         hasAdequateSpacing: false
       },
@@ -425,30 +595,39 @@ export async function analyzeWhitespace(
 function calculateWhitespaceMetrics(
   densityAnalysis: any,
   spacingAnalysis: any,
-  overallMetrics: any
+  overallMetrics: any,
+  screenshotAnalysis: ScreenshotAnalysis
 ): WhitespaceMetrics {
 
   // Calculate clutter score based on multiple factors
   let clutterScore = 0;
 
-  // Element density contribution (40%)
-  const maxDensity = densityAnalysis?.maxDensity || densityAnalysis?.maxDensityPerSection || 0;
-  const maxDensityPenalty = Math.min(maxDensity * 5, 40);
-  clutterScore += maxDensityPenalty;
+  // Use screenshot-based whitespace ratio if available, otherwise fall back to DOM-based
+  const whitespaceRatio = screenshotAnalysis.visualWhitespaceRatio > 0 
+    ? screenshotAnalysis.visualWhitespaceRatio 
+    : overallMetrics.whitespaceRatio;
 
-  // Spacing adequacy contribution (35%)
+  // Whitespace ratio contribution (60% - primary factor)
+  if (whitespaceRatio < 0.25) clutterScore += 60;        // Very cluttered
+  else if (whitespaceRatio < 0.35) clutterScore += 40;   // Cluttered  
+  else if (whitespaceRatio < 0.45) clutterScore += 20;   // Somewhat cluttered
+  else if (whitespaceRatio < 0.55) clutterScore += 5;    // Slightly cluttered
+
+  // Element density contribution (25% - reduced weight)
+  const maxDensity = densityAnalysis?.maxDensity || densityAnalysis?.maxDensityPerSection || 0;
+  // More realistic thresholds for element density
+  if (maxDensity > 50) clutterScore += 25;               // Very high density
+  else if (maxDensity > 30) clutterScore += 15;          // High density
+  else if (maxDensity > 20) clutterScore += 8;           // Moderate density
+
+  // Spacing adequacy contribution (15% - reduced weight)
   const spacingPenalties = [
-    !spacingAnalysis.headlineSpacing.adequate ? 8 : 0,
-    !spacingAnalysis.ctaSpacing.adequate ? 10 : 0,
-    !spacingAnalysis.contentBlockSpacing.adequate ? 8 : 0,
-    !spacingAnalysis.lineHeight.adequate ? 9 : 0
+    !spacingAnalysis.headlineSpacing.adequate ? 4 : 0,
+    !spacingAnalysis.ctaSpacing.adequate ? 5 : 0,
+    !spacingAnalysis.contentBlockSpacing.adequate ? 3 : 0,
+    !spacingAnalysis.lineHeight.adequate ? 3 : 0
   ];
   clutterScore += spacingPenalties.reduce((sum, penalty) => sum + penalty, 0);
-
-  // Whitespace ratio contribution (25%)
-  if (overallMetrics.whitespaceRatio < 0.2) clutterScore += 25;
-  else if (overallMetrics.whitespaceRatio < 0.3) clutterScore += 15;
-  else if (overallMetrics.whitespaceRatio < 0.4) clutterScore += 8;
 
   const hasAdequateSpacing = spacingAnalysis.headlineSpacing.adequate &&
                            spacingAnalysis.ctaSpacing.adequate &&
@@ -456,7 +635,7 @@ function calculateWhitespaceMetrics(
                            spacingAnalysis.lineHeight.adequate;
 
   return {
-    whitespaceRatio: overallMetrics.whitespaceRatio,
+    whitespaceRatio: screenshotAnalysis.visualWhitespaceRatio > 0 ? screenshotAnalysis.visualWhitespaceRatio : overallMetrics.whitespaceRatio,
     elementDensityPerSection: {
       gridSections: densityAnalysis.gridSections,
       elementDensityPerSection: densityAnalysis.elementDensityPerSection,
@@ -465,6 +644,7 @@ function calculateWhitespaceMetrics(
       totalElements: densityAnalysis.totalElements
     },
     spacingAnalysis,
+    screenshotAnalysis,
     clutterScore: Math.min(100, Math.max(0, clutterScore)),
     hasAdequateSpacing
   };
@@ -481,14 +661,23 @@ function calculateWhitespaceScore(metrics: WhitespaceMetrics): number {
   // Deduct based on clutter score
   score -= clutterScore;
 
-  // Bonus for excellent whitespace ratio
-  if (whitespaceRatio >= 0.5) {
-    score += 5;
+  // Bonus for excellent whitespace ratio (screenshot-based is more accurate)
+  if (metrics.screenshotAnalysis.visualWhitespaceRatio > 0) {
+    // Use screenshot-based bonuses
+    if (metrics.screenshotAnalysis.visualWhitespaceRatio >= 0.6) {
+      score += 10; // Excellent whitespace
+    } else if (metrics.screenshotAnalysis.visualWhitespaceRatio >= 0.5) {
+      score += 5;  // Good whitespace
+    }
+  } else if (whitespaceRatio >= 0.5) {
+    score += 5; // Fallback to DOM-based bonus
   }
 
-  // Bonus for low maximum density
-  if (maxDensity <= 3) {
+  // Bonus for low maximum density (with more realistic thresholds)
+  if (maxDensity <= 15) {
     score += 5;
+  } else if (maxDensity <= 25) {
+    score += 2;
   }
 
   const finalScore = Math.max(0, Math.min(100, Math.round(score)));
@@ -546,13 +735,23 @@ function generateWhitespaceRecommendations(
     recommendations.push('Increase line height to at least 1.4 for better text readability');
   }
 
-  // Whitespace ratio issues
-  if (metrics.whitespaceRatio < 0.2) {
-    issues.push(`Very low whitespace ratio (${Math.round(metrics.whitespaceRatio * 100)}%)`);
-    recommendations.push('Significantly increase whitespace - aim for at least 30% of page');
-  } else if (metrics.whitespaceRatio < 0.3) {
-    issues.push(`Low whitespace ratio (${Math.round(metrics.whitespaceRatio * 100)}%)`);
+  // Whitespace ratio issues (prefer screenshot analysis if available)
+  const displayRatio = metrics.screenshotAnalysis.visualWhitespaceRatio > 0 
+    ? metrics.screenshotAnalysis.visualWhitespaceRatio 
+    : metrics.whitespaceRatio;
+  const analysisMethod = metrics.screenshotAnalysis.visualWhitespaceRatio > 0 
+    ? 'visual analysis' 
+    : 'DOM analysis';
+
+  if (displayRatio < 0.25) {
+    issues.push(`Very low whitespace ratio (${Math.round(displayRatio * 100)}% via ${analysisMethod})`);
+    recommendations.push('Significantly increase whitespace - aim for at least 35% of page area');
+  } else if (displayRatio < 0.35) {
+    issues.push(`Low whitespace ratio (${Math.round(displayRatio * 100)}% via ${analysisMethod})`);
     recommendations.push('Increase overall whitespace for better visual breathing room');
+  } else if (displayRatio < 0.45) {
+    issues.push(`Moderate whitespace ratio (${Math.round(displayRatio * 100)}% via ${analysisMethod})`);
+    recommendations.push('Consider adding more spacing between content sections');
   }
 
   // Positive feedback for good whitespace

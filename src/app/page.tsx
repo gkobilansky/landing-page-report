@@ -21,6 +21,7 @@ interface AnalysisState {
   currentUrl: string | null
   fromCache: boolean
   emailSubmitted: boolean
+  screenshotUrl: string | null
 }
 
 export default function Home() {
@@ -32,7 +33,8 @@ export default function Home() {
     email: null,
     currentUrl: null,
     fromCache: false,
-    emailSubmitted: false
+    emailSubmitted: false,
+    screenshotUrl: null
   })
 
   const handleAnalyze = async (url: string, forceRescan = false) => {
@@ -44,11 +46,33 @@ export default function Home() {
       email: null,
       currentUrl: url,
       fromCache: false,
-      emailSubmitted: false
+      emailSubmitted: false,
+      screenshotUrl: null
     })
 
     try {
-      const response = await fetch('/api/analyze', {
+      // Capture screenshot first for immediate visual feedback
+      const screenshotPromise = fetch('/api/screenshot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      }).then(async (response) => {
+        if (response.ok) {
+          const screenshotResult = await response.json()
+          setAnalysisState(prev => ({
+            ...prev,
+            screenshotUrl: screenshotResult.screenshot?.url || null
+          }))
+        }
+      }).catch(error => {
+        console.warn('Screenshot capture failed:', error)
+        // Don't fail the entire analysis if screenshot fails
+      })
+
+      // Start analysis in parallel
+      const analysisPromise = fetch('/api/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -56,6 +80,9 @@ export default function Home() {
         body: JSON.stringify({ url, forceRescan }),
       })
 
+      // Wait for analysis to complete (screenshot runs in parallel)
+      const response = await analysisPromise
+      
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Analysis failed')
@@ -64,12 +91,15 @@ export default function Home() {
       const result = await response.json()
       // Extract analysis data from API response structure
       const analysisData = result.analysis || result
+      
       setAnalysisState(prev => ({
         ...prev,
         result: analysisData,
         isLoading: false,
         error: null,
-        fromCache: result.fromCache || false
+        fromCache: result.fromCache || false,
+        // Keep screenshot URL if we got one from API response
+        screenshotUrl: analysisData.screenshotUrl || prev.screenshotUrl
       }))
     } catch (error) {
       setAnalysisState(prev => ({
@@ -98,7 +128,8 @@ export default function Home() {
       email: null,
       currentUrl: null,
       fromCache: false,
-      emailSubmitted: false
+      emailSubmitted: false,
+      screenshotUrl: null
     })
   }
 
@@ -134,7 +165,10 @@ export default function Home() {
         )}
 
         {/* Loading State */}
-        <ProgressiveLoader isLoading={analysisState.isLoading} />
+        <ProgressiveLoader 
+          isLoading={analysisState.isLoading} 
+          screenshotUrl={analysisState.screenshotUrl}
+        />
 
         {/* Error State */}
         {analysisState.error && (

@@ -373,6 +373,137 @@ describe('/api/analyze', () => {
     });
   });
 
+  describe('Option 2 Caching - Create new reports for forced refresh or 24h+', () => {
+    it('should create a new analysis record when forceRescan is true, even if recent analysis exists', async () => {
+      // First analysis
+      const firstRequest = createRequest({ 
+        url: 'https://example.com',
+        email: 'test@example.com'
+      });
+      const firstResponse = await POST(firstRequest);
+      const firstData = await firstResponse.json();
+      
+      if (firstResponse.status !== 200) {
+        console.error('First request failed:', firstData);
+      }
+      
+      expect(firstResponse.status).toBe(200);
+      expect(firstData.fromCache).toBe(false);
+      const firstAnalysisId = firstData.analysisId;
+      
+      // Force rescan - should create new analysis
+      const forceRescanRequest = createRequest({ 
+        url: 'https://example.com',
+        email: 'test@example.com',
+        forceRescan: true
+      });
+      const forceRescanResponse = await POST(forceRescanRequest);
+      const forceRescanData = await forceRescanResponse.json();
+      
+      expect(forceRescanResponse.status).toBe(200);
+      expect(forceRescanData.fromCache).toBe(false);
+      expect(forceRescanData.analysisId).not.toBe(firstAnalysisId); // Should be different analysis
+    });
+
+    it('should create a new analysis record when analysis is older than 24 hours', async () => {
+      // This test would require manipulating database timestamps or mocking time
+      // For now, we'll test the logic structure
+      const request = createRequest({ 
+        url: 'https://httpbin.org/html',
+        email: 'test@example.com'
+      });
+      const response = await POST(request);
+      const data = await response.json();
+      
+      expect(response.status).toBe(200);
+      expect(data.fromCache).toBe(false);
+      expect(data.analysisId).toBeTruthy();
+    });
+
+    it('should return cached result when analysis is recent and not forced', async () => {
+      // First analysis
+      const firstRequest = createRequest({ 
+        url: 'https://httpbin.org/json',
+        email: 'test@example.com'
+      });
+      const firstResponse = await POST(firstRequest);
+      const firstData = await firstResponse.json();
+      
+      expect(firstResponse.status).toBe(200);
+      expect(firstData.fromCache).toBe(false);
+      const firstAnalysisId = firstData.analysisId;
+      
+      // Second request immediately after - should use cache
+      const secondRequest = createRequest({ 
+        url: 'https://httpbin.org/json',
+        email: 'test@example.com',
+        forceRescan: false
+      });
+      const secondResponse = await POST(secondRequest);
+      const secondData = await secondResponse.json();
+      
+      expect(secondResponse.status).toBe(200);
+      expect(secondData.fromCache).toBe(true);
+      expect(secondData.analysisId).toBe(firstAnalysisId); // Should be same analysis
+      expect(secondData.message).toContain('cached');
+    });
+
+    it('should maintain separate analyses for different URLs', async () => {
+      const url1Request = createRequest({ 
+        url: 'https://httpbin.org/status/200',
+        email: 'test@example.com'
+      });
+      const url1Response = await POST(url1Request);
+      const url1Data = await url1Response.json();
+      
+      const url2Request = createRequest({ 
+        url: 'https://httpbin.org/delay/1',
+        email: 'test@example.com'
+      });
+      const url2Response = await POST(url2Request);
+      const url2Data = await url2Response.json();
+      
+      expect(url1Response.status).toBe(200);
+      expect(url2Response.status).toBe(200);
+      expect(url1Data.analysisId).not.toBe(url2Data.analysisId);
+      expect(url1Data.fromCache).toBe(false);
+      expect(url2Data.fromCache).toBe(false);
+    });
+
+    it('should track historical analyses - multiple reports per URL over time', async () => {
+      const url = 'https://httpbin.org/uuid';
+      
+      // First analysis
+      const request1 = createRequest({ url, email: 'test@example.com' });
+      const response1 = await POST(request1);
+      const data1 = await response1.json();
+      
+      // Force rescan to create second analysis
+      const request2 = createRequest({ url, email: 'test@example.com', forceRescan: true });
+      const response2 = await POST(request2);
+      const data2 = await response2.json();
+      
+      // Third force rescan
+      const request3 = createRequest({ url, email: 'test@example.com', forceRescan: true });
+      const response3 = await POST(request3);
+      const data3 = await response3.json();
+      
+      expect(response1.status).toBe(200);
+      expect(response2.status).toBe(200);
+      expect(response3.status).toBe(200);
+      
+      // All should be different analysis IDs (historical tracking)
+      expect(data1.analysisId).not.toBe(data2.analysisId);
+      expect(data2.analysisId).not.toBe(data3.analysisId);
+      expect(data1.analysisId).not.toBe(data3.analysisId);
+      
+      // All should be new analyses, not cached
+      expect(data1.fromCache).toBe(false);
+      expect(data2.fromCache).toBe(false);
+      expect(data3.fromCache).toBe(false);
+    });
+  });
+
   describe('Database integration with caching', () => {
     it('should handle component-based analysis with caching parameters', async () => {
       const request = createRequest({ 

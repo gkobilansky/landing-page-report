@@ -115,6 +115,7 @@ interface AnalysisResult {
   }
   overallScore: number
   status: string
+  screenshotUrl?: string | null
 }
 
 interface AnalysisResultsProps {
@@ -147,11 +148,69 @@ function ScoreBadge({ score, testId }: { score: number; testId?: string }) {
   )
 }
 
+// Category configuration with icons and color themes
+const categoryConfig = {
+  'Page Load Speed': {
+    icon: '⚡',
+    colorTheme: 'blue',
+    bgClass: 'bg-blue-950/20',
+    borderClass: 'border-blue-800/40',
+    iconClass: 'text-blue-400'
+  },
+  'CTA Analysis': {
+    icon: '🎯',
+    colorTheme: 'purple', 
+    bgClass: 'bg-purple-950/20',
+    borderClass: 'border-purple-800/40',
+    iconClass: 'text-purple-400'
+  },
+  'Social Proof': {
+    icon: '⭐',
+    colorTheme: 'amber',
+    bgClass: 'bg-amber-950/20', 
+    borderClass: 'border-amber-800/40',
+    iconClass: 'text-amber-400'
+  },
+  'Whitespace Assessment': {
+    icon: '📐',
+    colorTheme: 'green',
+    bgClass: 'bg-green-950/20',
+    borderClass: 'border-green-800/40', 
+    iconClass: 'text-green-400'
+  },
+  'Image Optimization': {
+    icon: '🖼️',
+    colorTheme: 'indigo',
+    bgClass: 'bg-indigo-950/20',
+    borderClass: 'border-indigo-800/40',
+    iconClass: 'text-indigo-400'
+  },
+  'Font Usage': {
+    icon: '🔤',
+    colorTheme: 'teal',
+    bgClass: 'bg-teal-950/20',
+    borderClass: 'border-teal-800/40',
+    iconClass: 'text-teal-400'
+  }
+} as const;
+
 function CategoryCard({ title, score, children }: { title: string; score?: number; children: React.ReactNode }) {
+  const config = categoryConfig[title as keyof typeof categoryConfig];
+  const cardClasses = config 
+    ? `rounded-lg border p-6 ${config.bgClass} ${config.borderClass}`
+    : "rounded-lg border border-gray-700 p-6 bg-gray-800/20";
+
   return (
-    <div className="rounded-lg border border-gray-700 p-6" style={{ backgroundColor: 'var(--color-bg-card)' }}>
+    <div className={cardClasses}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-100">{title}</h3>
+        <div className="flex items-center gap-3">
+          {config && (
+            <span className={`text-2xl ${config.iconClass}`} aria-hidden="true">
+              {config.icon}
+            </span>
+          )}
+          <h3 className="text-lg font-semibold text-gray-100">{title}</h3>
+        </div>
         {score !== undefined && <ScoreBadge score={score} testId={`score-badge-${title.toLowerCase().replace(/\s+/g, '-')}`} />}
       </div>
       {children}
@@ -179,9 +238,29 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
         </div>
       </div>
 
-      {/* Analysis Categories */}
+      {/* Screenshot Section */}
+      {result.screenshotUrl && (
+        <div className="rounded-lg border border-gray-700 p-6" style={{ backgroundColor: 'var(--color-bg-card)' }}>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl text-blue-400" aria-hidden="true">📸</span>
+            <h3 className="text-lg font-semibold text-gray-100">Page Screenshot</h3>
+          </div>
+          <div className="relative bg-gray-800 rounded-lg overflow-hidden">
+            <img 
+              src={result.screenshotUrl} 
+              alt={`Screenshot of ${result.url}`}
+              className="w-full max-h-96 object-cover object-top border border-gray-600 rounded"
+            />
+          </div>
+          <p className="text-sm text-gray-400 mt-3">
+            Full-page screenshot captured during analysis for visual reference and whitespace assessment.
+          </p>
+        </div>
+      )}
+
+      {/* Analysis Categories - Ordered by Priority/Weight */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Page Load Speed */}
+        {/* Page Load Speed - 25% weight */}
         {result.pageLoadSpeed && (
           <CategoryCard title="Page Load Speed" score={result.pageLoadSpeed.score}>
             <div className="space-y-3 text-gray-300">
@@ -223,97 +302,7 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
           </CategoryCard>
         )}
 
-        {/* Font Usage */}
-        {result.fontUsage && (
-          <CategoryCard title="Font Usage" score={result.fontUsage.score}>
-            <div className="space-y-3 text-gray-300">
-              <div className="text-sm space-y-2">
-                <div>
-                  <span className="text-gray-400">Total Font Families: {result.fontUsage.fontCount}</span>
-                  {result.fontUsage.systemFontCount !== undefined && result.fontUsage.webFontCount !== undefined && (
-                    <span className="text-gray-500 ml-2">
-                      ({result.fontUsage.systemFontCount} system, {result.fontUsage.webFontCount} web)
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <span className="text-gray-400">Font Families:</span>
-                  <div className="mt-1">
-                    {result.fontUsage.fontFamilies.map((font, index) => (
-                      <span key={index} className="inline-block bg-gray-700 text-gray-200 px-2 py-1 rounded mr-2 mb-1 text-xs">
-                        {font}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              {result.fontUsage.issues.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-400 space-y-1">
-                    {result.fontUsage.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {result.fontUsage.recommendations.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-400 space-y-1">
-                    {result.fontUsage.recommendations.map((rec, index) => (
-                      <li key={index}>• {rec}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </CategoryCard>
-        )}
-
-        {/* Image Optimization */}
-        {result.imageOptimization && (
-          <CategoryCard title="Image Optimization" score={result.imageOptimization.score}>
-            <div className="space-y-3 text-gray-300">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-400">Total Images:</span> {result.imageOptimization.totalImages}
-                </div>
-                <div>
-                  <span className="text-gray-400">Modern Formats:</span> {result.imageOptimization.modernFormats}
-                </div>
-                <div>
-                  <span className="text-gray-400">With Alt Text:</span> {result.imageOptimization.withAltText}
-                </div>
-                <div>
-                  <span className="text-gray-400">Properly Sized:</span> {result.imageOptimization.appropriatelySized}
-                </div>
-              </div>
-              {result.imageOptimization.issues.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-400 space-y-1">
-                    {result.imageOptimization.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {result.imageOptimization.recommendations.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-400 space-y-1">
-                    {result.imageOptimization.recommendations.map((rec, index) => (
-                      <li key={index}>• {rec}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </CategoryCard>
-        )}
-
-        {/* CTA Analysis */}
+        {/* CTA Analysis - 25% weight */}
         {result.ctaAnalysis && (
           <CategoryCard title="CTA Analysis" score={result.ctaAnalysis.score}>
             <div className="space-y-3 text-gray-300">
@@ -377,49 +366,7 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
           </CategoryCard>
         )}
 
-        {/* Whitespace Assessment */}
-        {result.whitespaceAssessment && (
-          <CategoryCard title="Whitespace Assessment" score={result.whitespaceAssessment.score}>
-            <div className="space-y-3 text-gray-300">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-400">Whitespace Ratio:</span> {result.whitespaceAssessment.metrics.whitespaceRatio.toFixed(2)}
-                </div>
-                <div>
-                  <span className="text-gray-400">Clutter Score:</span> {result.whitespaceAssessment.metrics.clutterScore}
-                </div>
-                <div>
-                  <span className="text-gray-400">Avg Element Density:</span> {result.whitespaceAssessment.metrics.elementDensityPerSection.averageDensity.toFixed(2)}
-                </div>
-                 <div>
-                  <span className="text-gray-400">Spacing Adequate:</span> {result.whitespaceAssessment.metrics.hasAdequateSpacing ? 'Yes' : 'No'}
-                </div>
-              </div>
-              {result.whitespaceAssessment.issues.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Issues:</h4>
-                  <ul className="text-sm text-red-400 space-y-1">
-                    {result.whitespaceAssessment.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {result.whitespaceAssessment.recommendations.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Recommendations:</h4>
-                  <ul className="text-sm text-blue-400 space-y-1">
-                    {result.whitespaceAssessment.recommendations.map((rec, index) => (
-                      <li key={index}>• {rec}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </CategoryCard>
-        )}
-
-        {/* Social Proof */}
+        {/* Social Proof - 20% weight */}
         {result.socialProof && (
           <CategoryCard title="Social Proof" score={result.socialProof.score}>
             <div className="space-y-3 text-gray-300">
@@ -486,6 +433,138 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
                   <h4 className="font-medium text-gray-100 mb-2 mt-3">Recommendations:</h4>
                   <ul className="text-sm text-blue-400 space-y-1">
                     {result.socialProof.recommendations.map((rec, index) => (
+                      <li key={index}>• {rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CategoryCard>
+        )}
+
+        {/* Whitespace Assessment - 15% weight */}
+        {result.whitespaceAssessment && (
+          <CategoryCard title="Whitespace Assessment" score={result.whitespaceAssessment.score}>
+            <div className="space-y-3 text-gray-300">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Whitespace Ratio:</span> {result.whitespaceAssessment.metrics.whitespaceRatio.toFixed(2)}
+                </div>
+                <div>
+                  <span className="text-gray-400">Clutter Score:</span> {result.whitespaceAssessment.metrics.clutterScore}
+                </div>
+                <div>
+                  <span className="text-gray-400">Avg Element Density:</span> {result.whitespaceAssessment.metrics.elementDensityPerSection.averageDensity.toFixed(2)}
+                </div>
+                 <div>
+                  <span className="text-gray-400">Spacing Adequate:</span> {result.whitespaceAssessment.metrics.hasAdequateSpacing ? 'Yes' : 'No'}
+                </div>
+              </div>
+              {result.whitespaceAssessment.issues.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Issues:</h4>
+                  <ul className="text-sm text-red-400 space-y-1">
+                    {result.whitespaceAssessment.issues.map((issue, index) => (
+                      <li key={index}>• {issue}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {result.whitespaceAssessment.recommendations.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Recommendations:</h4>
+                  <ul className="text-sm text-blue-400 space-y-1">
+                    {result.whitespaceAssessment.recommendations.map((rec, index) => (
+                      <li key={index}>• {rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CategoryCard>
+        )}
+
+        {/* Image Optimization - 10% weight */}
+        {result.imageOptimization && (
+          <CategoryCard title="Image Optimization" score={result.imageOptimization.score}>
+            <div className="space-y-3 text-gray-300">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Total Images:</span> {result.imageOptimization.totalImages}
+                </div>
+                <div>
+                  <span className="text-gray-400">Modern Formats:</span> {result.imageOptimization.modernFormats}
+                </div>
+                <div>
+                  <span className="text-gray-400">With Alt Text:</span> {result.imageOptimization.withAltText}
+                </div>
+                <div>
+                  <span className="text-gray-400">Properly Sized:</span> {result.imageOptimization.appropriatelySized}
+                </div>
+              </div>
+              {result.imageOptimization.issues.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-100 mb-2">Issues:</h4>
+                  <ul className="text-sm text-red-400 space-y-1">
+                    {result.imageOptimization.issues.map((issue, index) => (
+                      <li key={index}>• {issue}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {result.imageOptimization.recommendations.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-100 mb-2">Recommendations:</h4>
+                  <ul className="text-sm text-blue-400 space-y-1">
+                    {result.imageOptimization.recommendations.map((rec, index) => (
+                      <li key={index}>• {rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CategoryCard>
+        )}
+
+        {/* Font Usage - 5% weight */}
+        {result.fontUsage && (
+          <CategoryCard title="Font Usage" score={result.fontUsage.score}>
+            <div className="space-y-3 text-gray-300">
+              <div className="text-sm space-y-2">
+                <div>
+                  <span className="text-gray-400">Total Font Families: {result.fontUsage.fontCount}</span>
+                  {result.fontUsage.systemFontCount !== undefined && result.fontUsage.webFontCount !== undefined && (
+                    <span className="text-gray-500 ml-2">
+                      ({result.fontUsage.systemFontCount} system, {result.fontUsage.webFontCount} web)
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-gray-400">Font Families:</span>
+                  <div className="mt-1">
+                    {result.fontUsage.fontFamilies.map((font, index) => (
+                      <span key={index} className="inline-block bg-gray-700 text-gray-200 px-2 py-1 rounded mr-2 mb-1 text-xs">
+                        {font}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {result.fontUsage.issues.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-100 mb-2">Issues:</h4>
+                  <ul className="text-sm text-red-400 space-y-1">
+                    {result.fontUsage.issues.map((issue, index) => (
+                      <li key={index}>• {issue}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {result.fontUsage.recommendations.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-gray-100 mb-2">Recommendations:</h4>
+                  <ul className="text-sm text-blue-400 space-y-1">
+                    {result.fontUsage.recommendations.map((rec, index) => (
                       <li key={index}>• {rec}</li>
                     ))}
                   </ul>

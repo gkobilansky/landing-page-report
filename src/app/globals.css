@@ -8,3 +8,25 @@ body {
     @apply text-gray-100;
     background-color: var(--color-bg-main);
 }
+
+/* Scanning animation for screenshot preview */
+@keyframes scan {
+    0% {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(400%);
+        opacity: 0;
+    }
+}
+
+.animate-scan {
+    animation: scan 3s ease-in-out infinite;
+}

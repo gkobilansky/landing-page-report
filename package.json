@@ -19,6 +19,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
     "@tailwindcss/postcss": "^4.1.7",
+    "@vercel/blob": "^1.1.1",
+    "canvas": "^2.11.2",
     "next": "^15.3.2",
     "puppeteer-core": "^24.9.0",
     "react": "^19.1.0",
