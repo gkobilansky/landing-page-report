@@ -1,5 +1,5 @@
 import { createPuppeteerBrowser } from './puppeteer-config';
-import { createCanvas, loadImage } from 'canvas';
+import Jimp from 'jimp';
 
 export interface ElementDensityAnalysis {
   gridSections: number;
@@ -133,27 +133,20 @@ async function analyzeScreenshotWhitespace(
   
   console.log('🔍 Processing screenshot for pixel analysis...');
   
-  // Load and process the image
-  const img = await loadImage(screenshotBuffer);
-  const canvas = createCanvas(img.width, img.height);
-  const ctx = canvas.getContext('2d');
-  
-  // Draw image to canvas
-  ctx.drawImage(img, 0, 0);
-  
-  // Get image data for pixel analysis
-  const imageData = ctx.getImageData(0, 0, img.width, img.height);
-  const pixels = imageData.data;
+  // Load and process the image with Jimp
+  const img = await Jimp.read(screenshotBuffer);
+  const { width, height } = img.bitmap;
   
   let contentPixels = 0;
-  const totalPixels = img.width * img.height;
+  const totalPixels = width * height;
   
-  // Process every pixel (RGBA format)
-  for (let i = 0; i < pixels.length; i += 4) {
-    const r = pixels[i];
-    const g = pixels[i + 1];
-    const b = pixels[i + 2];
-    // Skip alpha channel (pixels[i + 3])
+  // Process every pixel
+  img.scan(0, 0, width, height, (x, y, idx) => {
+    // Get RGBA values from bitmap data
+    const r = img.bitmap.data[idx];
+    const g = img.bitmap.data[idx + 1];
+    const b = img.bitmap.data[idx + 2];
+    // Skip alpha channel (img.bitmap.data[idx + 3])
     
     // Convert to grayscale using luminance formula
     const grayscale = 0.299 * r + 0.587 * g + 0.114 * b;
@@ -162,7 +155,7 @@ async function analyzeScreenshotWhitespace(
     if (grayscale < threshold) {
       contentPixels++;
     }
-  }
+  });
   
   const whitespacePixels = totalPixels - contentPixels;
   const visualWhitespaceRatio = whitespacePixels / totalPixels;

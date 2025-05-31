@@ -19,6 +19,14 @@ export default function ReportPage() {
             </svg>
             Back to Landing Page Analyzer
           </a>
+          <div className="mt-2">
+            <a 
+              href="/blueprint" 
+              className="text-gray-400 hover:text-blue-300 transition-colors text-sm"
+            >
+              📖 Also see: The Complete Blueprint for Digital Conversion →
+            </a>
+          </div>
         </nav>
 
         <div className="mb-12">

@@ -15,10 +15,10 @@ export default function SocialFooter() {
               lansky.tech
             </a>
             <a
-              href="/report"
+              href="/blueprint"
               className="text-gray-400 hover:text-white transition-colors text-xs px-2 py-1 rounded whitespace-nowrap"
             >
-              2025 Report
+              Blueprint
             </a>
           </div>
         </div>

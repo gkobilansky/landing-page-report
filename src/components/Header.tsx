@@ -83,12 +83,12 @@ export default function Header() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex justify-end mb-8">
+      <nav className="flex justify-end mb-8 gap-6">
         <a 
-          href="/report" 
+          href="/blueprint" 
           className="text-gray-300 hover:text-primary hover:underline transition-colors text-sm font-medium"
         >
-          Report: Landing Pages in 2025
+          The Blueprint for Digital Conversion
         </a>
       </nav>
 
