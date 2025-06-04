@@ -1,10 +1,9 @@
 import { Browser, Page } from 'puppeteer-core';
 import { createPuppeteerBrowser } from './puppeteer-config';
-import lighthouse, { RunnerResult } from 'lighthouse';
-import { analyzeFontUsage, FontAnalysisResult } from './font-analysis';
-import { analyzeCTA, CTAAnalysisResult } from './cta-analysis';
-import { analyzePageSpeed, PageSpeedAnalysisResult } from './page-speed-analysis';
-import { analyzeWhitespace, WhitespaceAnalysisResult } from './whitespace-assessment';
+import { analyzeFontUsage } from './font-analysis';
+import { analyzeCTA } from './cta-analysis';
+import { analyzePageSpeed } from './page-speed-analysis';
+import { analyzeWhitespace } from './whitespace-assessment';
 
 export interface AnalysisResult {
   url: string;
