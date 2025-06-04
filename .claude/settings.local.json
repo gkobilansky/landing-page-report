@@ -31,7 +31,11 @@
       "Bash(rg:*)",
       "Bash(supabase status:*)",
       "Bash(psql:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(supabase orgs:*)",
+      "Bash(supabase projects:*)",
+      "Bash(supabase link:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   },

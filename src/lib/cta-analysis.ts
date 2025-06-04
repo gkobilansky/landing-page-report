@@ -70,7 +70,7 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
 
     // Extract CTA elements using Puppeteer page evaluation
     console.log('🔍 Extracting CTA elements...');
-    const ctaData = await page.evaluate((viewport) => {
+    const ctaData = await page.evaluate((viewport: { width: number; height: number }) => {
       const ctas: any[] = [];
       const processedElements = new Set<Element>();
       
@@ -393,7 +393,7 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
 
     // Remove duplicate CTAs based on text similarity
     const uniqueCTAs: CTAElement[] = [];
-    ctaData.forEach(cta => {
+    ctaData.forEach((cta: CTAElement) => {
       const isDuplicate = uniqueCTAs.some(existing => {
         // Consider duplicates if text is very similar or one contains the other
         const similarity = cta.text.toLowerCase().trim() === existing.text.toLowerCase().trim() ||

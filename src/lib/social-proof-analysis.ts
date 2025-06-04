@@ -81,7 +81,7 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
 
     // Extract social proof elements using Puppeteer page evaluation
     console.log('🔍 Extracting social proof elements...');
-    const socialProofData = await page.evaluate((viewport) => {
+    const socialProofData = await page.evaluate((viewport: { width: number; height: number }) => {
       const elements: any[] = [];
       const processedElements = new Set<Element>();
       
@@ -405,7 +405,7 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
 
     // Remove duplicate elements based on text similarity
     const uniqueElements: SocialProofElement[] = [];
-    socialProofData.forEach(element => {
+    socialProofData.forEach((element: SocialProofElement) => {
       const isDuplicate = uniqueElements.some(existing => {
         const similarity = element.text.toLowerCase().trim() === existing.text.toLowerCase().trim() ||
                           element.text.toLowerCase().includes(existing.text.toLowerCase()) ||

@@ -209,7 +209,7 @@ export async function analyzeWhitespace(
     console.log('📊 Analyzing element density per grid section...');
     
     // 1. Grid-based element density analysis (PRD requirement)
-    const densityAnalysis = await page.evaluate((cols, rows) => {
+    const densityAnalysis = await page.evaluate((cols: number, rows: number) => {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       const sectionWidth = viewportWidth / cols;
