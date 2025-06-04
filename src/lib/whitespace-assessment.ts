@@ -69,6 +69,9 @@ interface WhitespaceOptions {
   useScreenshot?: boolean; // Use screenshot-based analysis (default: true)
   pixelThreshold?: number; // Pixel intensity threshold for content detection (0-255, default: 240)
   screenshotUrl?: string; // Use existing screenshot instead of capturing new one
+  puppeteer?: {
+    forceBrowserless?: boolean;
+  };
 }
 
 async function analyzeScreenshotWhitespace(
@@ -188,7 +191,7 @@ export async function analyzeWhitespace(
 
     console.log('📱 Launching Puppeteer browser...');
     
-    browser = await createPuppeteerBrowser();
+    browser = await createPuppeteerBrowser(options.puppeteer || {});
 
     const page = await browser.newPage();
     await page.setViewport(viewport);

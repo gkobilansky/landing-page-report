@@ -10,12 +10,18 @@ export interface FontAnalysisResult {
   recommendations: string[]
 }
 
-export async function analyzeFontUsage(url: string): Promise<FontAnalysisResult> {
+export interface FontAnalysisOptions {
+  puppeteer?: {
+    forceBrowserless?: boolean;
+  };
+}
+
+export async function analyzeFontUsage(url: string, options: FontAnalysisOptions = {}): Promise<FontAnalysisResult> {
   console.log(`🚀 Starting font analysis for: ${url}`)
   
   console.log('📱 Launching Puppeteer browser...')
   
-  const browser = await createPuppeteerBrowser()
+  const browser = await createPuppeteerBrowser(options.puppeteer || {})
   
   try {
     console.log('🌐 Creating new page and navigating to URL...')

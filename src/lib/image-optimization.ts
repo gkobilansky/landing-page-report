@@ -27,13 +27,19 @@ const MODERN_FORMATS = ['webp', 'avif'];
 const LEGACY_FORMATS = ['jpg', 'jpeg', 'png', 'gif', 'bmp'];
 const MAX_REASONABLE_SIZE = 2000; // pixels
 
-export async function analyzeImageOptimization(url: string): Promise<ImageOptimizationResult> {
+export interface ImageOptimizationOptions {
+  puppeteer?: {
+    forceBrowserless?: boolean;
+  };
+}
+
+export async function analyzeImageOptimization(url: string, options: ImageOptimizationOptions = {}): Promise<ImageOptimizationResult> {
   console.log('🖼️ Starting image optimization analysis for:', url);
   
   let browser;
   
   try {
-    browser = await createPuppeteerBrowser();
+    browser = await createPuppeteerBrowser(options.puppeteer || {});
     
     const page = await browser.newPage();
     

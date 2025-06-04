@@ -17,11 +17,12 @@ export async function POST(request: NextRequest) {
   try {
     console.log('📥 Parsing request body...')
     const body = await request.json();
-    const { url, component, email, forceRescan = false } = body; // Add email parameter for database storage
+    const { url, component, email, forceRescan = false, forceBrowserless = false } = body; // Add email parameter for database storage
     console.log(`📋 Received URL: ${url}`)
     console.log(`🎯 Component filter: ${component || 'all'}`)
     console.log(`📧 Email: ${email || 'anonymous request'}`)
     console.log(`🔄 Force rescan: ${forceRescan}`)
+    console.log(`🌐 Force Browserless: ${forceBrowserless}`)
 
     // Validate input
     if (!url) {
@@ -293,7 +294,8 @@ export async function POST(request: NextRequest) {
         fullPage: true,
         format: 'png',
         quality: 80,
-        viewport: { width: 1920, height: 1080 }
+        viewport: { width: 1920, height: 1080 },
+        puppeteer: { forceBrowserless }
       });
       console.log(`✅ Screenshot captured and stored: ${screenshotResult.blobUrl}`);
       
@@ -351,7 +353,9 @@ export async function POST(request: NextRequest) {
 
     if (shouldRun('font')) {
       console.log('🔄 Starting font usage analysis...')
-      const fontUsageResult = await analyzeFontUsage(validatedUrl.toString());
+      const fontUsageResult = await analyzeFontUsage(validatedUrl.toString(), {
+        puppeteer: { forceBrowserless }
+      });
       analysisResult.fontUsage = {
         score: fontUsageResult.score,
         fontFamilies: fontUsageResult.fontFamilies,
@@ -366,7 +370,9 @@ export async function POST(request: NextRequest) {
 
     if (shouldRun('image')) {
       console.log('🔄 Starting image optimization analysis...')
-      const imageOptimizationResult = await analyzeImageOptimization(validatedUrl.toString());
+      const imageOptimizationResult = await analyzeImageOptimization(validatedUrl.toString(), {
+        puppeteer: { forceBrowserless }
+      });
       analysisResult.imageOptimization = {
         score: imageOptimizationResult.score,
         totalImages: imageOptimizationResult.totalImages,
@@ -385,7 +391,9 @@ export async function POST(request: NextRequest) {
       
       try {
         console.log('🎯 Running CTA analysis...');
-        const ctaResult = await analyzeCTA(validatedUrl.toString());
+        const ctaResult = await analyzeCTA(validatedUrl.toString(), {
+          puppeteer: { forceBrowserless }
+        });
         console.log(`✅ CTA analysis complete: ${ctaResult.ctas.length} CTAs found, score: ${ctaResult.score}`);
         
         analysisResult.ctaAnalysis = {
@@ -425,7 +433,8 @@ export async function POST(request: NextRequest) {
       console.log('🔄 Starting whitespace assessment...')
       try {
         const whitespaceResult = await analyzeWhitespace(validatedUrl.toString(), {
-          screenshotUrl: screenshotResult?.blobUrl // Use the captured screenshot
+          screenshotUrl: screenshotResult?.blobUrl, // Use the captured screenshot
+          puppeteer: { forceBrowserless }
         });
         analysisResult.whitespaceAssessment = {
           score: whitespaceResult.score,
@@ -485,7 +494,9 @@ export async function POST(request: NextRequest) {
     if (shouldRun('social') || shouldRun('socialProof')) {
       console.log('🔄 Starting social proof analysis...')
       try {
-        const socialProofResult = await analyzeSocialProof(validatedUrl.toString());
+        const socialProofResult = await analyzeSocialProof(validatedUrl.toString(), {
+          puppeteer: { forceBrowserless }
+        });
         analysisResult.socialProof = {
           score: socialProofResult.score,
           elements: socialProofResult.elements.map(element => ({

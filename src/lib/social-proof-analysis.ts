@@ -48,6 +48,9 @@ interface AnalysisOptions {
     height: number;
   };
   isHtml?: boolean;
+  puppeteer?: {
+    forceBrowserless?: boolean;
+  };
 }
 
 export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOptions = {}): Promise<SocialProofAnalysisResult> {
@@ -61,7 +64,7 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
     
     console.log('📱 Launching Puppeteer browser...');
     
-    browser = await createPuppeteerBrowser();
+    browser = await createPuppeteerBrowser(options.puppeteer || {});
     
     const page = await browser.newPage();
     await page.setViewport(viewport);

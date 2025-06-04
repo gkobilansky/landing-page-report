@@ -16,16 +16,18 @@ async function getLocalExecutablePath() {
   return localPuppeteer.executablePath();
 }
 
-export async function createPuppeteerBrowser() {
+export async function createPuppeteerBrowser(options: { forceBrowserless?: boolean } = {}) {
   const isProduction = process.env.NODE_ENV === 'production';
   const browserlessKey = process.env.BLESS_KEY;
+  const { forceBrowserless = false } = options;
   
-  if (isProduction && browserlessKey) {
+  if ((isProduction || forceBrowserless) && browserlessKey) {
     // Browserless.io configuration for production
     try {
       console.log('🌐 Connecting to Browserless.io...');
       
-      const browserWSEndpoint = `wss://chrome.browserless.io?token=${browserlessKey}`;
+      // Use regional endpoint with WebSocket protocol
+      const browserWSEndpoint = `wss://production-sfo.browserless.io?token=${browserlessKey}`;
       
       console.log('🔗 Connecting to browser WebSocket endpoint...');
       
@@ -39,7 +41,7 @@ export async function createPuppeteerBrowser() {
     }
   } else {
     // Local development configuration
-    console.log('🏠 Running in local development mode...');
+    console.log(forceBrowserless ? '🏠 Browserless disabled - running locally...' : '🏠 Running in local development mode...');
     
     return await puppeteer.launch({
       args: [

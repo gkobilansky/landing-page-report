@@ -36,6 +36,9 @@ interface AnalysisOptions {
     height: number;
   };
   isHtml?: boolean; // Flag to indicate if input is HTML instead of URL
+  puppeteer?: {
+    forceBrowserless?: boolean;
+  };
 }
 
 
@@ -50,7 +53,7 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
     
     console.log('📱 Launching Puppeteer browser...');
     
-    browser = await createPuppeteerBrowser();
+    browser = await createPuppeteerBrowser(options.puppeteer || {});
     
     const page = await browser.newPage();
     await page.setViewport(viewport);

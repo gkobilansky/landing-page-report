@@ -18,6 +18,9 @@ export interface ScreenshotOptions {
     width: number;
     height: number;
   };
+  puppeteer?: {
+    forceBrowserless?: boolean;
+  };
 }
 
 /**
@@ -42,7 +45,7 @@ export async function captureAndStoreScreenshot(
 
     // Launch browser
     console.log('🌐 Launching browser for screenshot...');
-    browser = await createPuppeteerBrowser();
+    browser = await createPuppeteerBrowser(options.puppeteer || {});
     const page = await browser.newPage();
     
     // Set viewport
