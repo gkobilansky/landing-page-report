@@ -55,7 +55,7 @@ export default function EmailInput({ onEmailSubmit, isLoading = false, isAnalysi
             <span className="text-green-400 font-medium">Thanks!</span>
           </div>
           <p className="text-gray-300 text-sm">
-            I'll keep you posted as we add more testing capabilities to this tool.
+            I&apos;ll keep you posted as we add more testing capabilities to this tool.
           </p>
         </div>
       </div>
@@ -68,7 +68,7 @@ export default function EmailInput({ onEmailSubmit, isLoading = false, isAnalysi
         <div className="text-center mb-4">
           {isAnalysisComplete ? (
             <p className="text-gray-300 text-lg mb-2">
-              We&apos;re working on more advanced testing, add your email to automatically receive updates once they're out.
+              We&apos;re working on more advanced testing, add your email to automatically receive updates once they&apos;re out.
             </p>
           ) : (
               <>

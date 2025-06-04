@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 
 interface ProgressStep {
   id: string
@@ -196,9 +197,11 @@ export default function ProgressiveLoader({ isLoading, screenshotUrl }: Progress
           <div className="relative bg-gray-800 rounded-lg p-4 border border-gray-700">
             <h4 className="text-sm font-medium text-gray-300 mb-3">Page Screenshot</h4>
             <div className="relative overflow-hidden rounded-lg">
-              <img 
+              <Image 
                 src={screenshotUrl} 
                 alt="Page screenshot" 
+                width={800}
+                height={600}
                 className="w-full max-h-64 object-cover object-top"
               />
               {/* Scanning Animation Overlay */}

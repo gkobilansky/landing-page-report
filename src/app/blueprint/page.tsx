@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'The Blueprint for Digital Conversion | lansky.tech',
@@ -10,7 +11,7 @@ export default function BlueprintPage() {
     <main className="min-h-screen bg-gray-900">
       <div className="container mx-auto px-4 py-16 max-w-4xl">
         <nav className="mb-8">
-          <a 
+          <Link 
             href="/" 
             className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors text-sm font-medium"
           >
@@ -18,7 +19,7 @@ export default function BlueprintPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Landing Page Analyzer
-          </a>
+          </Link>
           <div className="mt-2">
             <a 
               href="/report" 
@@ -48,7 +49,7 @@ export default function BlueprintPage() {
             </a>
           </div>
           <div className="text-gray-500 text-xs mt-2 italic">
-            This comprehensive research was built with the help of Gemini Deep Research and Claude Code. All deep insights are mine, all mistakes are the AI's.
+            This comprehensive research was built with the help of Gemini Deep Research and Claude Code. All deep insights are mine, all mistakes are the AI&apos;s.
           </div>
         </div>
 
@@ -109,7 +110,7 @@ export default function BlueprintPage() {
                 </div>
               </div>
 
-              <h3 className="text-2xl font-semibold text-gray-200 mb-4">Defining "High-Converting" by Industry</h3>
+              <h3 className="text-2xl font-semibold text-gray-200 mb-4">Defining &quot;High-Converting&quot; by Industry</h3>
               
               <div className="grid md:grid-cols-2 gap-8 mb-8">
                 <div>
@@ -137,7 +138,7 @@ export default function BlueprintPage() {
               <h3 className="text-2xl font-semibold text-gray-200 mb-4">Strategic Importance in the Digital Funnel</h3>
               
               <p className="mb-6">
-                Landing pages serve as critical junctures in the digital marketing funnel. They are the dedicated arenas where marketing investments – whether in paid advertising, content marketing, or email campaigns – are intended to yield measurable outcomes. The discipline of Conversion Rate Optimization (CRO) is fundamentally about "continuously improving and enhancing a website or landing page's ability to convert visitors into leads or customers".
+                Landing pages serve as critical junctures in the digital marketing funnel. They are the dedicated arenas where marketing investments – whether in paid advertising, content marketing, or email campaigns – are intended to yield measurable outcomes. The discipline of Conversion Rate Optimization (CRO) is fundamentally about &quot;continuously improving and enhancing a website or landing page&apos;s ability to convert visitors into leads or customers&quot;.
               </p>
 
               <h4 className="text-lg font-semibold text-yellow-300 mb-3">Common Marketing Pain Points</h4>
@@ -217,7 +218,7 @@ export default function BlueprintPage() {
                     The foremost principle is clarity. A visitor should instantly grasp what the offer is, who it is intended for, and the unique value it provides. The headline plays a pivotal role in this initial communication.
                   </p>
                   <p className="text-sm text-blue-200 italic border-l-2 border-blue-500 pl-4">
-                    <strong>Example:</strong> "AI for Artists" directly communicates the value proposition to a specific audience. SaaS landing pages often open with a "powerful value proposition" presented clearly above the fold.
+                    <strong>Example:</strong> &quot;AI for Artists&quot; directly communicates the value proposition to a specific audience. SaaS landing pages often open with a &quot;powerful value proposition&quot; presented clearly above the fold.
                   </p>
                 </div>
 
@@ -227,7 +228,7 @@ export default function BlueprintPage() {
                     The Call-to-Action is the gateway to conversion. It must be unambiguous, easily noticeable, and persuasive, guiding the user toward the intended action. Elements such as button copy, color, size, and placement are critical.
                   </p>
                   <p className="text-sm text-green-200 italic border-l-2 border-green-500 pl-4">
-                    <strong>Impact:</strong> Changing button text from "Learn more" to "Try for 30 days!" resulted in an 18% increase in conversions for one e-commerce brand.
+                    <strong>Impact:</strong> Changing button text from &quot;Learn more&quot; to &quot;Try for 30 days!&quot; resulted in an 18% increase in conversions for one e-commerce brand.
                   </p>
                 </div>
 
@@ -254,7 +255,7 @@ export default function BlueprintPage() {
                 <div>
                   <h4 className="text-lg font-semibold text-teal-400 mb-2">E. Persuasive Copy and Content</h4>
                   <p className="text-gray-300 mb-3">
-                    The written content articulates the value and persuades the visitor. Copy should be benefit-oriented, directly addressing the user's pain points and aspirations using clear, concise language.
+                    The written content articulates the value and persuades the visitor. Copy should be benefit-oriented, directly addressing the user&apos;s pain points and aspirations using clear, concise language.
                   </p>
                   <ul className="text-gray-300 text-sm space-y-1">
                     <li>• Use benefit-focused headlines</li>
@@ -277,10 +278,10 @@ export default function BlueprintPage() {
                 <div>
                   <h4 className="text-lg font-semibold text-yellow-400 mb-2">G. Data-Driven Optimization and A/B Testing</h4>
                   <p className="text-gray-300 mb-3">
-                    The pursuit of high conversion rates is an ongoing process. Continuous improvement through rigorous A/B testing is key to unlocking a landing page's full potential.
+                    The pursuit of high conversion rates is an ongoing process. Continuous improvement through rigorous A/B testing is key to unlocking a landing page&apos;s full potential.
                   </p>
                   <p className="text-sm text-yellow-200 italic border-l-2 border-yellow-500 pl-4">
-                    <strong>Success Story:</strong> Restroworks saw a 52% boost in demo requests through continuous A/B testing on their key pages. The core tenet: "Data-driven decision-making is key."
+                    <strong>Success Story:</strong> Restroworks saw a 52% boost in demo requests through continuous A/B testing on their key pages. The core tenet: &quot;Data-driven decision-making is key.&quot;
                   </p>
                 </div>
               </div>
@@ -302,7 +303,7 @@ export default function BlueprintPage() {
 
               <h3 className="text-xl font-semibold text-gray-200 mb-4">Key SaaS Landing Page Themes</h3>
               <ul className="text-gray-300 space-y-2 mb-8">
-                <li>• <strong>"Show, don't just tell"</strong> approach with interactive demos and videos</li>
+                <li>• <strong>&quot;Show, don&apos;t just tell&quot;</strong> approach with interactive demos and videos</li>
                 <li>• <strong>Ecosystem integration</strong> messaging showing how the tool fits into workflows</li>
                 <li>• <strong>Persona-driven targeting</strong> with industry-specific landing pages</li>
                 <li>• <strong>Dual CTAs</strong> catering to different readiness levels</li>
@@ -337,7 +338,7 @@ export default function BlueprintPage() {
                           </div>
                         </td>
                         <td className="border-r border-gray-700 px-4 py-3 text-gray-300 text-sm">Product Analytics</td>
-                        <td className="border-r border-gray-700 px-4 py-3 text-gray-300 text-sm">Strong value prop, dual CTAs: 'Watch Demo' + 'Sign Up Free', 20K+ customer logos</td>
+                        <td className="border-r border-gray-700 px-4 py-3 text-gray-300 text-sm">Strong value prop, dual CTAs: &apos;Watch Demo&apos; + &apos;Sign Up Free&apos;, 20K+ customer logos</td>
                         <td className="px-4 py-3 text-gray-300 text-sm">Industry analysis featured</td>
                       </tr>
                       <tr className="bg-gray-800/30 border-b border-gray-700">
@@ -355,7 +356,7 @@ export default function BlueprintPage() {
                           </div>
                         </td>
                         <td className="border-r border-gray-700 px-4 py-3 text-gray-300 text-sm">CRM & Marketing</td>
-                        <td className="border-r border-gray-700 px-4 py-3 text-gray-300 text-sm">Customer carousel, Fitts' Law placement, ROI statistics</td>
+                        <td className="border-r border-gray-700 px-4 py-3 text-gray-300 text-sm">Customer carousel, Fitts&apos; Law placement, ROI statistics</td>
                         <td className="px-4 py-3 text-gray-300 text-sm">Industry-leading adoption</td>
                       </tr>
                       <tr className="border-b border-gray-700">
@@ -432,9 +433,9 @@ export default function BlueprintPage() {
               <div className="border border-blue-500 bg-blue-950/20 p-6">
                 <h4 className="text-lg font-semibold text-blue-200 mb-3 font-mono">SAAS_OPTIMIZATION_INSIGHTS</h4>
                 <ul className="text-blue-100 text-sm space-y-2">
-                  <li>• <strong>Dual CTAs work:</strong> Cater to different readiness levels with "Watch Demo" for explorers and "Sign Up Free" for ready users</li>
+                  <li>• <strong>Dual CTAs work:</strong> Cater to different readiness levels with &quot;Watch Demo&quot; for explorers and &quot;Sign Up Free&quot; for ready users</li>
                   <li>• <strong>Make it tangible:</strong> Interactive demos and product tours reduce uncertainty for complex SaaS products</li>
-                  <li>• <strong>Volume strategy:</strong> Multiple targeted pages (like Thinkific's 700+) can dramatically scale conversions</li>
+                  <li>• <strong>Volume strategy:</strong> Multiple targeted pages (like Thinkific&apos;s 700+) can dramatically scale conversions</li>
                   <li>• <strong>Content as conversion:</strong> High-value gated content can achieve 50-60% conversion rates</li>
                 </ul>
               </div>
@@ -538,7 +539,7 @@ export default function BlueprintPage() {
                           </div>
                         </td>
                         <td className="border-r border-gray-700 px-4 py-3 text-gray-300 text-sm">Wine Retail</td>
-                        <td className="border-r border-gray-700 px-4 py-3 text-gray-300 text-sm">Added "15% discount" label to product page</td>
+                        <td className="border-r border-gray-700 px-4 py-3 text-gray-300 text-sm">Added &quot;15% discount&quot; label to product page</td>
                         <td className="px-4 py-3 text-yellow-300 text-sm font-semibold">+148% conversions</td>
                       </tr>
                     </tbody>
@@ -609,9 +610,9 @@ export default function BlueprintPage() {
               <div className="border border-green-500 bg-green-950/20 p-6">
                 <h4 className="text-lg font-semibold text-green-200 mb-3 font-mono">ECOM_OPTIMIZATION_INSIGHTS</h4>
                 <ul className="text-green-100 text-sm space-y-2">
-                  <li>• <strong>Persona-based personalization:</strong> Nyraju's 277% increase shows the power of speaking directly to target audiences</li>
-                  <li>• <strong>Simple optimizations work:</strong> Corkscrew Wine's 148% boost came from just adding a discount label</li>
-                  <li>• <strong>Checkout is critical:</strong> Flos USA's 125% improvement focused on streamlining the purchase flow</li>
+                  <li>• <strong>Persona-based personalization:</strong> Nyraju&apos;s 277% increase shows the power of speaking directly to target audiences</li>
+                  <li>• <strong>Simple optimizations work:</strong> Corkscrew Wine&apos;s 148% boost came from just adding a discount label</li>
+                  <li>• <strong>Checkout is critical:</strong> Flos USA&apos;s 125% improvement focused on streamlining the purchase flow</li>
                   <li>• <strong>Location matters:</strong> Personalization based on geography (like Indochino) can significantly impact conversions</li>
                 </ul>
               </div>
@@ -701,12 +702,12 @@ export default function BlueprintPage() {
                 </div>
 
                 <div>
-                  <h4 className="text-lg font-semibold text-blue-300 mb-3 border-b border-gray-600 pb-2">The Psychology of "Free"</h4>
+                  <h4 className="text-lg font-semibold text-blue-300 mb-3 border-b border-gray-600 pb-2">The Psychology of &quot;Free&quot;</h4>
                   <ul className="text-gray-300 text-sm space-y-2">
                     <li>→ Free trials reduce perceived risk</li>
                     <li>→ Free shipping threshold drives AOV</li>
                     <li>→ Gated content can achieve 60% CVR</li>
-                    <li>→ "Free" is a potent psychological motivator</li>
+                    <li>→ &quot;Free&quot; is a potent psychological motivator</li>
                   </ul>
                 </div>
               </div>
@@ -863,13 +864,13 @@ export default function BlueprintPage() {
 
               <h3 className="text-xl font-semibold text-gray-200 mb-4">Sustainable Optimization Strategy</h3>
               <p className="text-gray-300 mb-4">
-                The call for "continuous optimization" must be balanced with pragmatic resource allocation. A strategic approach might involve:
+                The call for &quot;continuous optimization&quot; must be balanced with pragmatic resource allocation. A strategic approach might involve:
               </p>
               <ul className="text-gray-300 space-y-2 mb-8">
                 <li>→ <strong>80/20 Rule:</strong> Prioritize tests based on potential impact</li>
                 <li>→ <strong>Focus on Critical Pages:</strong> Concentrate on high-traffic, high-impact landing pages</li>
                 <li>→ <strong>Simple Tools First:</strong> Leverage effective, accessible optimization tools</li>
-                <li>→ <strong>Team Capability Match:</strong> Choose tools that fit your team's skills and bandwidth</li>
+                <li>→ <strong>Team Capability Match:</strong> Choose tools that fit your team&apos;s skills and bandwidth</li>
               </ul>
 
               {/* Blueprint-style final call to action */}
@@ -889,7 +890,7 @@ export default function BlueprintPage() {
         </article>
 
         <div className="mt-16 pt-8 border-t border-gray-700">
-          <a 
+          <Link 
             href="/" 
             className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors"
           >
@@ -897,7 +898,7 @@ export default function BlueprintPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Landing Page Analyzer
-          </a>
+          </Link>
         </div>
       </div>
     </main>

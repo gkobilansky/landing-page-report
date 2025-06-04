@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 
 interface AnalysisResult {
   url: string
@@ -246,18 +247,22 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
             <h3 className="text-lg font-semibold text-gray-100">Page Screenshot</h3>
           </div>
           <div className="relative bg-gray-800 rounded-lg overflow-hidden group cursor-pointer">
-            <img 
+            <Image 
               src={result.screenshotUrl} 
               alt={`Screenshot of ${result.url}`}
+              width={800}
+              height={600}
               className="w-full max-h-96 object-cover object-top border border-gray-600 rounded"
             />
             
             {/* Full-size overlay on hover */}
             <div className="absolute inset-0 bg-black/90 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-50">
               <div className="relative max-w-[95vw] max-h-[95vh] group-hover:max-w-[98vw] group-hover:max-h-[98vh] transition-all duration-300 overflow-auto bg-gray-900 rounded-lg border border-gray-600 shadow-2xl">
-                <img 
+                <Image 
                   src={result.screenshotUrl} 
                   alt={`Full screenshot of ${result.url}`}
+                  width={1920}
+                  height={1080}
                   className="w-auto h-auto max-w-full max-h-full object-contain"
                 />
                 

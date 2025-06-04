@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Landing Pages in 2025 | lansky.tech',
@@ -10,7 +11,7 @@ export default function ReportPage() {
     <main className="min-h-screen bg-gray-900">
       <div className="container mx-auto px-4 py-16 max-w-4xl">
         <nav className="mb-8">
-          <a 
+          <Link 
             href="/" 
             className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors text-sm font-medium"
           >
@@ -18,7 +19,7 @@ export default function ReportPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Landing Page Analyzer
-          </a>
+          </Link>
           <div className="mt-2">
             <a 
               href="/blueprint" 
@@ -48,7 +49,7 @@ export default function ReportPage() {
             </a>
           </div>
           <div className="text-gray-500 text-xs mt-2 italic">
-            This report was built with the help of Gemini Deep Research and Claude Code. All deep insights are mine, all mistakes are the AI's.
+            This report was built with the help of Gemini Deep Research and Claude Code. All deep insights are mine, all mistakes are the AI&apos;s.
           </div>
         </div>
 
@@ -89,7 +90,7 @@ export default function ReportPage() {
               <h2 className="text-2xl font-bold text-gray-100 mb-6">Executive Summary</h2>
               
               <p>
-                In today's crowded digital landscape, landing pages are the linchpins of conversion-driven marketing campaigns. Whether generating leads for SaaS products or driving direct sales for e-commerce stores, the most successful landing pages combine crystal-clear messaging, persuasive design, and data-driven optimization. This upgraded blueprint condenses proven principles, real-world examples, and tactical recommendations into a concise, actionable guide.
+                In today&apos;s crowded digital landscape, landing pages are the linchpins of conversion-driven marketing campaigns. Whether generating leads for SaaS products or driving direct sales for e-commerce stores, the most successful landing pages combine crystal-clear messaging, persuasive design, and data-driven optimization. This upgraded blueprint condenses proven principles, real-world examples, and tactical recommendations into a concise, actionable guide.
               </p>
 
               <div className="bg-blue-900/20 border border-blue-600 rounded-lg p-6 my-8">
@@ -267,7 +268,7 @@ export default function ReportPage() {
                         </div>
                       </td>
                       <td className="border border-gray-600 px-4 py-3 text-gray-300">Free Trials</td>
-                      <td className="border border-gray-600 px-4 py-3 text-gray-300">Dual CTAs: 'Watch Demo' + 'Sign Up Free', 20K+ customer logos</td>
+                      <td className="border border-gray-600 px-4 py-3 text-gray-300">Dual CTAs: &apos;Watch Demo&apos; + &apos;Sign Up Free&apos;, 20K+ customer logos</td>
                     </tr>
                     <tr className="bg-gray-700">
                       <td className="border border-gray-600 px-4 py-3">
@@ -284,7 +285,7 @@ export default function ReportPage() {
                         </div>
                       </td>
                       <td className="border border-gray-600 px-4 py-3 text-gray-300">Lead Gen</td>
-                      <td className="border border-gray-600 px-4 py-3 text-gray-300">Customer carousel, Fitts' Law placement, ROI statistics</td>
+                      <td className="border border-gray-600 px-4 py-3 text-gray-300">Customer carousel, Fitts&apos; Law placement, ROI statistics</td>
                     </tr>
                     <tr>
                       <td className="border border-gray-600 px-4 py-3">
@@ -318,7 +319,7 @@ export default function ReportPage() {
                         </div>
                       </td>
                       <td className="border border-gray-600 px-4 py-3 text-gray-300">Feature Adoption</td>
-                      <td className="border border-gray-600 px-4 py-3 text-gray-300">Dynamic visuals, 3D models, clear "Start free trial" CTA</td>
+                      <td className="border border-gray-600 px-4 py-3 text-gray-300">Dynamic visuals, 3D models, clear &quot;Start free trial&quot; CTA</td>
                     </tr>
                   </tbody>
                 </table>
@@ -606,7 +607,7 @@ export default function ReportPage() {
         </article>
 
         <div className="mt-16 pt-8 border-t border-gray-700">
-          <a 
+          <Link 
             href="/" 
             className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors"
           >
@@ -614,7 +615,7 @@ export default function ReportPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Landing Page Analyzer
-          </a>
+          </Link>
         </div>
       </div>
     </main>
