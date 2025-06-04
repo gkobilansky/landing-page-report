@@ -84,14 +84,14 @@ export async function captureAndStoreScreenshot(
     const captureTime = Date.now() - startTime;
     console.log(`✅ Screenshot captured and stored successfully in ${captureTime}ms`);
     console.log(`🔗 Blob URL: ${blob.url}`);
-    console.log(`📊 Size: ${blob.size} bytes`);
+    console.log(`📊 Size: ${screenshotBuffer.length} bytes`);
     
     return {
       url,
       blobUrl: blob.url,
       pathname: blob.pathname,
       downloadUrl: blob.downloadUrl,
-      size: blob.size,
+      size: screenshotBuffer.length,
       uploadedAt: new Date().toISOString()
     };
     
@@ -231,7 +231,7 @@ export async function captureScreenshotFromPage(
       blobUrl: blob.url,
       pathname: blob.pathname,
       downloadUrl: blob.downloadUrl,
-      size: blob.size,
+      size: screenshotBuffer.length,
       uploadedAt: new Date().toISOString()
     };
     
