@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a landing page analyzer project built as a lead magnet for lansky.tech. Users submit URLs for analysis against 6 key criteria and receive detailed reports via email.
+This is a Landing Page Report project built as a lead magnet for lansky.tech. Users submit URLs for analysis against 6 key criteria and receive detailed reports via email.
 
 ## Technology Stack
 

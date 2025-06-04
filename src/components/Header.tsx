@@ -88,17 +88,20 @@ export default function Header() {
           href="/blueprint" 
           className="text-gray-300 hover:text-primary hover:underline transition-colors text-sm font-medium"
         >
-          The Blueprint for Digital Conversion
+          The Conversion Blueprint
         </a>
       </nav>
 
       {/* Header */}
       <div className="text-center pt-2">
         <h1 className="text-4xl font-bold text-gray-50 mb-4">
-          <span className="text-primary">Landing Page Review</span>
+          <span className="text-primary">📝 Landing Page Report</span>
         </h1>
         <p className="text-gray-300 text-sm">
           Is your landing page up to snuff? Let&apos;s find out.
+        </p>
+        <p className="text-gray-300 text-sm">
+          Checks for good CTAs, plenty of space, social proof and more.
         </p>
       </div>
     </div>

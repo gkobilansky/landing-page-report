@@ -1,4 +1,4 @@
-# Product Requirements Document: Landing Page Analyzer Lead Magnet
+# Product Requirements Document: Landing Page Report Lead Magnet
 
 **Version:** 1.0
 **Date:** May 22, 2025
@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-The "Landing Page Analyzer" is an online tool designed to serve as a lead magnet for lansky.tech. Users can submit any URL, and the tool will analyze the corresponding landing page against a predefined set of best-practice criteria. Upon completion of the analysis, the user will receive an email notification with a link to a detailed report.
+The "Landing Page Report" is an online tool designed to serve as a lead magnet for lansky.tech. Users can submit any URL, and the tool will analyze the corresponding landing page against a predefined set of best-practice criteria. Upon completion of the analysis, the user will receive an email notification with a link to a detailed report.
 
 ## 2. Goals
 

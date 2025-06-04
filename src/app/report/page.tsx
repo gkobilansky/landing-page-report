@@ -18,14 +18,14 @@ export default function ReportPage() {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Landing Page Analyzer
+            Back to Landing Page Report
           </Link>
           <div className="mt-2">
             <a 
               href="/blueprint" 
               className="text-gray-400 hover:text-blue-300 transition-colors text-sm"
             >
-              📖 Also see: The Complete Blueprint for Digital Conversion →
+              📖 Also see: The Complete Conversion Blueprint →
             </a>
           </div>
         </nav>
@@ -35,7 +35,7 @@ export default function ReportPage() {
             Landing Pages in 2025
           </h1>
           <p className="text-xl text-gray-300 mb-6">
-            The Blueprint for Digital Conversion: An Actionable Guide to High-Performing SaaS and E-commerce Landing Pages
+            The Conversion Blueprint: An Actionable Guide to High-Performing SaaS and E-commerce Landing Pages
           </p>
           <div className="text-gray-400 text-sm">
             Published by{' '}
@@ -614,7 +614,7 @@ export default function ReportPage() {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Landing Page Analyzer
+            Back to Landing Page Report
           </Link>
         </div>
       </div>

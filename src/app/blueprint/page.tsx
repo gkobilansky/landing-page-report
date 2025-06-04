@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'The Blueprint for Digital Conversion | lansky.tech',
+  title: 'The Conversion Blueprint | lansky.tech',
   description: 'Comprehensive analysis of high-performing SaaS and e-commerce landing pages with actionable insights for conversion optimization.',
 }
 
@@ -18,7 +18,7 @@ export default function BlueprintPage() {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Landing Page Analyzer
+            Back to Landing Page Report
           </Link>
           <div className="mt-2">
             <a 
@@ -32,7 +32,7 @@ export default function BlueprintPage() {
 
         <div className="mb-12">
           <h1 className="text-4xl font-bold text-gray-50 mb-4">
-            The Blueprint for Digital Conversion
+            The Conversion Blueprint
           </h1>
           <p className="text-xl text-gray-300 mb-6">
             An Analysis of High-Performing SaaS and E-commerce Landing Pages
@@ -897,7 +897,7 @@ export default function BlueprintPage() {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Landing Page Analyzer
+            Back to Landing Page Report
           </Link>
         </div>
       </div>

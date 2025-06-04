@@ -5,7 +5,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Landing Page Analyzer | lansky.tech',
+  title: 'Landing Page Report | lansky.tech',
   description: 'Analyze your landing page against best-practice criteria',
 }
 
