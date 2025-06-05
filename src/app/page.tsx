@@ -22,6 +22,8 @@ interface AnalysisState {
   fromCache: boolean
   emailSubmitted: boolean
   screenshotUrl: string | null
+  analysisId: string | null
+  emailLoading: boolean
 }
 
 export default function Home() {
@@ -34,10 +36,13 @@ export default function Home() {
     currentUrl: null,
     fromCache: false,
     emailSubmitted: false,
-    screenshotUrl: null
+    screenshotUrl: null,
+    analysisId: null,
+    emailLoading: false
   })
 
   const handleAnalyze = async (url: string, forceRescan = false) => {
+    console.log('🔥 Starting analysis for:', url);
     setAnalysisState({
       result: null,
       isLoading: true,
@@ -47,7 +52,9 @@ export default function Home() {
       currentUrl: url,
       fromCache: false,
       emailSubmitted: false,
-      screenshotUrl: null
+      screenshotUrl: null,
+      analysisId: null,
+      emailLoading: false
     })
 
     try {
@@ -98,10 +105,18 @@ export default function Home() {
         isLoading: false,
         error: null,
         fromCache: result.fromCache || false,
+        analysisId: result.analysisId || null,
         // Keep screenshot URL if we got one from API response
         screenshotUrl: analysisData.screenshotUrl || prev.screenshotUrl
       }))
+
+      // If user submitted email during loading, send it now that analysis is complete
+      if (analysisState.email && !analysisState.emailSubmitted && result.analysisId) {
+        console.log('Sending email for completed analysis...');
+        sendEmailForCompletedAnalysis(analysisState.email, result.analysisId);
+      }
     } catch (error) {
+      console.error('💥 Analysis failed:', error);
       setAnalysisState(prev => ({
         ...prev,
         result: null,
@@ -111,12 +126,93 @@ export default function Home() {
     }
   }
 
+  const sendEmailForCompletedAnalysis = async (email: string, analysisId: string) => {
+    setAnalysisState(prev => ({
+      ...prev,
+      emailLoading: true
+    }))
+
+    try {
+      const response = await fetch('/api/email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          analysisId
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to send email')
+      }
+
+      setAnalysisState(prev => ({
+        ...prev,
+        emailSubmitted: true,
+        emailLoading: false
+      }))
+    } catch (error) {
+      console.error('Email sending failed:', error)
+      setAnalysisState(prev => ({
+        ...prev,
+        emailSubmitted: true,
+        emailLoading: false
+      }))
+    }
+  }
+
   const handleEmailSubmit = async (email: string) => {
+    if (!analysisState.analysisId) {
+      // If no analysis ID yet (during loading), just store the email
+      setAnalysisState(prev => ({
+        ...prev,
+        email,
+        emailSubmitted: true
+      }))
+      return
+    }
+
+    // If we have an analysis ID, send the email immediately
     setAnalysisState(prev => ({
       ...prev,
       email,
-      emailSubmitted: true
+      emailLoading: true
     }))
+
+    try {
+      const response = await fetch('/api/email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          analysisId: analysisState.analysisId
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to send email')
+      }
+
+      setAnalysisState(prev => ({
+        ...prev,
+        emailSubmitted: true,
+        emailLoading: false
+      }))
+    } catch (error) {
+      console.error('Email sending failed:', error)
+      // Still mark as submitted to show the success message, but log the error
+      setAnalysisState(prev => ({
+        ...prev,
+        emailSubmitted: true,
+        emailLoading: false
+      }))
+    }
   }
 
   const handleReset = () => {
@@ -129,7 +225,9 @@ export default function Home() {
       currentUrl: null,
       fromCache: false,
       emailSubmitted: false,
-      screenshotUrl: null
+      screenshotUrl: null,
+      analysisId: null,
+      emailLoading: false
     })
   }
 
@@ -159,7 +257,7 @@ export default function Home() {
           <div className="mb-12">
             <EmailInput 
               onEmailSubmit={handleEmailSubmit}
-              isLoading={false}
+              isLoading={analysisState.emailLoading}
             />
           </div>
         )}
@@ -191,13 +289,13 @@ export default function Home() {
                 Analyze Another Page
               </button>
             </div>
-            <AnalysisResults result={analysisState.result} />
+            <AnalysisResults result={analysisState.result} analysisId={analysisState.analysisId || undefined} />
             
             {/* Email Input after results */}
             <div className="mt-12 pt-8 border-t border-gray-700">
               <EmailInput 
                 onEmailSubmit={handleEmailSubmit}
-                isLoading={false}
+                isLoading={analysisState.emailLoading}
                 isAnalysisComplete={true}
                 initialSubmittedState={analysisState.emailSubmitted}
               />

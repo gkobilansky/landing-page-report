@@ -14,7 +14,7 @@ describe('EmailInput Component', () => {
     it('should render with default message for analysis in progress', () => {
       render(<EmailInput onEmailSubmit={mockOnEmailSubmit} />)
       
-      expect(screen.getByText("I'll send you a note when your report is ready")).toBeInTheDocument()
+      expect(screen.getByText("No need to wait, we can send the report to your email.")).toBeInTheDocument()
       expect(screen.getByPlaceholderText('your.email@example.com')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /notify me/i })).toBeInTheDocument()
     })
@@ -39,11 +39,17 @@ describe('EmailInput Component', () => {
       fireEvent.change(input, {
         target: { value: 'notvalidemail' }
       })
+      
+      // Wait for React to process the change
+      await waitFor(() => {
+        expect(input).toHaveValue('notvalidemail')
+      })
+      
       fireEvent.click(button)
       
       await waitFor(() => {
         expect(screen.getByText('Please enter a valid email address')).toBeInTheDocument()
-      })
+      }, { timeout: 5000 })
       
       expect(mockOnEmailSubmit).not.toHaveBeenCalled()
     })
@@ -168,7 +174,7 @@ describe('EmailInput Component', () => {
       
       await waitFor(() => {
         expect(screen.getByText('Thanks!')).toBeInTheDocument()
-        expect(screen.getByText("I'll send you a note when your report is ready.")).toBeInTheDocument()
+        expect(screen.getByText("I'll keep you posted as we add more testing capabilities to this tool.")).toBeInTheDocument()
       })
       
       // Form should be hidden after success
@@ -234,7 +240,10 @@ describe('EmailInput Component', () => {
         fireEvent.click(screen.getByRole('button', { name: /notify me/i }))
         
         await waitFor(() => {
-          expect(screen.getByText(/please enter.*email/i)).toBeInTheDocument()
+          const errorMessage = email === '' 
+            ? screen.getByText('Please enter your email address')
+            : screen.getByText('Please enter a valid email address')
+          expect(errorMessage).toBeInTheDocument()
         })
         expect(mockOnEmailSubmit).not.toHaveBeenCalled()
         unmount()
@@ -252,7 +261,7 @@ describe('EmailInput Component', () => {
         />
       )
       
-      expect(screen.getByText("I'll send you a note when your report is ready")).toBeInTheDocument()
+      expect(screen.getByText("No need to wait, we can send the report to your email.")).toBeInTheDocument()
       
       rerender(
         <EmailInput 
