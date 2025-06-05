@@ -44,7 +44,7 @@ function ReportCard({ report }: ReportCardProps) {
               src={report.screenshot_url}
               alt={`Screenshot of ${report.url}`}
               fill
-              className="object-cover"
+              className="object-cover object-top"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           ) : (

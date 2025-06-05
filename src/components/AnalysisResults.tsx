@@ -254,7 +254,7 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                 alt={`Screenshot of ${result.url}`}
                 width={800}
                 height={600}
-                className="w-full object-contain border border-gray-600 rounded"
+                className="w-full object-cover object-top border border-gray-600 rounded"
               />
             </div>
             
