@@ -121,6 +121,7 @@ interface AnalysisResult {
 
 interface AnalysisResultsProps {
   result: AnalysisResult
+  analysisId?: string
 }
 
 function getScoreColor(score: number): string {
@@ -219,7 +220,7 @@ function CategoryCard({ title, score, children }: { title: string; score?: numbe
   )
 }
 
-export default function AnalysisResults({ result }: AnalysisResultsProps) {
+export default function AnalysisResults({ result, analysisId }: AnalysisResultsProps) {
   const [showAllCtas, setShowAllCtas] = React.useState(false)
 
   return (
@@ -246,38 +247,23 @@ export default function AnalysisResults({ result }: AnalysisResultsProps) {
             <span className="text-2xl text-blue-400" aria-hidden="true">📸</span>
             <h3 className="text-lg font-semibold text-gray-100">Page Screenshot</h3>
           </div>
-          <div className="relative bg-gray-800 rounded-lg overflow-hidden group cursor-pointer">
-            <Image 
-              src={result.screenshotUrl} 
-              alt={`Screenshot of ${result.url}`}
-              width={800}
-              height={600}
-              className="w-full max-h-96 object-cover object-top border border-gray-600 rounded"
-            />
+          <div className="relative bg-gray-800 rounded-lg overflow-hidden">
+            <div className="max-h-96 overflow-y-auto">
+              <Image 
+                src={result.screenshotUrl} 
+                alt={`Screenshot of ${result.url}`}
+                width={800}
+                height={600}
+                className="w-full object-contain border border-gray-600 rounded"
+              />
+            </div>
             
-            {/* Full-size overlay on hover */}
-            <div className="absolute inset-0 bg-black/90 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-50">
-              <div className="relative max-w-[95vw] max-h-[95vh] group-hover:max-w-[98vw] group-hover:max-h-[98vh] transition-all duration-300 overflow-auto bg-gray-900 rounded-lg border border-gray-600 shadow-2xl">
-                <Image 
-                  src={result.screenshotUrl} 
-                  alt={`Full screenshot of ${result.url}`}
-                  width={1920}
-                  height={1080}
-                  className="w-auto h-auto max-w-full max-h-full object-contain"
-                />
-                
-                {/* Scroll indicator */}
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-3 py-2 rounded-full text-sm flex items-center gap-2 animate-bounce">
-                  <span>Scroll to see full page</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
-                </div>
-                
-                <div className="absolute top-3 right-3 bg-black/70 text-white px-2 py-1 rounded text-sm">
-                  Hover to view full size
-                </div>
-              </div>
+            {/* Scroll indicator */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-3 py-2 rounded-full text-sm flex items-center gap-2">
+              <span>Scroll to see full page</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
             </div>
           </div>
           <p className="text-sm text-gray-400 mt-3">
