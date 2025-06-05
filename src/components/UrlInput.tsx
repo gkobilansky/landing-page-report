@@ -38,6 +38,7 @@ export default function UrlInput({ onAnalyze, isLoading = false }: UrlInputProps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('🚀 UrlInput handleSubmit called with:', url);
     setError('')
 
     if (!url.trim()) {
@@ -55,6 +56,7 @@ export default function UrlInput({ onAnalyze, isLoading = false }: UrlInputProps
       return
     }
 
+    console.log('✅ UrlInput calling onAnalyze with:', normalizedUrl);
     onAnalyze(normalizedUrl)
   }
 

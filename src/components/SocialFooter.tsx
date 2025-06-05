@@ -49,7 +49,7 @@ export default function SocialFooter() {
             </svg>
           </a>
           <a
-            href="https://youtube.com/@lansky.tech"
+            href="https://youtube.com/@lanskytech"
             target="_blank"
             rel="noopener noreferrer"
             className="text-gray-400 hover:text-white transition-colors p-1 rounded"
