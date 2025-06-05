@@ -159,6 +159,15 @@ src/
 - **Storage**: Screenshots stored in Vercel Blob with public access
 - **Format**: PNG format, 1920x1080 viewport, full-page capture
 
+#### Reports Gallery (`src/app/reports/page.tsx`)
+- **Endpoint**: `/reports` - Gallery view of all completed analyses
+- **Features**: Responsive grid layout, score badges, statistics dashboard
+- **Report Cards**: Screenshots (with elegant fallbacks), page titles, URLs, dates, grades
+- **API Integration**: Uses `/api/reports` endpoint for data fetching
+- **Navigation**: Accessible via "View All Reports" in main header
+- **Error Handling**: Loading states, error states, empty states
+- **Screenshot Fallbacks**: Beautiful placeholder when screenshots unavailable
+
 ### Frontend Components
 - **Main Page** (`src/app/page.tsx`): URL input and results display with proper API response handling
 - **AnalysisResults** (`src/components/AnalysisResults.tsx`): Comprehensive results display with score badges
@@ -173,6 +182,7 @@ src/
 - Enhanced URL validation preventing incomplete URLs
 - Comprehensive test coverage across all modules
 - Robust error handling and fallback systems
+- **Reports Gallery Page** - Browse all completed analyses with thumbnails and scores
 
 ### Recent Updates Applied
 - ✅ Enhanced URL validation (client & server-side) - rejects incomplete URLs like "https://stripe"
