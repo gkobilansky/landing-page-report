@@ -85,6 +85,12 @@ export default function Header() {
       {/* Navigation */}
       <nav className="flex justify-end mb-8 gap-6">
         <a 
+          href="/reports" 
+          className="text-gray-300 hover:text-primary hover:underline transition-colors text-sm font-medium"
+        >
+          View All Reports
+        </a>
+        <a 
           href="/blueprint" 
           className="text-gray-300 hover:text-primary hover:underline transition-colors text-sm font-medium"
         >

@@ -164,6 +164,33 @@ export async function POST(request: NextRequest) {
           .single();
         
         if (existingData) {
+          let screenshotUrl = existingData.screenshot_url;
+          
+          // If cached analysis doesn't have a screenshot, capture one now
+          if (!screenshotUrl) {
+            try {
+              console.log('📸 Cached analysis missing screenshot, capturing now...');
+              const screenshotResult = await captureAndStoreScreenshot(validatedUrl.toString(), {
+                fullPage: true,
+                format: 'png',
+                quality: 80,
+                viewport: { width: 1920, height: 1080 },
+                puppeteer: { forceBrowserless }
+              });
+              screenshotUrl = screenshotResult.blobUrl;
+              console.log(`✅ Screenshot captured for cached analysis: ${screenshotUrl}`);
+              
+              // Update the cached analysis with the screenshot
+              await supabaseAdmin
+                .from('analyses')
+                .update({ screenshot_url: screenshotUrl })
+                .eq('id', existingData.id);
+            } catch (error) {
+              console.error('⚠️ Failed to capture screenshot for cached analysis:', error);
+              screenshotUrl = null;
+            }
+          }
+          
           return NextResponse.json({
             success: true,
             analysis: {
@@ -176,7 +203,7 @@ export async function POST(request: NextRequest) {
               socialProof: existingData.social_proof_analysis,
               overallScore: existingData.overall_score,
               status: existingData.status,
-              screenshotUrl: existingData.screenshot_url || null
+              screenshotUrl: screenshotUrl
             },
             analysisId: existingData.id,
             fromCache: true,
@@ -304,8 +331,7 @@ export async function POST(request: NextRequest) {
         await supabaseAdmin
           .from('analyses')
           .update({ 
-            screenshot_url: screenshotResult.blobUrl,
-            screenshot_size: screenshotResult.size 
+            screenshot_url: screenshotResult.blobUrl
           })
           .eq('id', analysisId);
       }
