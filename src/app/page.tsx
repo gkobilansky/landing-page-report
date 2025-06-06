@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import UrlInput from '@/components/UrlInput'
 import EmailInput from '@/components/EmailInput'
 import AnalysisResults from '@/components/AnalysisResults'
@@ -17,10 +17,10 @@ interface AnalysisState {
   isLoading: boolean
   error: string | null
   showEmailInput: boolean
-  email: string | null
   currentUrl: string | null
   fromCache: boolean
   emailSubmitted: boolean
+  emailSentToAPI: boolean
   screenshotUrl: string | null
   analysisId: string | null
   emailLoading: boolean
@@ -32,26 +32,28 @@ export default function Home() {
     isLoading: false,
     error: null,
     showEmailInput: false,
-    email: null,
     currentUrl: null,
     fromCache: false,
     emailSubmitted: false,
+    emailSentToAPI: false,
     screenshotUrl: null,
     analysisId: null,
     emailLoading: false
   })
 
+  // Store pending email submission
+  const pendingEmailRef = useRef<string | null>(null)
+
   const handleAnalyze = async (url: string, forceRescan = false) => {
-    console.log('🔥 Starting analysis for:', url);
     setAnalysisState({
       result: null,
       isLoading: true,
       error: null,
       showEmailInput: true,
-      email: null,
       currentUrl: url,
       fromCache: false,
       emailSubmitted: false,
+      emailSentToAPI: false,
       screenshotUrl: null,
       analysisId: null,
       emailLoading: false
@@ -106,17 +108,15 @@ export default function Home() {
         error: null,
         fromCache: result.fromCache || false,
         analysisId: result.analysisId || null,
-        // Keep screenshot URL if we got one from API response
         screenshotUrl: analysisData.screenshotUrl || prev.screenshotUrl
       }))
 
-      // If user submitted email during loading, send it now that analysis is complete
-      if (analysisState.email && !analysisState.emailSubmitted && result.analysisId) {
-        console.log('Sending email for completed analysis...');
-        sendEmailForCompletedAnalysis(analysisState.email, result.analysisId);
+      // Process pending email submission if analysis is complete
+      if (pendingEmailRef.current && result.analysisId) {
+        await callEmailAPI(pendingEmailRef.current, result.analysisId);
+        pendingEmailRef.current = null;
       }
     } catch (error) {
-      console.error('💥 Analysis failed:', error);
       setAnalysisState(prev => ({
         ...prev,
         result: null,
@@ -126,72 +126,28 @@ export default function Home() {
     }
   }
 
-  const sendEmailForCompletedAnalysis = async (email: string, analysisId: string) => {
+  const handleEmailSubmit = async (email: string) => {
     setAnalysisState(prev => ({
       ...prev,
-      emailLoading: true
+      emailLoading: true,
+      emailSubmitted: true
     }))
 
-    try {
-      const response = await fetch('/api/email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          analysisId
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to send email')
-      }
-
-      setAnalysisState(prev => ({
-        ...prev,
-        emailSubmitted: true,
-        emailLoading: false
-      }))
-    } catch (error) {
-      console.error('Email sending failed:', error)
-      setAnalysisState(prev => ({
-        ...prev,
-        emailSubmitted: true,
-        emailLoading: false
-      }))
+    if (analysisState.analysisId) {
+      await callEmailAPI(email, analysisState.analysisId);
+    } else {
+      pendingEmailRef.current = email;
     }
   }
 
-  const handleEmailSubmit = async (email: string) => {
-    if (!analysisState.analysisId) {
-      // If no analysis ID yet (during loading), just store the email
-      setAnalysisState(prev => ({
-        ...prev,
-        email,
-        emailSubmitted: true
-      }))
-      return
-    }
-
-    // If we have an analysis ID, send the email immediately
-    setAnalysisState(prev => ({
-      ...prev,
-      email,
-      emailLoading: true
-    }))
-
+  const callEmailAPI = async (email: string, analysisId: string) => {
     try {
       const response = await fetch('/api/email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email,
-          analysisId: analysisState.analysisId
-        }),
+        body: JSON.stringify({ email, analysisId }),
       })
 
       if (!response.ok) {
@@ -201,30 +157,30 @@ export default function Home() {
 
       setAnalysisState(prev => ({
         ...prev,
-        emailSubmitted: true,
+        emailSentToAPI: true,
         emailLoading: false
       }))
     } catch (error) {
       console.error('Email sending failed:', error)
-      // Still mark as submitted to show the success message, but log the error
       setAnalysisState(prev => ({
         ...prev,
-        emailSubmitted: true,
+        emailSentToAPI: true,
         emailLoading: false
       }))
     }
   }
 
   const handleReset = () => {
+    pendingEmailRef.current = null
     setAnalysisState({
       result: null,
       isLoading: false,
       error: null,
       showEmailInput: false,
-      email: null,
       currentUrl: null,
       fromCache: false,
       emailSubmitted: false,
+      emailSentToAPI: false,
       screenshotUrl: null,
       analysisId: null,
       emailLoading: false
