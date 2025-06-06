@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
     console.error('💥 Email API error:', error);
     
     // Handle JSON parsing errors
-    if (error instanceof SyntaxError || error.message === 'Invalid JSON') {
+    if (error instanceof SyntaxError || (error instanceof Error && error.message === 'Invalid JSON')) {
       return NextResponse.json(
         { error: 'Invalid request body' },
         { status: 400 }
