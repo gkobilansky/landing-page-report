@@ -213,8 +213,7 @@ describe('Email Service', () => {
         error: null 
       });
 
-      const dataWithoutScreenshot = { ...mockAnalysisData };
-      delete dataWithoutScreenshot.screenshotUrl;
+      const dataWithoutScreenshot = { ...mockAnalysisData, screenshotUrl: undefined };
 
       const result = await sendReportEmail(
         'test@example.com',
@@ -229,10 +228,12 @@ describe('Email Service', () => {
 
   describe('EmailTemplate', () => {
     const mockData = {
+      id: 'test-id',
       url: 'https://example.com',
       overallScore: 75,
       grade: 'B',
-      screenshotUrl: 'https://example.com/screenshot.png'
+      screenshotUrl: 'https://example.com/screenshot.png',
+      createdAt: '2024-01-01T00:00:00Z'
     };
 
     it('should generate HTML template with all required elements', () => {
@@ -279,8 +280,7 @@ describe('Email Service', () => {
     });
 
     it('should exclude screenshot section when not provided', () => {
-      const dataWithoutScreenshot = { ...mockData };
-      delete dataWithoutScreenshot.screenshotUrl;
+      const dataWithoutScreenshot = { ...mockData, screenshotUrl: undefined };
 
       const html = EmailTemplate.generateReportEmail(
         dataWithoutScreenshot,

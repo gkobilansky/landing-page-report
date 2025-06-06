@@ -1,21 +1,21 @@
 import { jest } from '@jest/globals';
 
 // Mock @vercel/blob
-const mockPut = jest.fn();
+const mockPut = jest.fn() as jest.MockedFunction<any>;
 jest.mock('@vercel/blob', () => ({
   put: mockPut
 }));
 
 // Mock puppeteer config
 const mockBrowser = {
-  newPage: jest.fn(),
-  close: jest.fn()
+  newPage: jest.fn() as jest.MockedFunction<any>,
+  close: jest.fn() as jest.MockedFunction<any>
 };
 
 const mockPage = {
-  setViewport: jest.fn(),
-  goto: jest.fn(),
-  screenshot: jest.fn()
+  setViewport: jest.fn() as jest.MockedFunction<any>,
+  goto: jest.fn() as jest.MockedFunction<any>,
+  screenshot: jest.fn() as jest.MockedFunction<any>
 };
 
 jest.mock('../puppeteer-config', () => ({
@@ -23,7 +23,7 @@ jest.mock('../puppeteer-config', () => ({
 }));
 
 // Mock global fetch
-global.fetch = jest.fn();
+global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 
 import { captureAndStoreScreenshot, captureScreenshotWithBrowserless, captureScreenshotFromPage } from '../screenshot-storage';
 
@@ -135,19 +135,19 @@ describe('Screenshot Storage', () => {
   describe('captureScreenshotWithBrowserless', () => {
     beforeEach(() => {
       // Reset environment
-      delete process.env.NODE_ENV;
+      Object.defineProperty(process.env, 'NODE_ENV', { value: undefined, writable: true });
       delete process.env.BLESS_KEY;
     });
 
     it('should use Browserless API in production', async () => {
-      process.env.NODE_ENV = 'production';
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true });
       process.env.BLESS_KEY = 'test-key';
 
       const mockResponse = {
         ok: true,
         arrayBuffer: () => Promise.resolve(new ArrayBuffer(8))
       };
-      (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValue(mockResponse as any);
 
       const url = 'https://example.com';
       const result = await captureScreenshotWithBrowserless(url);
@@ -174,7 +174,7 @@ describe('Screenshot Storage', () => {
     });
 
     it('should use local Puppeteer in development', async () => {
-      process.env.NODE_ENV = 'development';
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'development', writable: true });
 
       const url = 'https://example.com';
       const result = await captureScreenshotWithBrowserless(url);
@@ -186,14 +186,14 @@ describe('Screenshot Storage', () => {
     });
 
     it('should handle Browserless API errors', async () => {
-      process.env.NODE_ENV = 'production';
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true });
       process.env.BLESS_KEY = 'test-key';
 
       const mockResponse = {
         ok: false,
         statusText: 'Bad Request'
       };
-      (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValue(mockResponse as any);
 
       const url = 'https://example.com';
       

@@ -8,8 +8,12 @@ const mockAnalysisResult = {
   pageLoadSpeed: {
     score: 85,
     grade: 'B',
-    metrics: { lcp: 2.1, fcp: 1.8, cls: 0.05, tbt: 150, si: 2.5 },
-    lighthouseScore: 82,
+    metrics: { 
+      loadTime: 2.1, 
+      performanceGrade: 'B', 
+      speedDescription: 'Good performance', 
+      relativeTo: 'Most websites load in 3-4 seconds' 
+    },
     issues: ['LCP could be improved'],
     recommendations: ['Optimize images', 'Enable compression'],
     loadTime: 2100

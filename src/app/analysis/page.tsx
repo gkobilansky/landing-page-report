@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AnalysisResults from '@/components/AnalysisResults';
@@ -21,7 +21,7 @@ interface AnalysisData {
   created_at: string;
 }
 
-export default function AnalysisPage() {
+function AnalysisContent() {
   const searchParams = useSearchParams();
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -221,5 +221,23 @@ export default function AnalysisPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AnalysisPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+        <div className="container mx-auto px-4 py-16">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFCC00] mx-auto mb-4"></div>
+            <h1 className="text-2xl font-bold mb-4">Loading Report...</h1>
+            <p className="text-gray-400">Please wait while we fetch your analysis report.</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <AnalysisContent />
+    </Suspense>
   );
 }

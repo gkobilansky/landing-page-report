@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { jest } from '@jest/globals';
 
 // Mock the screenshot storage module
-const mockCaptureAndStoreScreenshot = jest.fn();
+const mockCaptureAndStoreScreenshot = jest.fn() as jest.MockedFunction<any>;
 jest.mock('@/lib/screenshot-storage', () => ({
   captureAndStoreScreenshot: mockCaptureAndStoreScreenshot
 }));

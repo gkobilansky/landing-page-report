@@ -337,7 +337,7 @@ describe('/api/email', () => {
       const originalEnv = process.env.NODE_ENV;
       const originalUrl = process.env.VERCEL_URL;
       
-      process.env.NODE_ENV = 'production';
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true });
       process.env.VERCEL_URL = 'app.lansky.tech';
 
       const mockAnalysis = {
@@ -372,7 +372,7 @@ describe('/api/email', () => {
       );
 
       // Restore environment
-      process.env.NODE_ENV = originalEnv;
+      Object.defineProperty(process.env, 'NODE_ENV', { value: originalEnv, writable: true });
       process.env.VERCEL_URL = originalUrl;
     });
   });

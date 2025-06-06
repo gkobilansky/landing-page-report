@@ -71,7 +71,7 @@ export async function sendReportEmail(
       to: email.trim(),
       subject,
       html: htmlContent,
-      reply_to: 'gene@lansky.tech'
+      replyTo: 'gene@lansky.tech'
     });
 
     if (result.error) {
