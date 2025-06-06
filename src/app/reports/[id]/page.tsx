@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import AnalysisResults from '@/components/AnalysisResults'
@@ -28,11 +28,7 @@ export default function IndividualReportPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    fetchAnalysis()
-  }, [params.id])
-
-  const fetchAnalysis = async () => {
+  const fetchAnalysis = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/reports/${params.id}`)
@@ -49,7 +45,11 @@ export default function IndividualReportPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [params.id])
+
+  useEffect(() => {
+    fetchAnalysis()
+  }, [fetchAnalysis])
 
   if (loading) {
     return (

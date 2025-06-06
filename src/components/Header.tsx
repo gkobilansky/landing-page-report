@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export default function Header() {
   return (
     <div className="relative mb-20">
@@ -84,12 +86,12 @@ export default function Header() {
 
       {/* Navigation */}
       <nav className="flex justify-end mb-8 gap-6">
-        <a 
+        <Link 
           href="/reports" 
           className="text-gray-300 hover:text-primary hover:underline transition-colors text-sm font-medium"
         >
           View All Reports
-        </a>
+        </Link>
         <a 
           href="/blueprint" 
           className="text-gray-300 hover:text-primary hover:underline transition-colors text-sm font-medium"
