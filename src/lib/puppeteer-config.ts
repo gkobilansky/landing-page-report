@@ -26,8 +26,8 @@ export async function createPuppeteerBrowser(options: { forceBrowserless?: boole
     try {
       console.log('🌐 Connecting to Browserless.io...');
       
-      // Use regional endpoint with WebSocket protocol
-      const browserWSEndpoint = `wss://production-sfo.browserless.io?token=${browserlessKey}`;
+      // Use regional endpoint with WebSocket protocol and launch options
+      const browserWSEndpoint = `wss://production-sfo.browserless.io?token=${browserlessKey}&headless=false&humanlike=true&blockConsentModals=true`;
       
       console.log('🔗 Connecting to browser WebSocket endpoint...');
       
