@@ -99,6 +99,8 @@ describe('ReportsPage', () => {
       expect(screen.getByText('Landing Page Analysis Reports')).toBeInTheDocument();
     });
 
+    expect(screen.getByRole('link', { name: /back/i })).toHaveAttribute('href', '/');
+
     // Check stats
     expect(screen.getByText('2')).toBeInTheDocument(); // Total reports
     expect(screen.getByText('Total Reports')).toBeInTheDocument();
@@ -116,6 +118,10 @@ describe('ReportsPage', () => {
     // Check links to individual reports
     expect(screen.getByRole('link', { name: /example landing page/i })).toHaveAttribute('href', '/report?id=report-1');
     expect(screen.getByRole('link', { name: /test page/i })).toHaveAttribute('href', '/report?id=report-2');
+
+    // New report buttons should be present
+    const newButtons = screen.getAllByRole('link', { name: /run new report/i });
+    expect(newButtons.length).toBeGreaterThanOrEqual(2);
   });
 
   it('should render error state when API fails', async () => {

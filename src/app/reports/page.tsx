@@ -161,6 +161,19 @@ export default function ReportsPage() {
   return (
     <div className="min-h-screen bg-[var(--color-bg-main)] py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back Link */}
+        <div className="mb-6">
+          <Link
+            href="/"
+            className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors text-sm font-medium"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </Link>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-100 mb-4">
@@ -191,6 +204,19 @@ export default function ReportsPage() {
               <div className="text-gray-400">Average Score</div>
             </div>
           </div>
+        </div>
+
+        {/* New Report Button */}
+        <div className="text-center mb-8">
+          <Link
+            href="/"
+            className="inline-flex items-center px-6 py-3 bg-brand-yellow text-gray-900 font-semibold rounded-lg hover:bg-yellow-500 transition-colors"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Run New Report
+          </Link>
         </div>
 
         {/* Reports Grid */}
@@ -225,12 +251,12 @@ export default function ReportsPage() {
           <div className="text-center mt-12">
             <Link
               href="/"
-              className="inline-flex items-center px-8 py-4 bg-brand-yellow text-gray-900 font-semibold rounded-lg hover:bg-yellow-500 transition-colors text-lg"
+              className="inline-flex items-center px-10 py-5 bg-brand-yellow text-gray-900 font-semibold rounded-lg hover:bg-yellow-500 transition-colors text-lg shadow-lg"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              Analyze Another Page
+              Run New Report
             </Link>
           </div>
         )}
