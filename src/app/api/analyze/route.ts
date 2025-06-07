@@ -583,8 +583,8 @@ export async function POST(request: NextRequest) {
     let weightedSum = 0;
     let totalWeight = 0;
     
-    if (analysisResult.pageSpeed?.score !== undefined) {
-      weightedSum += analysisResult.pageSpeed.score * weights.speed;
+    if (analysisResult.pageLoadSpeed?.score !== undefined) {
+      weightedSum += analysisResult.pageLoadSpeed.score * weights.speed;
       totalWeight += weights.speed;
     }
     if (analysisResult.ctaAnalysis?.score !== undefined) {
@@ -595,16 +595,16 @@ export async function POST(request: NextRequest) {
       weightedSum += analysisResult.socialProof.score * weights.socialProof;
       totalWeight += weights.socialProof;
     }
-    if (analysisResult.whitespace?.score !== undefined) {
-      weightedSum += analysisResult.whitespace.score * weights.whitespace;
+    if (analysisResult.whitespaceAssessment?.score !== undefined) {
+      weightedSum += analysisResult.whitespaceAssessment.score * weights.whitespace;
       totalWeight += weights.whitespace;
     }
-    if (analysisResult.images?.score !== undefined) {
-      weightedSum += analysisResult.images.score * weights.images;
+    if (analysisResult.imageOptimization?.score !== undefined) {
+      weightedSum += analysisResult.imageOptimization.score * weights.images;
       totalWeight += weights.images;
     }
-    if (analysisResult.fonts?.score !== undefined) {
-      weightedSum += analysisResult.fonts.score * weights.fonts;
+    if (analysisResult.fontUsage?.score !== undefined) {
+      weightedSum += analysisResult.fontUsage.score * weights.fonts;
       totalWeight += weights.fonts;
     }
     
