@@ -33,7 +33,9 @@ export async function captureAndStoreScreenshot(
   console.log(`📸 Starting screenshot capture for: ${url}`);
   
   const startTime = Date.now();
-  let browser;
+  const isProduction = process.env.NODE_ENV === 'production';
+  const browserlessKey = process.env.BLESS_KEY;
+  const { forceBrowserless = false } = options.puppeteer || {};
   
   try {
     const {
@@ -43,32 +45,47 @@ export async function captureAndStoreScreenshot(
       viewport = { width: 1920, height: 1080 }
     } = options;
 
-    // Launch browser
-    console.log('🌐 Launching browser for screenshot...');
-    browser = await createPuppeteerBrowser(options.puppeteer || {});
-    const page = await browser.newPage();
-    
-    // Set viewport
-    await page.setViewport(viewport);
-    
-    // Navigate to page
-    console.log(`🔗 Navigating to ${url}...`);
-    await page.goto(url, { 
-      waitUntil: 'networkidle2', 
-      timeout: 60000 
-    });
-    
-    // Wait for page to be ready
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // Capture screenshot
-    console.log(`📷 Capturing ${fullPage ? 'full-page' : 'viewport'} screenshot...`);
-    const screenshotBuffer = await page.screenshot({ 
-      type: format,
-      quality: format === 'jpeg' ? quality : undefined,
-      fullPage,
-      optimizeForSpeed: false
-    });
+    let screenshotBuffer: Buffer;
+
+    // Use Browserless REST API if in production or forceBrowserless is enabled
+    if ((isProduction || forceBrowserless) && browserlessKey) {
+      console.log('☁️ Using Browserless REST API for screenshot with blockConsentModals...');
+      screenshotBuffer = await captureScreenshotWithBrowserless(url, options);
+    } else {
+      // Use WebSocket connection for local development
+      console.log('🌐 Launching browser for screenshot...');
+      const browser = await createPuppeteerBrowser(options.puppeteer || {});
+      
+      try {
+        const page = await browser.newPage();
+        
+        // Set viewport
+        await page.setViewport(viewport);
+        
+        // Navigate to page
+        console.log(`🔗 Navigating to ${url}...`);
+        await page.goto(url, { 
+          waitUntil: 'networkidle2', 
+          timeout: 60000 
+        });
+        
+        // Wait for page to be ready
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Capture screenshot
+        console.log(`📷 Capturing ${fullPage ? 'full-page' : 'viewport'} screenshot...`);
+        const screenshot = await page.screenshot({ 
+          type: format,
+          quality: format === 'jpeg' ? quality : undefined,
+          fullPage,
+          optimizeForSpeed: false
+        });
+        
+        screenshotBuffer = Buffer.from(screenshot);
+      } finally {
+        await browser.close();
+      }
+    }
     
     // Generate filename with timestamp and URL hash
     const urlHash = Buffer.from(url).toString('base64url').slice(0, 10);
@@ -101,10 +118,6 @@ export async function captureAndStoreScreenshot(
   } catch (error) {
     console.error('❌ Screenshot capture failed:', error);
     throw new Error(`Screenshot capture failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 }
 
@@ -140,7 +153,8 @@ export async function captureScreenshotWithBrowserless(
           type: format,
           quality: format === 'jpeg' ? quality : undefined,
           fullPage,
-          optimizeForSpeed: false
+          optimizeForSpeed: false,
+          blockConsentModals: true // Block cookie/GDPR consent banners for cleaner screenshots
         }
       })
     });
