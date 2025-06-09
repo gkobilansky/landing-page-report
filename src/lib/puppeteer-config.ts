@@ -16,19 +16,30 @@ async function getLocalExecutablePath() {
   return localPuppeteer.executablePath();
 }
 
-export async function createPuppeteerBrowser(options: { forceBrowserless?: boolean } = {}) {
+export async function createPuppeteerBrowser(options: { 
+  forceBrowserless?: boolean;
+  blockConsentModals?: boolean;
+} = {}) {
   const isProduction = process.env.NODE_ENV === 'production';
   const browserlessKey = process.env.BLESS_KEY;
-  const { forceBrowserless = false } = options;
+  const { forceBrowserless = false, blockConsentModals = false } = options;
   
   if ((isProduction || forceBrowserless) && browserlessKey) {
     // Browserless.io configuration for production
     try {
       console.log('🌐 Connecting to Browserless.io...');
       
-      // Use regional endpoint with WebSocket protocol and BaaS v2 compatible parameters
-      // Note: blockConsentModals and humanlike are not supported in BaaS v2 WebSocket
-      const browserWSEndpoint = `wss://production-sfo.browserless.io?token=${browserlessKey}&headless=false&stealth=true&blockAds=true`;
+      // Build launch parameter for complex configurations
+      let browserWSEndpoint = `wss://production-sfo.browserless.io?token=${browserlessKey}&headless=false&stealth=true&blockAds=true`;
+      
+      if (blockConsentModals) {
+        // Use launch parameter for blockConsentModals (JSON format)
+        const launchConfig = JSON.stringify({
+          blockConsentModals: true
+        });
+        browserWSEndpoint += `&launch=${encodeURIComponent(launchConfig)}`;
+        console.log('🚫 Adding blockConsentModals via launch parameter');
+      }
       
       console.log('🔗 Connecting to browser WebSocket endpoint...');
       
