@@ -64,7 +64,6 @@ function ReportCard({ report }: ReportCardProps) {
           <div className="absolute top-3 right-3">
             <div className={`${getScoreBgColor(report.overall_score)} text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg`}>
               {report.overall_score}/100
-              {report.grade && ` (${report.grade})`}
             </div>
           </div>
         </div>

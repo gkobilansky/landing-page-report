@@ -130,9 +130,6 @@ export default function IndividualReportPage() {
             <div className="text-center">
               <div className="text-3xl font-bold text-brand-yellow">{analysis.overall_score}/100</div>
               <div className="text-sm text-gray-400">Overall Score</div>
-              {analysis.grade && (
-                <div className="text-sm text-gray-500 mt-1">Grade: {analysis.grade}</div>
-              )}
             </div>
           </div>
         </div>
