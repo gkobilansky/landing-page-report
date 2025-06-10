@@ -67,7 +67,7 @@ export async function sendReportEmail(
 
     // Send email
     const result = await resend.emails.send({
-      from: 'reports@lansky.tech',
+      from: 'reports@hi.lansky.tech',
       to: email.trim(),
       subject,
       html: htmlContent,

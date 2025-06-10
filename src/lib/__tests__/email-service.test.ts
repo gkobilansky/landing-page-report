@@ -46,13 +46,13 @@ describe('Email Service', () => {
       const result = await sendReportEmail(
         'test@example.com',
         mockAnalysisData,
-        'https://app.lansky.tech/report?id=test-analysis-id'
+        'https://landingpage.report/report?id=test-analysis-id'
       );
 
       expect(result.success).toBe(true);
       expect(result.emailId).toBe('email-123');
       expect(mockSend).toHaveBeenCalledWith({
-        from: 'reports@lansky.tech',
+        from: 'reports@hi.lansky.tech',
         to: 'test@example.com',
         subject: 'Your Landing Page Analysis Report is Ready (Score: 85/100)',
         html: expect.stringContaining('https://example.com'),
@@ -69,7 +69,7 @@ describe('Email Service', () => {
       const result = await sendReportEmail(
         'test@example.com',
         mockAnalysisData,
-        'https://app.lansky.tech/report?id=test-analysis-id'
+        'https://landingpage.report/report?id=test-analysis-id'
       );
 
       expect(result.success).toBe(false);
@@ -82,7 +82,7 @@ describe('Email Service', () => {
       const result = await sendReportEmail(
         'test@example.com',
         mockAnalysisData,
-        'https://app.lansky.tech/report?id=test-analysis-id'
+        'https://landingpage.report/report?id=test-analysis-id'
       );
 
       expect(result.success).toBe(false);
@@ -93,7 +93,7 @@ describe('Email Service', () => {
       const result = await sendReportEmail(
         '',
         mockAnalysisData,
-        'https://app.lansky.tech/report?id=test-analysis-id'
+        'https://landingpage.report/report?id=test-analysis-id'
       );
 
       expect(result.success).toBe(false);
@@ -105,7 +105,7 @@ describe('Email Service', () => {
       const result = await sendReportEmail(
         'invalid-email',
         mockAnalysisData,
-        'https://app.lansky.tech/report?id=test-analysis-id'
+        'https://landingpage.report/report?id=test-analysis-id'
       );
 
       expect(result.success).toBe(false);
@@ -134,14 +134,14 @@ describe('Email Service', () => {
       await sendReportEmail(
         'test@example.com',
         mockAnalysisData,
-        'https://app.lansky.tech/report?id=test-analysis-id'
+        'https://landingpage.report/report?id=test-analysis-id'
       );
 
       const emailCall = mockSend.mock.calls[0][0];
       expect(emailCall.html).toContain('https://example.com');
       expect(emailCall.html).toContain('85/100');
       expect(emailCall.html).toContain('Grade A');
-      expect(emailCall.html).toContain('https://app.lansky.tech/report?id=test-analysis-id');
+      expect(emailCall.html).toContain('https://landingpage.report/report?id=test-analysis-id');
     });
 
     it('should handle missing environment variable', async () => {
@@ -150,7 +150,7 @@ describe('Email Service', () => {
       const result = await sendReportEmail(
         'test@example.com',
         mockAnalysisData,
-        'https://app.lansky.tech/report?id=test-analysis-id'
+        'https://landingpage.report/report?id=test-analysis-id'
       );
 
       expect(result.success).toBe(false);
@@ -167,7 +167,7 @@ describe('Email Service', () => {
       await sendReportEmail(
         'test@example.com',
         { ...mockAnalysisData, overallScore: 95 },
-        'https://app.lansky.tech/report?id=test-analysis-id'
+        'https://landingpage.report/report?id=test-analysis-id'
       );
 
       expect(mockSend).toHaveBeenCalledWith(
@@ -181,7 +181,7 @@ describe('Email Service', () => {
       await sendReportEmail(
         'test@example.com',
         { ...mockAnalysisData, overallScore: 45 },
-        'https://app.lansky.tech/report?id=test-analysis-id'
+        'https://landingpage.report/report?id=test-analysis-id'
       );
 
       expect(mockSend).toHaveBeenCalledWith(
@@ -200,7 +200,7 @@ describe('Email Service', () => {
       await sendReportEmail(
         'test@example.com',
         mockAnalysisData,
-        'https://app.lansky.tech/report?id=test-analysis-id'
+        'https://landingpage.report/report?id=test-analysis-id'
       );
 
       const emailCall = mockSend.mock.calls[0][0];
@@ -218,7 +218,7 @@ describe('Email Service', () => {
       const result = await sendReportEmail(
         'test@example.com',
         dataWithoutScreenshot,
-        'https://app.lansky.tech/report?id=test-analysis-id'
+        'https://landingpage.report/report?id=test-analysis-id'
       );
 
       expect(result.success).toBe(true);
@@ -239,14 +239,14 @@ describe('Email Service', () => {
     it('should generate HTML template with all required elements', () => {
       const html = EmailTemplate.generateReportEmail(
         mockData,
-        'https://app.lansky.tech/report?id=123'
+        'https://landingpage.report/report?id=123'
       );
 
       expect(html).toContain('Landing Page Analysis Report');
       expect(html).toContain('https://example.com');
       expect(html).toContain('75/100');
       expect(html).toContain('Grade B');
-      expect(html).toContain('https://app.lansky.tech/report?id=123');
+      expect(html).toContain('https://landingpage.report/report?id=123');
       expect(html).toContain('View Full Report');
     });
 
@@ -256,11 +256,11 @@ describe('Email Service', () => {
 
       const highScoreHtml = EmailTemplate.generateReportEmail(
         highScoreData,
-        'https://app.lansky.tech/report?id=123'
+        'https://landingpage.report/report?id=123'
       );
       const lowScoreHtml = EmailTemplate.generateReportEmail(
         lowScoreData,
-        'https://app.lansky.tech/report?id=123'
+        'https://landingpage.report/report?id=123'
       );
 
       expect(highScoreHtml).toContain('95/100');
@@ -272,7 +272,7 @@ describe('Email Service', () => {
     it('should include screenshot when provided', () => {
       const html = EmailTemplate.generateReportEmail(
         mockData,
-        'https://app.lansky.tech/report?id=123'
+        'https://landingpage.report/report?id=123'
       );
 
       expect(html).toContain('<img');
@@ -284,7 +284,7 @@ describe('Email Service', () => {
 
       const html = EmailTemplate.generateReportEmail(
         dataWithoutScreenshot,
-        'https://app.lansky.tech/report?id=123'
+        'https://landingpage.report/report?id=123'
       );
 
       expect(html).not.toContain('<img');
@@ -299,7 +299,7 @@ describe('Email Service', () => {
 
       const html = EmailTemplate.generateReportEmail(
         dataWithHtml,
-        'https://app.lansky.tech/report?id=123'
+        'https://landingpage.report/report?id=123'
       );
 
       expect(html).not.toContain('<script>');
@@ -309,7 +309,7 @@ describe('Email Service', () => {
     it('should include branding and styling', () => {
       const html = EmailTemplate.generateReportEmail(
         mockData,
-        'https://app.lansky.tech/report?id=123'
+        'https://landingpage.report/report?id=123'
       );
 
       expect(html).toContain('lansky.tech');
