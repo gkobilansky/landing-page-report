@@ -290,7 +290,7 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
           if (hasLogoClass) return;
           
           // Enhanced navigation filtering
-          if (CTA_DICTIONARY.NAVIGATION_WORDS.includes(text.toLowerCase().trim())) return;
+          if (CTA_HELPERS.containsAnyWord(text, CTA_DICTIONARY.NAVIGATION_WORDS)) return;
           
           // Skip obvious navigation phrases
           if (CTA_HELPERS.containsAnyWord(text, CTA_DICTIONARY.NAVIGATION_PHRASES)) return;
