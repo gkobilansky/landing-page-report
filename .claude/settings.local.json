@@ -37,7 +37,8 @@
       "Bash(supabase link:*)",
       "Bash(curl:*)",
       "WebFetch(domain:docs.browserless.io)",
-      "Bash(npm run test:*)"
+      "Bash(npm run test:*)",
+      "WebFetch(domain:www.landingpage.report)"
     ],
     "deny": []
   },
