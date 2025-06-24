@@ -74,9 +74,29 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
 
     // Extract CTA elements using Puppeteer page evaluation
     console.log('🔍 Extracting CTA elements...');
-    const ctaData = await page.evaluate((viewport: { width: number; height: number }) => {
+    const ctaData = await page.evaluate((viewport: { width: number; height: number }, ctaDictionary: any) => {
+      try {
       const ctas: any[] = [];
       const processedElements = new Set<Element>();
+      
+      // Browser-compatible helper functions
+      const ctaHelpers = {
+        containsAnyWord: (text: string, words: readonly string[]): boolean => {
+          const lowerText = text.toLowerCase();
+          return words.some(word => lowerText.includes(word));
+        },
+        
+        matchesAnyPattern: (text: string, patterns: readonly string[]): boolean => {
+          return patterns.some(patternStr => {
+            const pattern = new RegExp(patternStr, 'i');
+            return pattern.test(text);
+          });
+        },
+        
+        hasAnyClass: (element: Element, classes: readonly string[]): boolean => {
+          return classes.some(className => element.classList.contains(className));
+        }
+      };
       
       // More precise CTA selectors focusing on actual actionable elements
       const ctaSelectors = [
@@ -123,13 +143,13 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
       };
       
       const analyzeActionStrength = (text: string): string => {
-        if (CTA_HELPERS.containsAnyWord(text, CTA_DICTIONARY.STRONG_ACTION_WORDS)) return 'strong';
-        if (CTA_HELPERS.containsAnyWord(text, CTA_DICTIONARY.WEAK_ACTION_WORDS)) return 'weak';
+        if (ctaHelpers.containsAnyWord(text, ctaDictionary.STRONG_ACTION_WORDS)) return 'strong';
+        if (ctaHelpers.containsAnyWord(text, ctaDictionary.WEAK_ACTION_WORDS)) return 'weak';
         return 'medium';
       };
       
       const analyzeUrgency = (text: string): string => {
-        if (CTA_HELPERS.containsAnyWord(text, CTA_DICTIONARY.URGENCY_WORDS)) return 'high';
+        if (ctaHelpers.containsAnyWord(text, ctaDictionary.URGENCY_WORDS)) return 'high';
         if (text.toLowerCase().includes('free') || text.toLowerCase().includes('trial')) return 'medium';
         return 'low';
       };
@@ -196,11 +216,11 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
       };
       
       const hasValueProposition = (surroundingText: string): boolean => {
-        return CTA_HELPERS.containsAnyWord(surroundingText, CTA_DICTIONARY.VALUE_PROPOSITION_WORDS);
+        return ctaHelpers.containsAnyWord(surroundingText, ctaDictionary.VALUE_PROPOSITION_WORDS);
       };
       
       const hasGuarantee = (surroundingText: string): boolean => {
-        return CTA_HELPERS.containsAnyWord(surroundingText, CTA_DICTIONARY.GUARANTEE_WORDS);
+        return ctaHelpers.containsAnyWord(surroundingText, ctaDictionary.GUARANTEE_WORDS);
       };
       
       const isMobileOptimized = (element: Element, computedStyle: CSSStyleDeclaration, viewport: any): boolean => {
@@ -215,7 +235,7 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
       
       const refineCTAType = (element: Element, initialType: string, text: string, computedStyle: CSSStyleDeclaration): string => {
         // Check for explicit primary CTA indicators
-        if (CTA_HELPERS.hasAnyClass(element, CTA_DICTIONARY.PRIMARY_CTA_CLASSES)) {
+        if (ctaHelpers.hasAnyClass(element, ctaDictionary.PRIMARY_CTA_CLASSES)) {
           return 'primary';
         }
         
@@ -237,7 +257,7 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
         const lowerText = text.toLowerCase();
         
         // Check for primary action phrases first
-        const hasPrimaryPhrase = CTA_HELPERS.containsAnyWord(text, CTA_DICTIONARY.PRIMARY_CTA_PHRASES);
+        const hasPrimaryPhrase = ctaHelpers.containsAnyWord(text, ctaDictionary.PRIMARY_CTA_PHRASES);
         if (hasPrimaryPhrase && isInteractiveButton) {
           return 'primary';
         }
@@ -249,7 +269,7 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
                                    (backgroundColor.includes('rgb') || backgroundColor.includes('#'));
         
         // If it's a button with strong action words and prominent styling
-        const hasStrongAction = CTA_HELPERS.containsAnyWord(text, CTA_DICTIONARY.STRONG_ACTION_WORDS);
+        const hasStrongAction = ctaHelpers.containsAnyWord(text, ctaDictionary.STRONG_ACTION_WORDS);
         if (hasStrongAction && isInteractiveButton && hasProminentStyling && initialType === 'secondary') {
           return 'primary';
         }
@@ -276,13 +296,13 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
           if (text.length < 2 || text.length > 150) return; // Slightly more lenient on length
           
           // Skip single names, short words, or testimonial signatures
-          if (CTA_HELPERS.matchesAnyPattern(text, CTA_DICTIONARY.NAME_PATTERNS)) return;
+          if (ctaHelpers.matchesAnyPattern(text, ctaDictionary.NAME_PATTERNS)) return;
           
           // Skip very long descriptive text (likely not a CTA button)
           if (text.length > 80 && !text.toLowerCase().includes('start') && !text.toLowerCase().includes('get')) return;
           
           // Skip logos and brand names (generic patterns)
-          if (CTA_HELPERS.matchesAnyPattern(text, CTA_DICTIONARY.LOGO_PATTERNS)) return;
+          if (ctaHelpers.matchesAnyPattern(text, ctaDictionary.LOGO_PATTERNS)) return;
           
           // Skip if element has logo-related attributes or classes
           const hasLogoClass = element.className.toLowerCase().includes('logo') || 
@@ -290,13 +310,13 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
           if (hasLogoClass) return;
           
           // Enhanced navigation filtering
-          if (CTA_HELPERS.containsAnyWord(text, CTA_DICTIONARY.NAVIGATION_WORDS)) return;
+          if (ctaHelpers.containsAnyWord(text, ctaDictionary.NAVIGATION_WORDS)) return;
           
           // Skip obvious navigation phrases
-          if (CTA_HELPERS.containsAnyWord(text, CTA_DICTIONARY.NAVIGATION_PHRASES)) return;
+          if (ctaHelpers.containsAnyWord(text, ctaDictionary.NAVIGATION_PHRASES)) return;
           
           // Skip elements that are likely decorative or non-actionable
-          if (CTA_HELPERS.matchesAnyPattern(text, CTA_DICTIONARY.DECORATIVE_PATTERNS)) return;
+          if (ctaHelpers.matchesAnyPattern(text, ctaDictionary.DECORATIVE_PATTERNS)) return;
 
           const rect = element.getBoundingClientRect();
           const computedStyle = window.getComputedStyle(element);
@@ -354,10 +374,10 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
         if (text.length < 2 || text.length > 200) return;
         
         // Filter out single names and testimonial patterns
-        if (CTA_HELPERS.matchesAnyPattern(text, CTA_DICTIONARY.NAME_PATTERNS)) return;
+        if (ctaHelpers.matchesAnyPattern(text, ctaDictionary.NAME_PATTERNS)) return;
         
         // Skip logos and brand names in additional search too
-        if (CTA_HELPERS.matchesAnyPattern(text, CTA_DICTIONARY.LOGO_PATTERNS)) return;
+        if (ctaHelpers.matchesAnyPattern(text, ctaDictionary.LOGO_PATTERNS)) return;
         
         // Skip if element has logo-related attributes or classes
         const hasLogoClass = element.className.toLowerCase().includes('logo') || 
@@ -365,7 +385,7 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
         if (hasLogoClass) return;
         
         // Enhanced action phrase detection for modern SaaS/e-commerce
-        const hasActionPhrase = CTA_HELPERS.containsAnyWord(text, CTA_DICTIONARY.ACTION_PHRASES);
+        const hasActionPhrase = ctaHelpers.containsAnyWord(text, ctaDictionary.ACTION_PHRASES);
         
         if (hasActionPhrase) {
           const rect = element.getBoundingClientRect();
@@ -408,7 +428,17 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
       });
       
       return ctas;
-    }, viewport);
+      } catch (error) {
+        console.error('Error in page.evaluate:', error);
+        return [];
+      }
+    }, viewport, {
+      ...CTA_DICTIONARY,
+      // Convert regex patterns to strings for serialization
+      DECORATIVE_PATTERNS: CTA_DICTIONARY.DECORATIVE_PATTERNS.map(r => r.source),
+      LOGO_PATTERNS: CTA_DICTIONARY.LOGO_PATTERNS.map(r => r.source),
+      NAME_PATTERNS: CTA_DICTIONARY.NAME_PATTERNS.map(r => r.source)
+    });
 
     console.log(`📊 Found ${ctaData.length} potential CTAs`);
     
