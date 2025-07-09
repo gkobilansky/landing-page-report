@@ -9,6 +9,7 @@ interface AnalysisData {
   id: string
   url: string
   url_title?: string
+  url_description?: string
   overall_score: number
   grade?: string
   screenshot_url?: string
@@ -22,11 +23,32 @@ interface AnalysisData {
   social_proof_analysis?: any
 }
 
+// Helper function to format relative time
+function formatRelativeTime(date: string): string {
+  const now = new Date()
+  const analysisDate = new Date(date)
+  const diffMs = now.getTime() - analysisDate.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffMinutes = Math.floor(diffMs / (1000 * 60))
+  
+  if (diffDays > 0) {
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+  } else if (diffHours > 0) {
+    return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+  } else if (diffMinutes > 0) {
+    return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`
+  } else {
+    return 'Just now'
+  }
+}
+
 export default function IndividualReportPage() {
   const params = useParams()
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [shareClicked, setShareClicked] = useState(false)
 
   const fetchAnalysis = useCallback(async () => {
     try {
@@ -118,18 +140,128 @@ export default function IndividualReportPage() {
           </Link>
           
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-100">
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-gray-100 mb-2">
                 {analysis.url_title || 'Landing Page Analysis'}
               </h1>
+              {analysis.url_description && (
+                <p className="text-gray-300 text-lg mb-3 max-w-3xl">
+                  {analysis.url_description}
+                </p>
+              )}
               <p className="text-gray-400 mt-1">{analysis.url}</p>
               <p className="text-gray-500 text-sm mt-1">
-                Analyzed on {new Date(analysis.created_at).toLocaleDateString()}
+                Analyzed {formatRelativeTime(analysis.created_at)}
               </p>
             </div>
-            <div className="text-center">
+            <div className="text-center ml-8">
               <div className="text-3xl font-bold text-brand-yellow">{analysis.overall_score}/100</div>
               <div className="text-sm text-gray-400">Overall Score</div>
+              
+              {/* Share Button */}
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href)
+                  setShareClicked(true)
+                  setTimeout(() => setShareClicked(false), 2000)
+                }}
+                className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 mx-auto"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                </svg>
+                {shareClicked ? 'Copied!' : 'Share Report'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Performance Summary Bar */}
+        <div className="mb-8 bg-gray-800 rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-gray-100 mb-4">Performance Overview</h2>
+          <div className="grid grid-cols-6 gap-4">
+            {/* Page Speed */}
+            <div className="text-center">
+              <div className="text-2xl font-bold text-brand-yellow mb-1">
+                {analysisResult.pageLoadSpeed?.score || 0}
+              </div>
+              <div className="text-sm text-gray-400">Page Speed</div>
+              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-brand-yellow rounded-full h-2 transition-all duration-300"
+                  style={{ width: `${analysisResult.pageLoadSpeed?.score || 0}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            {/* Font Usage */}
+            <div className="text-center">
+              <div className="text-2xl font-bold text-brand-yellow mb-1">
+                {analysisResult.fontUsage?.score || 0}
+              </div>
+              <div className="text-sm text-gray-400">Font Usage</div>
+              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-brand-yellow rounded-full h-2 transition-all duration-300"
+                  style={{ width: `${analysisResult.fontUsage?.score || 0}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            {/* Image Optimization */}
+            <div className="text-center">
+              <div className="text-2xl font-bold text-brand-yellow mb-1">
+                {analysisResult.imageOptimization?.score || 0}
+              </div>
+              <div className="text-sm text-gray-400">Images</div>
+              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-brand-yellow rounded-full h-2 transition-all duration-300"
+                  style={{ width: `${analysisResult.imageOptimization?.score || 0}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            {/* CTA Analysis */}
+            <div className="text-center">
+              <div className="text-2xl font-bold text-brand-yellow mb-1">
+                {analysisResult.ctaAnalysis?.score || 0}
+              </div>
+              <div className="text-sm text-gray-400">CTA</div>
+              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-brand-yellow rounded-full h-2 transition-all duration-300"
+                  style={{ width: `${analysisResult.ctaAnalysis?.score || 0}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            {/* Whitespace */}
+            <div className="text-center">
+              <div className="text-2xl font-bold text-brand-yellow mb-1">
+                {analysisResult.whitespaceAssessment?.score || 0}
+              </div>
+              <div className="text-sm text-gray-400">Whitespace</div>
+              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-brand-yellow rounded-full h-2 transition-all duration-300"
+                  style={{ width: `${analysisResult.whitespaceAssessment?.score || 0}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            {/* Social Proof */}
+            <div className="text-center">
+              <div className="text-2xl font-bold text-brand-yellow mb-1">
+                {analysisResult.socialProof?.score || 0}
+              </div>
+              <div className="text-sm text-gray-400">Social Proof</div>
+              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-brand-yellow rounded-full h-2 transition-all duration-300"
+                  style={{ width: `${analysisResult.socialProof?.score || 0}%` }}
+                ></div>
+              </div>
             </div>
           </div>
         </div>
