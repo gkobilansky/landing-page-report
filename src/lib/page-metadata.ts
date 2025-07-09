@@ -7,7 +7,9 @@ export interface PageMetadata {
 }
 
 export async function extractPageMetadata(url: string, options: { puppeteer?: { forceBrowserless?: boolean } } = {}): Promise<PageMetadata> {
-  const browser = await createPuppeteerBrowser(options.puppeteer?.forceBrowserless);
+  const browser = await createPuppeteerBrowser({ 
+    forceBrowserless: options.puppeteer?.forceBrowserless 
+  });
   
   try {
     const page = await browser.newPage();
