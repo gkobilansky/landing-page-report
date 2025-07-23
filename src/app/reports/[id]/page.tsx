@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import AnalysisResults from '@/components/AnalysisResults'
+import EmailInput from '@/components/EmailInput'
 
 interface AnalysisData {
   id: string
@@ -54,6 +55,14 @@ export default function IndividualReportPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [shareClicked, setShareClicked] = useState(false)
+  const [showEmailModal, setShowEmailModal] = useState(false)
+  const [emailSubmitted, setEmailSubmitted] = useState(false)
+  const [hasSignedUpThisSession, setHasSignedUpThisSession] = useState(false)
+  const cleanAnalysisUrl = analysis?.url
+    ? analysis.url
+      .replace(/^https?:\/\//, '')   // Remove http:// or https://
+      .replace(/\/+$/, '')           // Remove trailing slashes
+    : 'the page';
 
   const fetchAnalysis = useCallback(async () => {
     try {
@@ -131,57 +140,92 @@ export default function IndividualReportPage() {
     urlTitle: analysis.url_title,
   }
 
+  const handleEmailSubmit = async (email: string) => {
+    try {
+      const response = await fetch('/api/email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email,
+          analysisId: analysis?.id
+        }),
+      })
+
+      if (response.ok) {
+        setEmailSubmitted(true)
+        setHasSignedUpThisSession(true)
+        setTimeout(() => {
+          setShowEmailModal(false)
+          setEmailSubmitted(false)
+        }, 2000)
+      } else {
+        const errorData = await response.json()
+        console.error('Email submission failed:', errorData)
+        // Still mark as signed up to prevent repeated prompts
+        setHasSignedUpThisSession(true)
+        setShowEmailModal(false)
+      }
+    } catch (error) {
+      console.error('Error submitting email:', error)
+      // Still mark as signed up to prevent repeated prompts
+      setHasSignedUpThisSession(true)
+      setShowEmailModal(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[var(--color-bg-main)] py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-12">
           <Link 
             href="/reports" 
-            className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors text-sm font-medium mb-4"
+            className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors text-sm font-medium mb-6"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to All Reports
           </Link>
-          <h1 className="text-4xl font-bold text-gray-100 mb-2">
+          <h1 className="text-4xl font-bold text-gray-100 mb-6">
             {analysis.schema_data?.name ? `${analysis.schema_data.name} Landing Page Report` : (analysis.url_title || 'Landing Page Report')}
           </h1>
           
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between mb-8">
             {/* Screenshot thumbnail */}
             {analysis.screenshot_url && (
-              <div className="flex-shrink-0 mr-6">
+              <div className="flex-shrink-0 mr-8">
                 <img
                   src={analysis.screenshot_url}
                   alt={`Screenshot of ${analysis.url}`}
-                  className="w-32 h-24 object-cover object-left-top rounded-lg border border-gray-700 shadow-lg"
+                  className="w-36 h-28 object-cover object-left-top rounded-lg border border-gray-700 shadow-lg"
                 />
               </div>
             )}
             
-            <div className="flex-1">
-              <h2 className="text-gray-400 mt-1">{analysis.url}</h2>
-              <p className="text-gray-500 text-sm mt-1">
+            <div className="flex-1 space-y-2">
+              <h2 className="text-gray-300 text-lg font-medium">{analysis.url}</h2>
+              <p className="text-gray-500 text-sm">
                 Analyzed {formatRelativeTime(analysis.created_at)}
               </p>
-              <p className="text-2xl font-bold text-gray-100 mb-2">
-             {analysis.url_title || 'Landing Page Report'}
+              <p className="text-2xl font-bold text-gray-100 leading-tight">
+                {analysis.url_title || 'No Title in HTML'}
               </p>         
             </div>
-            <div className="text-center ml-8">
-              <div className="text-3xl font-bold text-brand-yellow">{analysis.overall_score}/100</div>
-              <div className="text-sm text-gray-400">Overall Score</div>
+            <div className="text-center ml-10 flex-shrink-0">
+              <div className="text-4xl font-bold text-brand-yellow mb-1">{analysis.overall_score}/100</div>
+              <div className="text-sm text-gray-400 mb-6">Overall Score</div>
               
               {/* Share Button */}
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(window.location.href)
                   setShareClicked(true)
-                  setTimeout(() => setShareClicked(false), 2000)
+                  setTimeout(() => setShareClicked(false), 1000)
                 }}
-                className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 mx-auto"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 mx-auto"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
@@ -191,6 +235,64 @@ export default function IndividualReportPage() {
             </div>
           </div>
         </div>
+
+        {/* Analysis Summary */}
+        <div className="bg-gray-800/50 rounded-lg p-6 mb-8 border border-gray-700">
+          <p className="text-gray-300 text-base leading-relaxed mb-3">
+            We've run {cleanAnalysisUrl} through a series of tests and found . We algorithmically analyzed the page and tried our best to find and rate the most important elements: <em className="text-gray-200">speed, space, and story.</em> 
+          </p>
+
+          <p className="text-gray-300 text-base leading-relaxed">
+            <b>Story</b> is the hardest element to analyze algorithmically, but a clear engaging call to action is a pretty good proxy. Social proof tells it's own story, humans are social creatures after all.
+          </p>
+          <p className="text-gray-300 text-base leading-relaxed">
+            <b>Speed</b> is the easiest element to analyze algorithmically. Some other page "tools" make this seem more complicated than it is. 
+          </p>
+          <p className="text-gray-300 text-base leading-relaxed">
+            <b>Space</b> is the most important element to analyze algorithmically, but a clear engaging call to action is a pretty good proxy. Social proof tells it's own story, humans are social creatures after all.
+          </p>
+
+          {!hasSignedUpThisSession && (
+            <p className="text-gray-300 text-base leading-relaxed mt-4 pt-3 border-t border-gray-700">
+              <button
+                onClick={() => setShowEmailModal(true)}
+                className="text-blue-400 hover:text-blue-300 underline transition-colors font-medium"
+              >
+                Sign up to get notified
+              </button>{' '}
+              when we launch our more advanced, AI reviewed sentiment analysis service.
+            </p>
+          )}
+        </div>
+
+        {/* Email Collection Modal */}
+        {showEmailModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full relative">
+              <button
+                onClick={() => setShowEmailModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              
+              <h3 className="text-xl font-bold text-gray-100 mb-2 text-center">
+                Get Notified
+              </h3>
+              <p className="text-gray-400 text-sm mb-6 text-center">
+                We'll let you know when our AI sentiment analysis is ready!
+              </p>
+              
+              <EmailInput
+                onEmailSubmit={handleEmailSubmit}
+                isAnalysisComplete={true}
+                initialSubmittedState={emailSubmitted}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Analysis Results */}
         <AnalysisResults result={analysisResult} analysisId={analysis.id} />
