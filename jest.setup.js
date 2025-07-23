@@ -59,6 +59,23 @@ jest.mock('@/lib/supabase', () => ({
   }
 }))
 
+
+// Mock puppeteer-config for CTA analysis tests
+jest.mock('@/lib/puppeteer-config', () => ({
+  createPuppeteerBrowser: jest.fn(() => Promise.resolve({
+    newPage: jest.fn(() => Promise.resolve({
+      setViewport: jest.fn(),
+      goto: jest.fn(),
+      setContent: jest.fn(),
+      evaluate: jest.fn(() => Promise.resolve([])),
+      screenshot: jest.fn(() => Promise.resolve(Buffer.from('fake-screenshot'))),
+      url: jest.fn(() => 'https://example.com'),
+      viewport: jest.fn(() => ({ width: 1920, height: 1080 })),
+    })),
+    close: jest.fn(),
+  }))
+}))
+
 // Suppress console.log during tests
 global.console = {
   ...console,
