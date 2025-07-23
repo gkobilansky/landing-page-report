@@ -54,7 +54,7 @@ describe('Email Service', () => {
       expect(mockSend).toHaveBeenCalledWith({
         from: 'reports@hi.lansky.tech',
         to: 'test@example.com',
-        subject: 'Your Landing Page Analysis Report is Ready (Score: 85/100)',
+        subject: 'Your Landing Page Report is Ready (Score: 85/100)',
         html: expect.stringContaining('https://example.com'),
         reply_to: 'gene@lansky.tech'
       });
@@ -172,7 +172,7 @@ describe('Email Service', () => {
 
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
-          subject: 'Your Landing Page Analysis Report is Ready (Score: 95/100)'
+          subject: 'Your Landing Page Report is Ready (Score: 95/100)'
         })
       );
 
@@ -186,7 +186,7 @@ describe('Email Service', () => {
 
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
-          subject: 'Your Landing Page Analysis Report is Ready (Score: 45/100)'
+          subject: 'Your Landing Page Report is Ready (Score: 45/100)'
         })
       );
     });
@@ -242,7 +242,7 @@ describe('Email Service', () => {
         'https://landingpage.report/report?id=123'
       );
 
-      expect(html).toContain('Landing Page Analysis Report');
+      expect(html).toContain('Landing Page Report');
       expect(html).toContain('https://example.com');
       expect(html).toContain('75/100');
       expect(html).toContain('Grade B');

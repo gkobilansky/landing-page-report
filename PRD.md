@@ -36,7 +36,7 @@ The "Landing Page Report" is an online tool designed to serve as a lead magnet f
 6.  **Email Notification:** Once the analysis is complete, the user receives an email containing:
     * A thank you message.
     * A unique link to their personalized report (e.g., `lansky.tech/tool/report-[reportId]`).
-7.  **View Report:** User clicks the link in the email and views the detailed landing page analysis report on the lansky.tech website.
+7.  **View Report:** User clicks the link in the email and views the detailed landing page report on the lansky.tech website.
 
 ## 5. Key Features & Analysis Criteria
 

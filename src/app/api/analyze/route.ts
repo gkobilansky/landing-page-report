@@ -7,6 +7,7 @@ import { analyzeWhitespace } from '@/lib/whitespace-assessment';
 import { analyzeSocialProof } from '@/lib/social-proof-analysis';
 import { supabaseAdmin } from '@/lib/supabase';
 import { captureAndStoreScreenshot } from '@/lib/screenshot-storage';
+import { extractPageMetadata } from '@/lib/page-metadata';
 
 export async function POST(request: NextRequest) {
   console.log('🔥 API /analyze endpoint called')
@@ -60,6 +61,23 @@ export async function POST(request: NextRequest) {
         { error: 'Invalid URL format. Please provide a complete URL with a valid domain.' },
         { status: 400 }
       );
+    }
+
+    // Extract page metadata early for database storage
+    console.log('📖 Extracting page metadata...');
+    let pageMetadata;
+    try {
+      pageMetadata = await extractPageMetadata(validatedUrl.toString(), {
+        puppeteer: { forceBrowserless }
+      });
+      console.log(`✅ Page metadata extracted: "${pageMetadata.title}" - "${pageMetadata.description.substring(0, 50)}..."`);
+    } catch (error) {
+      console.error('⚠️ Failed to extract page metadata:', error);
+      pageMetadata = {
+        title: 'Page Title Unavailable',
+        description: 'Description not available',
+        url: validatedUrl.toString()
+      };
     }
 
     // Create or find user and analysis record in database
@@ -195,6 +213,9 @@ export async function POST(request: NextRequest) {
             success: true,
             analysis: {
               url: existingData.url,
+              url_title: existingData.url_title,
+              url_description: existingData.url_description,
+              schema: existingData.schema_data,
               pageLoadSpeed: existingData.page_speed_analysis,
               fontUsage: existingData.font_analysis,
               imageOptimization: existingData.image_analysis,
@@ -221,6 +242,9 @@ export async function POST(request: NextRequest) {
         .insert({
           user_id: userId,
           url: validatedUrl.toString(),
+          url_title: pageMetadata.title,
+          url_description: pageMetadata.description,
+          schema_data: pageMetadata.schema,
           status: 'processing',
           algorithm_version: '1.0.0',
           lighthouse_available: true, // Will be updated based on actual availability
@@ -650,6 +674,9 @@ export async function POST(request: NextRequest) {
       success: true,
       analysis: {
         ...analysisResult,
+        url_title: pageMetadata.title,
+        url_description: pageMetadata.description,
+        schema: pageMetadata.schema,
         screenshotUrl: screenshotResult?.blobUrl || null
       },
       analysisId,

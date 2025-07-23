@@ -9,6 +9,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 interface AnalysisData {
   id: string;
   url: string;
+  url_title?: string;
   status: string;
   overall_score?: number;
   page_speed_analysis?: any;
@@ -92,7 +93,7 @@ function AnalysisContent() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFCC00] mx-auto mb-4"></div>
             <h1 className="text-2xl font-bold mb-4">Loading Report...</h1>
-            <p className="text-gray-400">Please wait while we fetch your analysis report.</p>
+            <p className="text-gray-400">Please wait while we fetch your Landing Page Report.</p>
           </div>
         </div>
       </div>
@@ -125,7 +126,7 @@ function AnalysisContent() {
         <div className="container mx-auto px-4 py-16">
           <div className="text-center">
             <h1 className="text-3xl font-bold mb-4">No Report Found</h1>
-            <p className="text-gray-400 mb-8">The requested analysis report could not be found.</p>
+            <p className="text-gray-400 mb-8">The requested Landing Page Report could not be found.</p>
             <Link
               href="/"
               className="inline-flex items-center px-6 py-3 bg-[#FFCC00] text-gray-900 font-semibold rounded-lg hover:bg-yellow-500 transition-colors"
@@ -144,9 +145,9 @@ function AnalysisContent() {
         <div className="container mx-auto px-4 py-16">
           <div className="text-center">
             <div className="animate-pulse text-yellow-500 text-6xl mb-6">⏳</div>
-            <h1 className="text-3xl font-bold mb-4">Analysis in Progress</h1>
+            <h1 className="text-3xl font-bold mb-4">Report in Progress</h1>
             <p className="text-gray-400 mb-8">
-              Your analysis is still processing. This usually takes 45 seconds to 1 minute.
+              Your report is still processing. This usually takes 45 seconds to 1 minute.
             </p>
             <button
               onClick={() => fetchAnalysis(analysis.id)}
@@ -172,9 +173,9 @@ function AnalysisContent() {
         <div className="container mx-auto px-4 py-16">
           <div className="text-center">
             <div className="text-red-500 text-6xl mb-6">❌</div>
-            <h1 className="text-3xl font-bold mb-4">Analysis Failed</h1>
+            <h1 className="text-3xl font-bold mb-4">Report Failed</h1>
             <p className="text-gray-400 mb-8">
-              Unfortunately, the analysis failed to complete. Please try analyzing the page again.
+              Unfortunately, the analysis failed to complete. Please try running a new report.
             </p>
             <Link
               href="/"
@@ -195,7 +196,7 @@ function AnalysisContent() {
       <div className="container mx-auto px-4 py-16">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Landing Page Analysis Report</h1>
+          <h1 className="text-4xl font-bold mb-4">{analysis.url_title || 'Landing Page'} Report</h1>
           <p className="text-xl text-gray-300 mb-2">
             Analysis for: <span className="text-[#FFCC00]">{analysis.url}</span>
           </p>
