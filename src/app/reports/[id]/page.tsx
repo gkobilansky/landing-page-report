@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import AnalysisResults from '@/components/AnalysisResults'
 import EmailInput from '@/components/EmailInput'
 
@@ -197,9 +198,11 @@ export default function IndividualReportPage() {
             {/* Screenshot thumbnail */}
             {analysis.screenshot_url && (
               <div className="flex-shrink-0 mr-8">
-                <img
+                <Image
                   src={analysis.screenshot_url}
                   alt={`Screenshot of ${analysis.url}`}
+                  width={144}
+                  height={112}
                   className="w-36 h-28 object-cover object-left-top rounded-lg border border-gray-700 shadow-lg"
                 />
               </div>
@@ -239,17 +242,17 @@ export default function IndividualReportPage() {
         {/* Analysis Summary */}
         <div className="bg-gray-800/50 rounded-lg p-6 mb-8 border border-gray-700">
           <p className="text-gray-300 text-base leading-relaxed mb-3">
-            We've run {cleanAnalysisUrl} through a series of tests and found . We algorithmically analyzed the page and tried our best to find and rate the most important elements: <em className="text-gray-200">speed, space, and story.</em> 
+            We&apos;ve run {cleanAnalysisUrl} through a series of tests and found . We algorithmically analyzed the page and tried our best to find and rate the most important elements: <em className="text-gray-200">speed, space, and story.</em> 
           </p>
 
           <p className="text-gray-300 text-base leading-relaxed">
-            <b>Story</b> is the hardest element to analyze algorithmically, but a clear engaging call to action is a pretty good proxy. Social proof tells it's own story, humans are social creatures after all.
+            <b>Story</b> is the hardest element to analyze algorithmically, but a clear engaging call to action is a pretty good proxy. Social proof tells it&apos;s own story, humans are social creatures after all.
           </p>
           <p className="text-gray-300 text-base leading-relaxed">
-            <b>Speed</b> is the easiest element to analyze algorithmically. Some other page "tools" make this seem more complicated than it is. 
+            <b>Speed</b> is the easiest element to analyze algorithmically. Some other page &quot;tools&quot; make this seem more complicated than it is. 
           </p>
           <p className="text-gray-300 text-base leading-relaxed">
-            <b>Space</b> is the most important element to analyze algorithmically, but a clear engaging call to action is a pretty good proxy. Social proof tells it's own story, humans are social creatures after all.
+            <b>Space</b> is the most important element to analyze algorithmically, but a clear engaging call to action is a pretty good proxy. Social proof tells it&apos;s own story, humans are social creatures after all.
           </p>
 
           {!hasSignedUpThisSession && (
@@ -282,7 +285,7 @@ export default function IndividualReportPage() {
                 Get Notified
               </h3>
               <p className="text-gray-400 text-sm mb-6 text-center">
-                We'll let you know when our AI sentiment analysis is ready!
+                We&apos;ll let you know when our AI sentiment analysis is ready!
               </p>
               
               <EmailInput
