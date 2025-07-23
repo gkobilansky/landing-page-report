@@ -38,7 +38,11 @@
       "Bash(curl:*)",
       "WebFetch(domain:docs.browserless.io)",
       "Bash(npm run test:*)",
-      "WebFetch(domain:www.landingpage.report)"
+      "WebFetch(domain:www.landingpage.report)",
+      "Bash(git checkout:*)",
+      "Bash(git commit:*)",
+      "Bash(find:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   },

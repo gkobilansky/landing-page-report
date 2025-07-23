@@ -96,7 +96,7 @@ describe('ReportsPage', () => {
     render(<ReportsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Landing Page Analysis Reports')).toBeInTheDocument();
+      expect(screen.getByText('Landing Page Reports')).toBeInTheDocument();
     });
 
     expect(screen.getByRole('link', { name: /back/i })).toHaveAttribute('href', '/');

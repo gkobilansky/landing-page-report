@@ -226,51 +226,6 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="rounded-lg border border-gray-700 p-6" style={{ backgroundColor: 'var(--color-bg-card)' }}>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-100">Analysis Results</h2>
-            <p className="text-gray-400 mt-1">{result.url}</p>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-gray-100 mb-1">{result.overallScore}</div>
-            <div className="text-sm text-gray-400">Overall Score</div>
-            <div className="text-sm text-gray-500 mt-2">Status: {result.status}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Screenshot Section */}
-      {result.screenshotUrl && (
-        <div className="rounded-lg border border-gray-700 p-6" style={{ backgroundColor: 'var(--color-bg-card)' }}>
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-2xl text-blue-400" aria-hidden="true">📸</span>
-            <h3 className="text-lg font-semibold text-gray-100">Page Screenshot</h3>
-          </div>
-          <div className="relative bg-gray-800 rounded-lg overflow-hidden">
-            <div className="max-h-96 overflow-y-auto">
-              <Image 
-                src={result.screenshotUrl} 
-                alt={`Screenshot of ${result.url}`}
-                width={800}
-                height={600}
-                className="w-full object-cover object-top border border-gray-600 rounded"
-              />
-            </div>
-            
-            {/* Scroll indicator */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-3 py-2 rounded-full text-sm flex items-center gap-2">
-              <span>Scroll to see full page</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-            </div>
-          </div>
-          <p className="text-sm text-gray-400 mt-3">
-            Full-page screenshot captured during analysis for visual reference and whitespace assessment.
-          </p>
-        </div>
-      )}
 
       {/* Analysis Categories - Ordered by Priority/Weight */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -587,7 +542,41 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
             </div>
           </CategoryCard>
         )}
+
+        
       </div>
+
+      {/* Screenshot Section */}
+      {result.screenshotUrl && (
+        <div className="rounded-lg border border-gray-700 p-6" style={{ backgroundColor: 'var(--color-bg-card)' }}>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl text-blue-400" aria-hidden="true">📸</span>
+            <h3 className="text-lg font-semibold text-gray-100">Full Landing Page Screenshot</h3>
+          </div>
+          <div className="relative bg-gray-800 rounded-lg overflow-hidden">
+            <div className="max-h-96 overflow-y-auto">
+              <Image 
+                src={result.screenshotUrl} 
+                alt={`Screenshot of ${result.url}`}
+                width={800}
+                height={600}
+                className="w-full object-cover object-top border border-gray-600 rounded"
+              />
+            </div>
+            
+            {/* Scroll indicator */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-3 py-2 rounded-full text-sm flex items-center gap-2">
+              <span>Scroll to see full page</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-sm text-gray-400 mt-3">
+            Full-page screenshot captured during analysis for visual reference and whitespace assessment.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

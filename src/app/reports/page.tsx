@@ -176,7 +176,7 @@ export default function ReportsPage() {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-100 mb-4">
-            Landing Page Analysis Reports
+            Landing Page Reports
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
             Browse through all completed landing page analyses. Click on any report to view detailed insights and recommendations.

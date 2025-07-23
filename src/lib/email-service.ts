@@ -62,7 +62,7 @@ export async function sendReportEmail(
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     // Generate email content
-    const subject = `Your Landing Page Analysis Report is Ready (Score: ${analysisData.overallScore}/100)`;
+    const subject = `Your Landing Page Report is Ready (Score: ${analysisData.overallScore}/100)`;
     const htmlContent = EmailTemplate.generateReportEmail(analysisData, reportUrl);
 
     // Send email
@@ -120,7 +120,7 @@ export class EmailTemplate {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Landing Page Analysis Report</title>
+  <title>Your Landing Page Report</title>
   <style>
     body { 
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
@@ -237,7 +237,7 @@ export class EmailTemplate {
 <body>
   <div class="container">
     <div class="header">
-      <h1>${getGradeEmoji(analysisData.overallScore)} Your Landing Page Analysis is Ready!</h1>
+      <h1>${getGradeEmoji(analysisData.overallScore)} Your Landing Page Report is Ready!</h1>
       <p>Comprehensive analysis with actionable insights</p>
     </div>
     
@@ -251,7 +251,7 @@ export class EmailTemplate {
       
       <p>Hi there! 👋</p>
       
-      <p>Great news! Your landing page analysis is complete. I've analyzed your page across 6 key conversion criteria and compiled actionable recommendations to help improve your conversion rates.</p>
+      <p>Great news! Your landing page report is complete. I've analyzed your page across 6 key conversion criteria and compiled actionable recommendations to help improve your conversion rates.</p>
       
       <div class="url-box">
         <strong>Analyzed Page:</strong> ${escapeHtml(analysisData.url)}

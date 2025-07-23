@@ -1,5 +1,10 @@
 import { createPuppeteerBrowser } from './puppeteer-config';
-import Jimp from 'jimp';
+
+// Conditional import for Jimp to avoid test environment issues
+let Jimp: any;
+if (process.env.NODE_ENV !== 'test') {
+  Jimp = require('jimp');
+}
 
 export interface ElementDensityAnalysis {
   gridSections: number;
@@ -134,6 +139,7 @@ async function analyzeScreenshotWhitespace(
     }
   }
   
+  
   console.log('🔍 Processing screenshot for pixel analysis...');
   
   // Load and process the image with Jimp
@@ -144,7 +150,7 @@ async function analyzeScreenshotWhitespace(
   const totalPixels = width * height;
   
   // Process every pixel
-  img.scan(0, 0, width, height, (x, y, idx) => {
+  img.scan(0, 0, width, height, (x: number, y: number, idx: number) => {
     // Get RGBA values from bitmap data
     const r = img.bitmap.data[idx];
     const g = img.bitmap.data[idx + 1];

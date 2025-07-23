@@ -1,5 +1,26 @@
 import { analyzeWhitespace, WhitespaceAnalysisResult } from '../whitespace-assessment';
 
+// Mock Jimp to avoid native dependencies
+jest.mock('jimp', () => ({
+  read: jest.fn(() => Promise.resolve({
+    bitmap: {
+      width: 1920,
+      height: 1080,
+      data: new Array(1920 * 1080 * 4).fill(255),
+    },
+    scan: jest.fn((x, y, w, h, callback) => {
+      // Mock scan that simulates some content
+      for (let dx = 0; dx < w; dx++) {
+        for (let dy = 0; dy < h; dy++) {
+          const idx = ((y + dy) * w + (x + dx)) << 2;
+          callback.call(this, x + dx, y + dy, idx);
+        }
+      }
+      return this;
+    }),
+  })),
+}));
+
 // Mock the puppeteer-config module
 jest.mock('../puppeteer-config', () => ({
   createPuppeteerBrowser: jest.fn(),
