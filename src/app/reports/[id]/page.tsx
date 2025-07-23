@@ -10,6 +10,11 @@ interface AnalysisData {
   url: string
   url_title?: string
   url_description?: string
+  schema_data?: {
+    name?: string
+    description?: string
+    organization?: any
+  } | null
   overall_score: number
   grade?: string
   screenshot_url?: string
@@ -60,6 +65,7 @@ export default function IndividualReportPage() {
       }
 
       const data = await response.json()
+      console.log(data)
       setAnalysis(data)
     } catch (err) {
       console.error('Error fetching analysis:', err)
@@ -121,7 +127,8 @@ export default function IndividualReportPage() {
     socialProof: analysis.social_proof_analysis,
     overallScore: analysis.overall_score || 0,
     status: analysis.status,
-    screenshotUrl: analysis.screenshot_url
+    screenshotUrl: analysis.screenshot_url,
+    urlTitle: analysis.url_title,
   }
 
   return (
@@ -138,21 +145,30 @@ export default function IndividualReportPage() {
             </svg>
             Back to All Reports
           </Link>
+          <h1 className="text-4xl font-bold text-gray-100 mb-2">
+            {analysis.schema_data?.name ? `${analysis.schema_data.name} Landing Page Report` : (analysis.url_title || 'Landing Page Report')}
+          </h1>
           
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between">
+            {/* Screenshot thumbnail */}
+            {analysis.screenshot_url && (
+              <div className="flex-shrink-0 mr-6">
+                <img
+                  src={analysis.screenshot_url}
+                  alt={`Screenshot of ${analysis.url}`}
+                  className="w-32 h-24 object-cover object-left-top rounded-lg border border-gray-700 shadow-lg"
+                />
+              </div>
+            )}
+            
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-100 mb-2">
-                {analysis.url_title || 'Landing Page Analysis'}
-              </h1>
-              {analysis.url_description && (
-                <p className="text-gray-300 text-lg mb-3 max-w-3xl">
-                  {analysis.url_description}
-                </p>
-              )}
-              <p className="text-gray-400 mt-1">{analysis.url}</p>
+              <h2 className="text-gray-400 mt-1">{analysis.url}</h2>
               <p className="text-gray-500 text-sm mt-1">
                 Analyzed {formatRelativeTime(analysis.created_at)}
               </p>
+              <p className="text-2xl font-bold text-gray-100 mb-2">
+             {analysis.url_title || 'Landing Page Report'}
+              </p>         
             </div>
             <div className="text-center ml-8">
               <div className="text-3xl font-bold text-brand-yellow">{analysis.overall_score}/100</div>
@@ -172,96 +188,6 @@ export default function IndividualReportPage() {
                 </svg>
                 {shareClicked ? 'Copied!' : 'Share Report'}
               </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Performance Summary Bar */}
-        <div className="mb-8 bg-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-100 mb-4">Performance Overview</h2>
-          <div className="grid grid-cols-6 gap-4">
-            {/* Page Speed */}
-            <div className="text-center">
-              <div className="text-2xl font-bold text-brand-yellow mb-1">
-                {analysisResult.pageLoadSpeed?.score || 0}
-              </div>
-              <div className="text-sm text-gray-400">Page Speed</div>
-              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
-                <div 
-                  className="bg-brand-yellow rounded-full h-2 transition-all duration-300"
-                  style={{ width: `${analysisResult.pageLoadSpeed?.score || 0}%` }}
-                ></div>
-              </div>
-            </div>
-            
-            {/* Font Usage */}
-            <div className="text-center">
-              <div className="text-2xl font-bold text-brand-yellow mb-1">
-                {analysisResult.fontUsage?.score || 0}
-              </div>
-              <div className="text-sm text-gray-400">Font Usage</div>
-              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
-                <div 
-                  className="bg-brand-yellow rounded-full h-2 transition-all duration-300"
-                  style={{ width: `${analysisResult.fontUsage?.score || 0}%` }}
-                ></div>
-              </div>
-            </div>
-            
-            {/* Image Optimization */}
-            <div className="text-center">
-              <div className="text-2xl font-bold text-brand-yellow mb-1">
-                {analysisResult.imageOptimization?.score || 0}
-              </div>
-              <div className="text-sm text-gray-400">Images</div>
-              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
-                <div 
-                  className="bg-brand-yellow rounded-full h-2 transition-all duration-300"
-                  style={{ width: `${analysisResult.imageOptimization?.score || 0}%` }}
-                ></div>
-              </div>
-            </div>
-            
-            {/* CTA Analysis */}
-            <div className="text-center">
-              <div className="text-2xl font-bold text-brand-yellow mb-1">
-                {analysisResult.ctaAnalysis?.score || 0}
-              </div>
-              <div className="text-sm text-gray-400">CTA</div>
-              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
-                <div 
-                  className="bg-brand-yellow rounded-full h-2 transition-all duration-300"
-                  style={{ width: `${analysisResult.ctaAnalysis?.score || 0}%` }}
-                ></div>
-              </div>
-            </div>
-            
-            {/* Whitespace */}
-            <div className="text-center">
-              <div className="text-2xl font-bold text-brand-yellow mb-1">
-                {analysisResult.whitespaceAssessment?.score || 0}
-              </div>
-              <div className="text-sm text-gray-400">Whitespace</div>
-              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
-                <div 
-                  className="bg-brand-yellow rounded-full h-2 transition-all duration-300"
-                  style={{ width: `${analysisResult.whitespaceAssessment?.score || 0}%` }}
-                ></div>
-              </div>
-            </div>
-            
-            {/* Social Proof */}
-            <div className="text-center">
-              <div className="text-2xl font-bold text-brand-yellow mb-1">
-                {analysisResult.socialProof?.score || 0}
-              </div>
-              <div className="text-sm text-gray-400">Social Proof</div>
-              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
-                <div 
-                  className="bg-brand-yellow rounded-full h-2 transition-all duration-300"
-                  style={{ width: `${analysisResult.socialProof?.score || 0}%` }}
-                ></div>
-              </div>
             </div>
           </div>
         </div>

@@ -213,6 +213,9 @@ export async function POST(request: NextRequest) {
             success: true,
             analysis: {
               url: existingData.url,
+              url_title: existingData.url_title,
+              url_description: existingData.url_description,
+              schema: existingData.schema_data,
               pageLoadSpeed: existingData.page_speed_analysis,
               fontUsage: existingData.font_analysis,
               imageOptimization: existingData.image_analysis,
@@ -241,6 +244,7 @@ export async function POST(request: NextRequest) {
           url: validatedUrl.toString(),
           url_title: pageMetadata.title,
           url_description: pageMetadata.description,
+          schema_data: pageMetadata.schema,
           status: 'processing',
           algorithm_version: '1.0.0',
           lighthouse_available: true, // Will be updated based on actual availability
@@ -670,6 +674,9 @@ export async function POST(request: NextRequest) {
       success: true,
       analysis: {
         ...analysisResult,
+        url_title: pageMetadata.title,
+        url_description: pageMetadata.description,
+        schema: pageMetadata.schema,
         screenshotUrl: screenshotResult?.blobUrl || null
       },
       analysisId,

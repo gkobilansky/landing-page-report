@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Landing Page Report project built as a lead magnet for lansky.tech. Users submit URLs for analysis against 6 key criteria and receive detailed reports via email.
+This is the Landing Page Report project. Users submit URLs for analysis against 6 key criteria and receive detailed reports via email.
+
+Check the quality of your vibe coded landing page and make sure your visitors convert to users. The Landing Page Report provides improvements recommendations. 
 
 ## Technology Stack
 
@@ -90,6 +92,7 @@ src/
 - **Table**: `landing_page_analyses`
 - **Primary Key**: UUID with auto-generation
 - **Analysis Fields**: JSONB fields for each of the 6 criteria
+- **Metadata Fields**: `url_title`, `url_description`, `schema_data` (JSON-LD schema.org data)
 - **Features**: Timestamps, RLS policies, indexes for performance
 
 ## Technical Implementation Summary
@@ -137,6 +140,14 @@ src/
 - **Scoring**: Multi-factor scoring based on element types, positioning, and credibility indicators
 - **Test Coverage**: 12 comprehensive test cases covering all social proof types
 
+### Page Metadata Extraction (`src/lib/page-metadata.ts`)
+- **Purpose**: Extract page title, meta description, and schema.org JSON-LD data
+- **Algorithm**: Puppeteer-based extraction with JSON-LD parsing for organization/website data
+- **Features**: Supports Organization and WebSite schema types, graceful fallbacks for malformed data
+- **Schema Priority**: Organization schema prioritized over WebSite schema
+- **Output**: Title, description, URL, and structured schema data for enhanced reporting
+- **Test Coverage**: 15 comprehensive test cases including error handling and real-world scenarios
+
 ### API Architecture
 
 #### Main Analysis Endpoint (`src/app/api/analyze/route.ts`)
@@ -145,7 +156,7 @@ src/
   - `url` (required): The URL to analyze
   - `component` (optional): Selective testing for specific modules (`speed`, `fonts`, `images`, `cta`, `whitespace`, `social`)
   - `forceRescan` (optional): Boolean to bypass 24-hour cache and force fresh analysis
-- **Response**: JSON with individual module scores, overall analysis, and screenshot URL
+- **Response**: JSON with individual module scores, overall analysis, page metadata (title, description, schema), and screenshot URL
 - **Features**: Component-based testing, robust URL validation, error handling, progress logging, 24-hour caching, screenshot capture
 - **URL Validation**: Enhanced validation requires proper domain extensions, rejects incomplete URLs
 - **Caching**: Results cached for 24 hours per URL - use `forceRescan: true` to bypass
@@ -172,6 +183,7 @@ src/
 - **Main Page** (`src/app/page.tsx`): URL input and results display with proper API response handling
 - **AnalysisResults** (`src/components/AnalysisResults.tsx`): Comprehensive results display with score badges
 - **UrlInput** (`src/components/UrlInput.tsx`): Enhanced URL validation and submission form with domain extension requirements
+- **Individual Reports** (`src/app/reports/[id]/page.tsx`): Enhanced with schema.org data for branded report titles (e.g., "Stripe Landing Page Report")
 
 ## Current Status
 
@@ -192,6 +204,10 @@ src/
 - ✅ Updated CTA field mapping (isAboveFold, actionStrength display)
 - ✅ Corrected page speed metrics display units (ms instead of seconds)
 - ✅ Social proof detection module completed with full functionality
+- ✅ **Schema.org JSON-LD Integration** - Enhanced page metadata extraction with organization/website data
+- ✅ **Branded Report Titles** - Individual reports now use organization names from schema data (e.g., "Stripe Landing Page Report")
+- ✅ **Database Schema Enhancement** - Added `schema_data` JSONB field with GIN indexing
+- ✅ **Comprehensive Test Coverage** - Updated all tests for schema functionality including error handling
 
 ## API Usage Examples
 
@@ -236,9 +252,9 @@ curl -X POST http://localhost:3000/api/screenshot \
 ## Next Steps
 
 ### Phase 1: Core Enhancement (High Impact)
-- Add database storage for analysis results  
-- Consider email report generation functionality
-- Enhance scoring algorithms and recommendation quality
+✅ Add database storage for analysis results  
+✅ Consider email report generation functionality
+✅ Enhance scoring algorithms and recommendation quality
 
 ### Phase 2: Advanced Analysis Modules (Based on Research Insights)
 

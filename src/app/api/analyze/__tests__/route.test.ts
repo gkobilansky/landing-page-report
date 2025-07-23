@@ -25,6 +25,14 @@ jest.mock('@/lib/social-proof-analysis', () => ({
   analyzeSocialProof: jest.fn()
 }));
 
+jest.mock('@/lib/page-metadata', () => ({
+  extractPageMetadata: jest.fn()
+}));
+
+jest.mock('@/lib/screenshot-storage', () => ({
+  captureAndStoreScreenshot: jest.fn()
+}));
+
 // Note: Using real Supabase connection for integration testing
 // This tests that database storage actually works with the local Supabase instance
 
@@ -36,6 +44,8 @@ describe('/api/analyze', () => {
   const mockAnalyzeWhitespace = require('@/lib/whitespace-assessment').analyzeWhitespace;
   const mockAnalyzeCTA = require('@/lib/cta-analysis').analyzeCTA;
   const mockAnalyzeSocialProof = require('@/lib/social-proof-analysis').analyzeSocialProof;
+  const mockExtractPageMetadata = require('@/lib/page-metadata').extractPageMetadata;
+  const mockCaptureAndStoreScreenshot = require('@/lib/screenshot-storage').captureAndStoreScreenshot;
 
   const createRequest = (body: any) => {
     const mockRequest = {
@@ -114,6 +124,28 @@ describe('/api/analyze', () => {
       summary: { totalElements: 1, testimonials: 1 },
       issues: ['Limited social proof'],
       recommendations: ['Add more testimonials']
+    });
+
+    mockExtractPageMetadata.mockResolvedValue({
+      title: 'Test Page Title',
+      description: 'Test page description for analysis',
+      url: 'https://example.com/',
+      schema: {
+        name: 'Test Organization',
+        description: 'A test organization for analysis',
+        organization: {
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
+          'name': 'Test Organization',
+          'description': 'A test organization for analysis'
+        }
+      }
+    });
+
+    mockCaptureAndStoreScreenshot.mockResolvedValue({
+      blobUrl: 'https://blob.vercel-storage.com/test-screenshot.png',
+      width: 1920,
+      height: 1080
     });
   });
 
@@ -581,6 +613,88 @@ describe('/api/analyze', () => {
         fromCache: expect.any(Boolean),
         message: expect.any(String)
       });
+    });
+  });
+
+  describe('Schema.org data inclusion', () => {
+    it('should include schema data in analysis response', async () => {
+      const request = createRequest({ 
+        url: 'https://example.com'
+      });
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      
+      // Verify schema data is included
+      expect(data.analysis.schema).toBeDefined();
+      expect(data.analysis.schema.name).toBe('Test Organization');
+      expect(data.analysis.schema.description).toBe('A test organization for analysis');
+      expect(data.analysis.schema.organization['@type']).toBe('Organization');
+      
+      // Verify page metadata is included
+      expect(data.analysis.url_title).toBe('Test Page Title');
+      expect(data.analysis.url_description).toBe('Test page description for analysis');
+      
+      // Verify extractPageMetadata was called
+      expect(mockExtractPageMetadata).toHaveBeenCalledWith('https://example.com/', expect.any(Object));
+    });
+
+    it('should handle schema extraction failure gracefully', async () => {
+      // Mock extractPageMetadata to return no schema
+      mockExtractPageMetadata.mockResolvedValueOnce({
+        title: 'Page Without Schema',
+        description: 'A page without schema data',
+        url: 'https://example.com/',
+        schema: null
+      });
+
+      const request = createRequest({ 
+        url: 'https://example.com'
+      });
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      
+      // Verify null schema is handled correctly
+      expect(data.analysis.schema).toBeNull();
+      expect(data.analysis.url_title).toBe('Page Without Schema');
+      expect(data.analysis.url_description).toBe('A page without schema data');
+    });
+
+    it('should include schema data in cached responses', async () => {
+      // Create an analysis with schema data
+      const firstRequest = createRequest({ 
+        url: 'https://schema-test.com',
+        email: 'test@example.com'
+      });
+      const firstResponse = await POST(firstRequest);
+      const firstData = await firstResponse.json();
+      
+      expect(firstResponse.status).toBe(200);
+      expect(firstData.fromCache).toBe(false);
+      expect(firstData.analysis.schema).toBeDefined();
+      
+      // Request again to get cached version
+      const secondRequest = createRequest({ 
+        url: 'https://schema-test.com',
+        email: 'test@example.com',
+        forceRescan: false
+      });
+      const secondResponse = await POST(secondRequest);
+      const secondData = await secondResponse.json();
+      
+      expect(secondResponse.status).toBe(200);
+      expect(secondData.fromCache).toBe(true);
+      
+      // Verify cached response includes schema data
+      expect(secondData.analysis.schema).toBeDefined();
+      expect(secondData.analysis.schema.name).toBe('Test Organization');
+      expect(secondData.analysis.url_title).toBe('Test Page Title');
+      expect(secondData.analysis.url_description).toBe('Test page description for analysis');
     });
   });
 });
