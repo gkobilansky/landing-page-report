@@ -1,5 +1,7 @@
 import React from 'react'
 import Image from 'next/image'
+import AccordionSection from './AccordionSection'
+import { categorizeContent, groupByImpact } from '@/lib/impact-analyzer'
 
 interface AnalysisResult {
   url: string
@@ -231,7 +233,8 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Page Load Speed - 25% weight */}
         {result.pageLoadSpeed && (
-          <CategoryCard title="Page Load Speed" score={result.pageLoadSpeed.score}>
+          <div id="speed-section">
+            <CategoryCard title="Page Load Speed" score={result.pageLoadSpeed.score}>
             <div className="space-y-3 text-gray-300">
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center">
@@ -247,33 +250,45 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                   <span className="font-medium text-blue-400">{result.pageLoadSpeed.metrics.relativeTo}</span>
                 </div>
               </div>
-              {result.pageLoadSpeed.issues.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-400 space-y-1">
-                    {result.pageLoadSpeed.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
+{(() => {
+                const categorized = categorizeContent(result.pageLoadSpeed.issues, result.pageLoadSpeed.recommendations)
+                const groupedIssues = groupByImpact(categorized.issues)
+                const groupedRecommendations = groupByImpact(categorized.recommendations)
+                
+                return (
+                  <div className="space-y-3 mt-4">
+                    {Object.entries(groupedIssues).map(([impact, items]) => (
+                      <AccordionSection
+                        key={`issues-${impact}`}
+                        title="Issues"
+                        impact={impact as any}
+                        items={items}
+                        type="issues"
+                        defaultOpen={impact === 'High'}
+                      />
                     ))}
-                  </ul>
-                </div>
-              )}
-              {result.pageLoadSpeed.recommendations.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-400 space-y-1">
-                    {result.pageLoadSpeed.recommendations.map((rec, index) => (
-                      <li key={index}>• {rec}</li>
+                    {Object.entries(groupedRecommendations).map(([impact, items]) => (
+                      <AccordionSection
+                        key={`recommendations-${impact}`}
+                        title="Recommendations"
+                        impact={impact as any}
+                        items={items}
+                        type="recommendations"
+                        defaultOpen={impact === 'High'}
+                      />
                     ))}
-                  </ul>
-                </div>
-              )}
+                  </div>
+                )
+              })()}
             </div>
-          </CategoryCard>
+            </CategoryCard>
+          </div>
         )}
 
         {/* CTA Analysis - 25% weight */}
         {result.ctaAnalysis && (
-          <CategoryCard title="CTA Analysis" score={result.ctaAnalysis.score}>
+          <div id="cta-section">
+            <CategoryCard title="CTA Analysis" score={result.ctaAnalysis.score}>
             <div className="space-y-3 text-gray-300">
               {result.ctaAnalysis.primaryCTA && (
                 <div>
@@ -311,33 +326,45 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                     </ul>
                  </div>
               )}
-              {result.ctaAnalysis.issues.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Issues:</h4>
-                  <ul className="text-sm text-red-400 space-y-1">
-                    {result.ctaAnalysis.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
+{(() => {
+                const categorized = categorizeContent(result.ctaAnalysis.issues, result.ctaAnalysis.recommendations)
+                const groupedIssues = groupByImpact(categorized.issues)
+                const groupedRecommendations = groupByImpact(categorized.recommendations)
+                
+                return (
+                  <div className="space-y-3 mt-4">
+                    {Object.entries(groupedIssues).map(([impact, items]) => (
+                      <AccordionSection
+                        key={`cta-issues-${impact}`}
+                        title="Issues"
+                        impact={impact as any}
+                        items={items}
+                        type="issues"
+                        defaultOpen={impact === 'High'}
+                      />
                     ))}
-                  </ul>
-                </div>
-              )}
-              {result.ctaAnalysis.recommendations.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Recommendations:</h4>
-                  <ul className="text-sm text-blue-400 space-y-1">
-                    {result.ctaAnalysis.recommendations.map((rec, index) => (
-                      <li key={index}>• {rec}</li>
+                    {Object.entries(groupedRecommendations).map(([impact, items]) => (
+                      <AccordionSection
+                        key={`cta-recommendations-${impact}`}
+                        title="Recommendations"
+                        impact={impact as any}
+                        items={items}
+                        type="recommendations"
+                        defaultOpen={impact === 'High'}
+                      />
                     ))}
-                  </ul>
-                </div>
-              )}
+                  </div>
+                )
+              })()}
             </div>
-          </CategoryCard>
+            </CategoryCard>
+          </div>
         )}
 
         {/* Social Proof - 20% weight */}
         {result.socialProof && (
-          <CategoryCard title="Social Proof" score={result.socialProof.score}>
+          <div id="social-section">
+            <CategoryCard title="Social Proof" score={result.socialProof.score}>
             <div className="space-y-3 text-gray-300">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
@@ -386,34 +413,45 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                 <p className="text-sm">No social proof elements detected.</p>
               )}
               
-              {result.socialProof.issues.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Issues:</h4>
-                  <ul className="text-sm text-red-400 space-y-1">
-                    {result.socialProof.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
+{(() => {
+                const categorized = categorizeContent(result.socialProof.issues, result.socialProof.recommendations)
+                const groupedIssues = groupByImpact(categorized.issues)
+                const groupedRecommendations = groupByImpact(categorized.recommendations)
+                
+                return (
+                  <div className="space-y-3 mt-4">
+                    {Object.entries(groupedIssues).map(([impact, items]) => (
+                      <AccordionSection
+                        key={`social-issues-${impact}`}
+                        title="Issues"
+                        impact={impact as any}
+                        items={items}
+                        type="issues"
+                        defaultOpen={impact === 'High'}
+                      />
                     ))}
-                  </ul>
-                </div>
-              )}
-              
-              {result.socialProof.recommendations.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Recommendations:</h4>
-                  <ul className="text-sm text-blue-400 space-y-1">
-                    {result.socialProof.recommendations.map((rec, index) => (
-                      <li key={index}>• {rec}</li>
+                    {Object.entries(groupedRecommendations).map(([impact, items]) => (
+                      <AccordionSection
+                        key={`social-recommendations-${impact}`}
+                        title="Recommendations"
+                        impact={impact as any}
+                        items={items}
+                        type="recommendations"
+                        defaultOpen={impact === 'High'}
+                      />
                     ))}
-                  </ul>
-                </div>
-              )}
+                  </div>
+                )
+              })()}
             </div>
-          </CategoryCard>
+            </CategoryCard>
+          </div>
         )}
 
         {/* Whitespace Assessment - 15% weight */}
         {result.whitespaceAssessment && (
-          <CategoryCard title="Whitespace Assessment" score={result.whitespaceAssessment.score}>
+          <div id="whitespace-section">
+            <CategoryCard title="Whitespace Assessment" score={result.whitespaceAssessment.score}>
             <div className="space-y-3 text-gray-300">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
@@ -429,33 +467,45 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                   <span className="text-gray-400">Spacing Adequate:</span> {result.whitespaceAssessment.metrics.hasAdequateSpacing ? 'Yes' : 'No'}
                 </div>
               </div>
-              {result.whitespaceAssessment.issues.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Issues:</h4>
-                  <ul className="text-sm text-red-400 space-y-1">
-                    {result.whitespaceAssessment.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
+{(() => {
+                const categorized = categorizeContent(result.whitespaceAssessment.issues, result.whitespaceAssessment.recommendations)
+                const groupedIssues = groupByImpact(categorized.issues)
+                const groupedRecommendations = groupByImpact(categorized.recommendations)
+                
+                return (
+                  <div className="space-y-3 mt-4">
+                    {Object.entries(groupedIssues).map(([impact, items]) => (
+                      <AccordionSection
+                        key={`whitespace-issues-${impact}`}
+                        title="Issues"
+                        impact={impact as any}
+                        items={items}
+                        type="issues"
+                        defaultOpen={impact === 'High'}
+                      />
                     ))}
-                  </ul>
-                </div>
-              )}
-              {result.whitespaceAssessment.recommendations.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Recommendations:</h4>
-                  <ul className="text-sm text-blue-400 space-y-1">
-                    {result.whitespaceAssessment.recommendations.map((rec, index) => (
-                      <li key={index}>• {rec}</li>
+                    {Object.entries(groupedRecommendations).map(([impact, items]) => (
+                      <AccordionSection
+                        key={`whitespace-recommendations-${impact}`}
+                        title="Recommendations"
+                        impact={impact as any}
+                        items={items}
+                        type="recommendations"
+                        defaultOpen={impact === 'High'}
+                      />
                     ))}
-                  </ul>
-                </div>
-              )}
+                  </div>
+                )
+              })()}
             </div>
-          </CategoryCard>
+            </CategoryCard>
+          </div>
         )}
 
         {/* Image Optimization - 10% weight */}
         {result.imageOptimization && (
-          <CategoryCard title="Image Optimization" score={result.imageOptimization.score}>
+          <div id="images-section">
+            <CategoryCard title="Image Optimization" score={result.imageOptimization.score}>
             <div className="space-y-3 text-gray-300">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
@@ -471,33 +521,45 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                   <span className="text-gray-400">Properly Sized:</span> {result.imageOptimization.appropriatelySized}
                 </div>
               </div>
-              {result.imageOptimization.issues.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-400 space-y-1">
-                    {result.imageOptimization.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
+{(() => {
+                const categorized = categorizeContent(result.imageOptimization.issues, result.imageOptimization.recommendations)
+                const groupedIssues = groupByImpact(categorized.issues)
+                const groupedRecommendations = groupByImpact(categorized.recommendations)
+                
+                return (
+                  <div className="space-y-3 mt-4">
+                    {Object.entries(groupedIssues).map(([impact, items]) => (
+                      <AccordionSection
+                        key={`images-issues-${impact}`}
+                        title="Issues"
+                        impact={impact as any}
+                        items={items}
+                        type="issues"
+                        defaultOpen={impact === 'High'}
+                      />
                     ))}
-                  </ul>
-                </div>
-              )}
-              {result.imageOptimization.recommendations.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-400 space-y-1">
-                    {result.imageOptimization.recommendations.map((rec, index) => (
-                      <li key={index}>• {rec}</li>
+                    {Object.entries(groupedRecommendations).map(([impact, items]) => (
+                      <AccordionSection
+                        key={`images-recommendations-${impact}`}
+                        title="Recommendations"
+                        impact={impact as any}
+                        items={items}
+                        type="recommendations"
+                        defaultOpen={impact === 'High'}
+                      />
                     ))}
-                  </ul>
-                </div>
-              )}
+                  </div>
+                )
+              })()}
             </div>
-          </CategoryCard>
+            </CategoryCard>
+          </div>
         )}
 
         {/* Font Usage - 5% weight */}
         {result.fontUsage && (
-          <CategoryCard title="Font Usage" score={result.fontUsage.score}>
+          <div id="fonts-section">
+            <CategoryCard title="Font Usage" score={result.fontUsage.score}>
             <div className="space-y-3 text-gray-300">
               <div className="text-sm space-y-2">
                 <div>
@@ -519,28 +581,39 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                   </div>
                 </div>
               </div>
-              {result.fontUsage.issues.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2">Issues:</h4>
-                  <ul className="text-sm text-red-400 space-y-1">
-                    {result.fontUsage.issues.map((issue, index) => (
-                      <li key={index}>• {issue}</li>
+{(() => {
+                const categorized = categorizeContent(result.fontUsage.issues, result.fontUsage.recommendations)
+                const groupedIssues = groupByImpact(categorized.issues)
+                const groupedRecommendations = groupByImpact(categorized.recommendations)
+                
+                return (
+                  <div className="space-y-3 mt-4">
+                    {Object.entries(groupedIssues).map(([impact, items]) => (
+                      <AccordionSection
+                        key={`fonts-issues-${impact}`}
+                        title="Issues"
+                        impact={impact as any}
+                        items={items}
+                        type="issues"
+                        defaultOpen={impact === 'High'}
+                      />
                     ))}
-                  </ul>
-                </div>
-              )}
-              {result.fontUsage.recommendations.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2">Recommendations:</h4>
-                  <ul className="text-sm text-blue-400 space-y-1">
-                    {result.fontUsage.recommendations.map((rec, index) => (
-                      <li key={index}>• {rec}</li>
+                    {Object.entries(groupedRecommendations).map(([impact, items]) => (
+                      <AccordionSection
+                        key={`fonts-recommendations-${impact}`}
+                        title="Recommendations"
+                        impact={impact as any}
+                        items={items}
+                        type="recommendations"
+                        defaultOpen={impact === 'High'}
+                      />
                     ))}
-                  </ul>
-                </div>
-              )}
+                  </div>
+                )
+              })()}
             </div>
-          </CategoryCard>
+            </CategoryCard>
+          </div>
         )}
 
         

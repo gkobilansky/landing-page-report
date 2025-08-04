@@ -7,6 +7,32 @@
 body {
     @apply text-gray-100;
     background-color: var(--color-bg-main);
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+/* Mobile typography improvements for better readability */
+@media (max-width: 768px) {
+    body {
+        font-size: 17px;
+        line-height: 1.7;
+    }
+    
+    /* Improve contrast for better readability on dark theme */
+    .text-gray-400 {
+        color: rgb(156 163 175) !important; /* Lighter gray-400 for better contrast */
+    }
+    
+    .text-gray-500 {
+        color: rgb(156 163 175) !important; /* Upgrade gray-500 to gray-400 level */
+    }
+}
+
+@media (max-width: 640px) {
+    body {
+        font-size: 18px;
+        line-height: 1.75;
+    }
 }
 
 /* Scanning animation for screenshot preview */

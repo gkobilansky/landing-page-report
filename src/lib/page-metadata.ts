@@ -31,7 +31,7 @@ export async function extractPageMetadata(url: string, options: { puppeteer?: { 
 
     // Extract title, meta description, and JSON-LD schema data
     const metadata = await page.evaluate(() => {
-      const title = document.title || '';
+      const title = (document.title || '').trim();
       const descriptionMeta = document.querySelector('meta[name="description"]');
       const description = descriptionMeta?.getAttribute('content') || '';
       
@@ -70,7 +70,7 @@ export async function extractPageMetadata(url: string, options: { puppeteer?: { 
       }
       
       return {
-        title: title.trim(),
+        title: title.length > 0 ? title : '',
         description: description.trim(),
         url: window.location.href,
         schema

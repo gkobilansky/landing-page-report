@@ -6,6 +6,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import AnalysisResults from '@/components/AnalysisResults'
 import EmailInput from '@/components/EmailInput'
+import AlgorithmModal, { AlgorithmModalButton } from '@/components/AlgorithmModal'
+import ScoreBar from '@/components/ScoreBar'
 
 interface AnalysisData {
   id: string
@@ -59,6 +61,7 @@ export default function IndividualReportPage() {
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [emailSubmitted, setEmailSubmitted] = useState(false)
   const [hasSignedUpThisSession, setHasSignedUpThisSession] = useState(false)
+  const [showAlgorithmModal, setShowAlgorithmModal] = useState(false)
   const cleanAnalysisUrl = analysis?.url
     ? analysis.url
       .replace(/^https?:\/\//, '')   // Remove http:// or https://
@@ -190,36 +193,46 @@ export default function IndividualReportPage() {
             </svg>
             Back to All Reports
           </Link>
-          <h1 className="text-4xl font-bold text-gray-100 mb-6">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-100 mb-6">
             {analysis.schema_data?.name ? `${analysis.schema_data.name} Landing Page Report` : (analysis.url_title || 'Landing Page Report')}
           </h1>
           
-          <div className="flex items-start justify-between mb-8">
-            {/* Screenshot thumbnail */}
-            {analysis.screenshot_url && (
-              <div className="flex-shrink-0 mr-8">
-                <Image
-                  src={analysis.screenshot_url}
-                  alt={`Screenshot of ${analysis.url}`}
-                  width={144}
-                  height={112}
-                  className="w-36 h-28 object-cover object-left-top rounded-lg border border-gray-700 shadow-lg"
-                />
+          <div className="flex flex-col lg:flex-row lg:items-start gap-6 mb-8">
+            {/* Main content area */}
+            <div className="flex-1 lg:order-2">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+                {/* Screenshot thumbnail */}
+                {analysis.screenshot_url && (
+                  <div className="flex-shrink-0">
+                    <Image
+                      src={analysis.screenshot_url}
+                      alt={`Screenshot of ${analysis.url}`}
+                      width={144}
+                      height={112}
+                      className="w-32 h-24 sm:w-36 sm:h-28 object-cover object-left-top rounded-lg border border-gray-700 shadow-lg"
+                    />
+                  </div>
+                )}
+                
+                {/* Page info */}
+                <div className="flex-1 space-y-2">
+                  <h2 className="text-gray-300 text-base sm:text-lg font-medium break-all">{analysis.url}</h2>
+                  <p className="text-gray-500 text-sm">
+                    Analyzed {formatRelativeTime(analysis.created_at)}
+                  </p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-100 leading-tight">
+                    {analysis.url_title || 'No Title in HTML'}
+                  </p>         
+                </div>
               </div>
-            )}
-            
-            <div className="flex-1 space-y-2">
-              <h2 className="text-gray-300 text-lg font-medium">{analysis.url}</h2>
-              <p className="text-gray-500 text-sm">
-                Analyzed {formatRelativeTime(analysis.created_at)}
-              </p>
-              <p className="text-2xl font-bold text-gray-100 leading-tight">
-                {analysis.url_title || 'No Title in HTML'}
-              </p>         
             </div>
-            <div className="text-center ml-10 flex-shrink-0">
-              <div className="text-4xl font-bold text-brand-yellow mb-1">{analysis.overall_score}/100</div>
-              <div className="text-sm text-gray-400 mb-6">Overall Score</div>
+            
+            {/* Score and share section */}
+            <div className="flex flex-row sm:flex-col items-center justify-center sm:justify-start gap-4 lg:order-3 lg:flex-shrink-0 bg-gray-800/30 rounded-lg p-4 sm:bg-transparent sm:p-0">
+              <div className="text-center">
+                <div className="text-3xl sm:text-4xl font-bold text-brand-yellow">{analysis.overall_score}/100</div>
+                <div className="text-xs sm:text-sm text-gray-400">Overall Score</div>
+              </div>
               
               {/* Share Button */}
               <button
@@ -228,12 +241,12 @@ export default function IndividualReportPage() {
                   setShareClicked(true)
                   setTimeout(() => setShareClicked(false), 1000)
                 }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 mx-auto"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                 </svg>
-                {shareClicked ? 'Copied!' : 'Share Report'}
+                {shareClicked ? 'Copied!' : 'Share'}
               </button>
             </div>
           </div>
@@ -241,31 +254,30 @@ export default function IndividualReportPage() {
 
         {/* Analysis Summary */}
         <div className="bg-gray-800/50 rounded-lg p-6 mb-8 border border-gray-700">
-          <p className="text-gray-300 text-base leading-relaxed mb-3">
-            We&apos;ve run {cleanAnalysisUrl} through a series of tests and found . We algorithmically analyzed the page and tried our best to find and rate the most important elements: <em className="text-gray-200">speed, space, and story.</em> 
-          </p>
-
-          <p className="text-gray-300 text-base leading-relaxed">
-            <b>Story</b> is the hardest element to analyze algorithmically, but a clear engaging call to action is a pretty good proxy. Social proof tells it&apos;s own story, humans are social creatures after all.
-          </p>
-          <p className="text-gray-300 text-base leading-relaxed">
-            <b>Speed</b> is the easiest element to analyze algorithmically. Some other page &quot;tools&quot; make this seem more complicated than it is. 
-          </p>
-          <p className="text-gray-300 text-base leading-relaxed">
-            <b>Space</b> is the most important element to analyze algorithmically, but a clear engaging call to action is a pretty good proxy. Social proof tells it&apos;s own story, humans are social creatures after all.
-          </p>
-
-          {!hasSignedUpThisSession && (
-            <p className="text-gray-300 text-base leading-relaxed mt-4 pt-3 border-t border-gray-700">
-              <button
-                onClick={() => setShowEmailModal(true)}
-                className="text-blue-400 hover:text-blue-300 underline transition-colors font-medium"
-              >
-                Sign up to get notified
-              </button>{' '}
-              when we launch our more advanced, AI reviewed sentiment analysis service.
-            </p>
-          )}
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-gray-300 text-base leading-relaxed mb-3">
+                We&apos;ve run {cleanAnalysisUrl} through a series of automated tests analyzing the most important conversion elements: <em className="text-gray-200">speed, space, and story.</em>
+              </p>
+              
+              {!hasSignedUpThisSession && (
+                <p className="text-gray-300 text-base leading-relaxed">
+                  <button
+                    onClick={() => setShowEmailModal(true)}
+                    className="text-blue-400 hover:text-blue-300 underline transition-colors font-medium"
+                  >
+                    Sign up to get notified
+                  </button>{' '}
+                  when we launch our more advanced, AI reviewed sentiment analysis service.
+                </p>
+              )}
+            </div>
+            
+            <AlgorithmModalButton 
+              onClick={() => setShowAlgorithmModal(true)}
+              className="flex-shrink-0 ml-4"
+            />
+          </div>
         </div>
 
         {/* Email Collection Modal */}
@@ -296,6 +308,21 @@ export default function IndividualReportPage() {
             </div>
           </div>
         )}
+
+        <AlgorithmModal 
+          isOpen={showAlgorithmModal}
+          onClose={() => setShowAlgorithmModal(false)}
+        />
+
+        {/* Score Bar */}
+        <ScoreBar
+          pageSpeed={analysisResult.pageLoadSpeed}
+          fontUsage={analysisResult.fontUsage}
+          imageOptimization={analysisResult.imageOptimization}
+          ctaAnalysis={analysisResult.ctaAnalysis}
+          whitespaceAssessment={analysisResult.whitespaceAssessment}
+          socialProof={analysisResult.socialProof}
+        />
 
         {/* Analysis Results */}
         <AnalysisResults result={analysisResult} analysisId={analysis.id} />

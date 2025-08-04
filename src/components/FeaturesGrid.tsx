@@ -1,7 +1,15 @@
+'use client'
+
+import { useState } from 'react'
+import AlgorithmModal, { AlgorithmModalButton } from './AlgorithmModal'
+
 export default function FeaturesGrid() {
+  const [showAlgorithmModal, setShowAlgorithmModal] = useState(false)
+
   return (
-    <div className="mt-16 max-w-4xl mx-auto">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <>
+      <div className="mt-16 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               <div className="text-center">
           <div className="w-12 h-12 bg-purple-900 rounded-lg flex items-center justify-center mx-auto mb-4">
             <svg className="w-6 h-6 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -43,7 +51,21 @@ export default function FeaturesGrid() {
         </div>
   
         
+        </div>
+        
+        {/* How we analyze button */}
+        <div className="mt-12 text-center">
+          <AlgorithmModalButton 
+            onClick={() => setShowAlgorithmModal(true)}
+            className="mx-auto"
+          />
+        </div>
       </div>
-    </div>
+
+      <AlgorithmModal 
+        isOpen={showAlgorithmModal}
+        onClose={() => setShowAlgorithmModal(false)}
+      />
+    </>
   )
 }
