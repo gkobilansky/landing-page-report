@@ -36,12 +36,12 @@ const ScoreItem = ({
   return (
     <button
       onClick={handleClick}
-      className="flex items-center gap-2 px-4 py-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-gray-600 hover:bg-gray-800/70 transition-all duration-200 cursor-pointer group min-w-[120px] flex-shrink-0"
+      className="flex items-center gap-3 px-4 py-3 bg-gray-800/60 rounded-xl border border-gray-700/50 hover:border-gray-600 hover:bg-gray-800/80 transition-all duration-200 cursor-pointer group min-w-[130px] flex-shrink-0"
     >
       <span className="text-lg group-hover:scale-110 transition-transform">{emoji}</span>
       <div className="text-left">
         <div className="text-sm text-gray-400 font-medium">{label}</div>
-        <div className={`text-lg font-bold ${getScoreColor(score)}`}>{score}</div>
+        <div className={`text-xl font-bold ${getScoreColor(score)}`}>{score}</div>
       </div>
     </button>
   )
@@ -56,20 +56,17 @@ export default function ScoreBar({
   socialProof 
 }: ScoreBarProps) {
   const scores = [
-    { emoji: '🔥', label: 'Speed', score: pageSpeed?.score || 0, sectionId: 'speed-section' },
+    { emoji: '⚡', label: 'Speed', score: pageSpeed?.score || 0, sectionId: 'speed-section' },
     { emoji: '🎯', label: 'CTA', score: ctaAnalysis?.score || 0, sectionId: 'cta-section' },
-    { emoji: '🖼️', label: 'Images', score: imageOptimization?.score || 0, sectionId: 'images-section' },
-    { emoji: '🎨', label: 'Fonts', score: fontUsage?.score || 0, sectionId: 'fonts-section' },
     { emoji: '⭐', label: 'Social', score: socialProof?.score || 0, sectionId: 'social-section' },
-    { emoji: '🎪', label: 'Space', score: whitespaceAssessment?.score || 0, sectionId: 'whitespace-section' }
+    { emoji: '📐', label: 'Space', score: whitespaceAssessment?.score || 0, sectionId: 'whitespace-section' },
+    { emoji: '🖼️', label: 'Images', score: imageOptimization?.score || 0, sectionId: 'images-section' },
+    { emoji: '🔤', label: 'Fonts', score: fontUsage?.score || 0, sectionId: 'fonts-section' }
   ]
 
   return (
-    <div className="bg-gray-900/80 rounded-xl p-6 mb-8 border border-gray-700 backdrop-blur-sm">
-      <h3 className="text-lg font-semibold text-gray-200 mb-4 text-center">
-        Quick Navigation - Click any score to jump to that section
-      </h3>
-      <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
+    <div className="mb-8">
+      <div className="flex flex-wrap gap-4 justify-center max-w-5xl mx-auto">
         {scores.map(({ emoji, label, score, sectionId }) => (
           <ScoreItem
             key={sectionId}
@@ -80,6 +77,9 @@ export default function ScoreBar({
           />
         ))}
       </div>
+      <p className="text-sm text-gray-400 mt-6 text-center">
+        Click any score to jump to that section
+      </p>
     </div>
   )
 }

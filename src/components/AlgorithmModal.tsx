@@ -109,7 +109,7 @@ export function AlgorithmModalButton({ onClick, variant = 'default', className =
         onClick={onClick}
         className={`text-blue-400 hover:text-blue-300 underline transition-colors text-sm font-medium ${className}`}
       >
-        How we analyze
+        How we get your score
       </button>
     )
   }
