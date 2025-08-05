@@ -247,20 +247,41 @@ export default function IndividualReportPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                 </svg>
                 {shareClicked ? 'Copied!' : 'Share'}
-              </button>
+              </button>     
             </div>
           </div>
         </div>
 
-        {/* Analysis Summary */}
-        <div className="bg-gray-800/50 rounded-lg p-6 mb-8 border border-gray-700">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-gray-300 text-base leading-relaxed mb-3">
-                We&apos;ve run {cleanAnalysisUrl} through a series of automated tests analyzing the most important conversion elements: <em className="text-gray-200">speed, space, and story.</em>
-              </p>
-              
-              {!hasSignedUpThisSession && (
+        {/* Report Summary */}
+        <div className="w-full max-w-6xl mx-auto">
+          <div className="rounded-lg border border-gray-700 p-8 mb-6" style={{ backgroundColor: 'var(--color-bg-card)' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <h2 className="text-2xl font-bold text-gray-100">Executive Summary</h2>
+              <aside>
+                <AlgorithmModalButton 
+                  onClick={() => setShowAlgorithmModal(true)}
+                  className="text-sm text-gray-400 hover:text-gray-300"
+                  variant="compact"
+                />
+              </aside>
+            </div>
+            
+            <p className="text-gray-300 text-lg leading-relaxed mb-8">
+              We&apos;ve run {cleanAnalysisUrl} through a series of automated tests analyzing the most important conversion elements: <em className="text-gray-200">speed, space, and story.</em>
+            </p>
+
+            {/* Score Bar */}
+            <ScoreBar
+              pageSpeed={analysisResult.pageLoadSpeed}
+              fontUsage={analysisResult.fontUsage}
+              imageOptimization={analysisResult.imageOptimization}
+              ctaAnalysis={analysisResult.ctaAnalysis}
+              whitespaceAssessment={analysisResult.whitespaceAssessment}
+              socialProof={analysisResult.socialProof}
+            />
+            
+            {!hasSignedUpThisSession && (
+              <div className="mt-8">
                 <p className="text-gray-300 text-base leading-relaxed">
                   <button
                     onClick={() => setShowEmailModal(true)}
@@ -270,13 +291,8 @@ export default function IndividualReportPage() {
                   </button>{' '}
                   when we launch our more advanced, AI reviewed sentiment analysis service.
                 </p>
-              )}
-            </div>
-            
-            <AlgorithmModalButton 
-              onClick={() => setShowAlgorithmModal(true)}
-              className="flex-shrink-0 ml-4"
-            />
+              </div>
+            )}
           </div>
         </div>
 
@@ -312,16 +328,6 @@ export default function IndividualReportPage() {
         <AlgorithmModal 
           isOpen={showAlgorithmModal}
           onClose={() => setShowAlgorithmModal(false)}
-        />
-
-        {/* Score Bar */}
-        <ScoreBar
-          pageSpeed={analysisResult.pageLoadSpeed}
-          fontUsage={analysisResult.fontUsage}
-          imageOptimization={analysisResult.imageOptimization}
-          ctaAnalysis={analysisResult.ctaAnalysis}
-          whitespaceAssessment={analysisResult.whitespaceAssessment}
-          socialProof={analysisResult.socialProof}
         />
 
         {/* Analysis Results */}
