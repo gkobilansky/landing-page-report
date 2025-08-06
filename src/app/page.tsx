@@ -320,9 +320,9 @@ export default function Home() {
             
             {/* Subheading */}
             <p className="text-xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed">
-              Get a comprehensive analysis of your landing page in seconds. Discover what's 
+              Get a comprehensive analysis of your landing page in seconds. Discover what&apos;s 
               killing your conversions and get actionable insights to boost your results by up to 
-              300%.
+              300%
             </p>
 
             {/* URL Input */}
