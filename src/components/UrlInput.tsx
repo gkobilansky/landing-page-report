@@ -68,35 +68,70 @@ export default function UrlInput({ onAnalyze, isLoading = false }: UrlInputProps
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto">
-      <div className="flex flex-col gap-4">
-        <div>
-          <label htmlFor="url" className="block text-sm font-medium text-gray-300 mb-2">
-            Enter your landing page URL
-          </label>
-          <div className="flex gap-2">
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h2 className="text-3xl font-bold text-white mb-3">
+            Analyze Your Landing Page Now
+          </h2>
+          <p className="text-gray-400 text-lg">
+            Enter your URL below and get your free report in under 30 seconds
+          </p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="mb-6">
+          <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
               id="url"
               value={url}
               onChange={handleUrlChange}
-              placeholder="https://example.com"
-              className="flex-1 px-4 py-3 bg-gray-800 border border-gray-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow outline-none placeholder-gray-500"
+              placeholder="https://your-landing-page.com"
+              className="flex-1 px-6 py-4 bg-gray-700/50 border border-gray-600 text-gray-100 rounded-xl focus:ring-2 focus:ring-[#FFCC00] focus:border-[#FFCC00] outline-none placeholder-gray-400 text-lg"
               disabled={isLoading}
             />
             <button
               type="submit"
               disabled={isLoading}
-              className="px-6 py-3 bg-[#FFCC00] text-gray-900 font-semibold rounded-lg hover:bg-yellow-500 focus:ring-2 focus:ring-yellow-300 focus:ring-offset-2 focus:ring-offset-[var(--color-bg-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-8 py-4 bg-[#FFCC00] text-gray-900 font-bold rounded-xl hover:bg-yellow-400 focus:ring-2 focus:ring-yellow-300 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg flex items-center gap-2"
             >
-              {isLoading ? 'Analyzing...' : 'Analyze'}
+              {isLoading ? 'Analyzing...' : (
+                <>
+                  Analyze Now
+                  <span className="text-xl">→</span>
+                </>
+              )}
             </button>
           </div>
+          {error && (
+            <p className="text-red-400 text-sm mt-3">{error}</p>
+          )}
+        </form>
+
+        {/* Benefits */}
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-6 text-gray-400">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-sm">✓</span>
+            </div>
+            <span>No signup required</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-sm">✓</span>
+            </div>
+            <span>Results in about a minute</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-sm">✓</span>
+            </div>
+            <span>Free to try</span>
+          </div>
         </div>
-        {error && (
-          <p className="text-red-400 text-sm">{error}</p>
-        )}
       </div>
-    </form>
+    </div>
   )
 }
