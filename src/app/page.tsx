@@ -9,6 +9,7 @@ import ProgressiveLoader from '@/components/ProgressiveLoader'
 import Header from '@/components/Header'
 import ErrorNotification from '@/components/ErrorNotification'
 import FeaturesGrid from '@/components/FeaturesGrid'
+import TopPerformingPages from '@/components/TopPerformingPages'
 import AboutSection from '@/components/AboutSection'
 import SocialFooter from '@/components/SocialFooter'
 
@@ -428,6 +429,13 @@ export default function Home() {
         {!analysisState.isLoading && !analysisState.error && !analysisState.showEmailInput && (
           <div className="pb-16">
             <FeaturesGrid />
+          </div>
+        )}
+
+        {/* Top Performing Pages - Only show when no analysis in progress */}
+        {!analysisState.result && !analysisState.isLoading && !analysisState.error && !analysisState.showEmailInput && (
+          <div className="pb-16">
+            <TopPerformingPages />
           </div>
         )}
    

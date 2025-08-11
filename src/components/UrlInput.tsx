@@ -68,7 +68,7 @@ export default function UrlInput({ onAnalyze, isLoading = false }: UrlInputProps
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto" id="url-input">
       <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8">
         {/* Header */}
         <div className="text-center mb-6">
@@ -76,7 +76,7 @@ export default function UrlInput({ onAnalyze, isLoading = false }: UrlInputProps
             Analyze Your Landing Page Now
           </h2>
           <p className="text-gray-400 text-lg">
-            Enter your URL below and get your free report in under 30 seconds
+            Enter your URL below and get your free report in about a minute
           </p>
         </div>
 
@@ -99,7 +99,7 @@ export default function UrlInput({ onAnalyze, isLoading = false }: UrlInputProps
             >
               {isLoading ? 'Analyzing...' : (
                 <>
-                  Analyze Now
+                  Run Your Report Now
                   <span className="text-xl">→</span>
                 </>
               )}
