@@ -36,7 +36,8 @@ describe('Font Usage Analysis', () => {
       webFontCount: expect.any(Number),
       score: expect.any(Number),
       issues: expect.any(Array),
-      recommendations: expect.any(Array)
+      recommendations: expect.any(Array),
+      loadTime: expect.any(Number)
     })
     
     // Should detect exactly 1 font-family declaration for example.com

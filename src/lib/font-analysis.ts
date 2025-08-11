@@ -8,6 +8,7 @@ export interface FontAnalysisResult {
   score: number
   issues: string[]
   recommendations: string[]
+  loadTime: number // Total analysis time in ms
 }
 
 export interface FontAnalysisOptions {
@@ -17,6 +18,7 @@ export interface FontAnalysisOptions {
 }
 
 export async function analyzeFontUsage(url: string, options: FontAnalysisOptions = {}): Promise<FontAnalysisResult> {
+  const startTime = Date.now()
   console.log(`🚀 Starting font analysis for: ${url}`)
   
   console.log('📱 Launching Puppeteer browser...')
@@ -66,6 +68,8 @@ export async function analyzeFontUsage(url: string, options: FontAnalysisOptions
     
     console.log(`💯 Font usage score: ${score}/100 (${fontCount} font families)`)
     
+    const loadTime = Date.now() - startTime
+    
     return {
       fontFamilies: fontFamilyDeclarations,
       fontCount,
@@ -73,7 +77,8 @@ export async function analyzeFontUsage(url: string, options: FontAnalysisOptions
       webFontCount,
       score,
       issues,
-      recommendations
+      recommendations,
+      loadTime
     }
     
   } finally {

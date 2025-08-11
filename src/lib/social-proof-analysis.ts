@@ -40,6 +40,7 @@ export interface SocialProofAnalysisResult {
   };
   issues: string[];
   recommendations: string[];
+  loadTime: number; // Total analysis time in ms
 }
 
 interface AnalysisOptions {
@@ -54,6 +55,7 @@ interface AnalysisOptions {
 }
 
 export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOptions = {}): Promise<SocialProofAnalysisResult> {
+  const startTime = Date.now();
   console.log('🔍 Social Proof Analysis starting...');
   
   let browser;
@@ -449,16 +451,21 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
 
     console.log(`🎯 Social Proof Analysis complete: ${uniqueElements.length} elements found, score: ${score}`);
     
+    const loadTime = Date.now() - startTime;
+    
     return {
       score,
       elements: uniqueElements,
       summary,
       issues,
-      recommendations
+      recommendations,
+      loadTime
     };
     
   } catch (error) {
     console.error('❌ Social Proof Analysis failed with error:', error);
+    
+    const loadTime = Date.now() - startTime;
     
     return {
       score: 0,
@@ -478,7 +485,8 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
         newsMentions: 0
       },
       issues: ['Social proof analysis failed due to an error'],
-      recommendations: []
+      recommendations: [],
+      loadTime
     };
   } finally {
     if (browser) {

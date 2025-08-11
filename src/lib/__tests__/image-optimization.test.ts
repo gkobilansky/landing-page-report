@@ -34,11 +34,13 @@ describe('Image Optimization Analysis', () => {
       const result = await analyzeImageOptimization('https://example.com');
 
       expect(result.score).toBe(100);
+      expect(result.applicable).toBe(true); // Should be applicable when images are present
       expect(result.totalImages).toBe(2);
       expect(result.modernFormats).toBe(2);
       expect(result.withAltText).toBe(2);
       expect(result.appropriatelySized).toBe(2);
       expect(result.issues).toHaveLength(0);
+      expect(result.loadTime).toBeGreaterThanOrEqual(0); // Should include analysis time
     });
 
     it('should detect mixed format usage', async () => {
@@ -161,9 +163,11 @@ describe('Image Optimization Analysis', () => {
       const result = await analyzeImageOptimization('https://example.com');
 
       expect(result.totalImages).toBe(0);
-      expect(result.score).toBe(100); // Perfect score if no images to optimize
+      expect(result.score).toBe(null); // null when not applicable (no images)
+      expect(result.applicable).toBe(false); // Not applicable when no images
       expect(result.issues).toHaveLength(0);
       expect(result.recommendations).toContain('Consider adding relevant images to enhance user engagement');
+      expect(result.loadTime).toBeGreaterThanOrEqual(0); // Should include analysis time
     });
   });
 
@@ -198,8 +202,10 @@ describe('Image Optimization Analysis', () => {
       const result = await analyzeImageOptimization('https://example.com');
 
       expect(result.totalImages).toBe(0);
-      expect(result.score).toBe(100);
+      expect(result.score).toBe(null); // null when not applicable (no images)
+      expect(result.applicable).toBe(false); // Not applicable when no images
       expect(result.recommendations).toContain('Consider adding relevant images to enhance user engagement');
+      expect(result.loadTime).toBeGreaterThanOrEqual(0); // Should include analysis time
     });
 
     it('should handle typical e-commerce site', async () => {

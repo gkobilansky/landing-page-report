@@ -99,7 +99,7 @@ describe('Whitespace Assessment', () => {
       const result = await analyzeWhitespace('https://example.com');
 
       expect(result.score).toBeGreaterThanOrEqual(80);
-      expect(result.grade).toBe('B');
+      // Grade property removed - using numeric score only
       expect(result.metrics.elementDensityPerSection.maxDensity).toBe(4);
       expect(result.metrics.spacingAnalysis.headlineSpacing.adequate).toBe(true);
       expect(result.metrics.spacingAnalysis.ctaSpacing.adequate).toBe(true);
@@ -155,7 +155,7 @@ describe('Whitespace Assessment', () => {
       const result = await analyzeWhitespace('https://example.com');
 
       expect(result.score).toBeLessThanOrEqual(30);
-      expect(result.grade).toBe('F');
+      // Grade property removed - using numeric score only
       expect(result.metrics.elementDensityPerSection.maxDensity).toBe(16);
       expect(result.metrics.spacingAnalysis.headlineSpacing.adequate).toBe(false);
       expect(result.metrics.spacingAnalysis.ctaSpacing.adequate).toBe(false);
@@ -266,7 +266,7 @@ describe('Whitespace Assessment', () => {
       const result = await analyzeWhitespace('https://invalid-url.com');
 
       expect(result.score).toBe(0);
-      expect(result.grade).toBe('F');
+      // Grade property removed - using numeric score only
       expect(result.issues).toContain('Whitespace analysis failed due to error');
       expect(result.recommendations).toContain('Unable to analyze whitespace - please check URL accessibility');
     });
@@ -302,7 +302,7 @@ describe('Whitespace Assessment', () => {
 
       const result = await analyzeWhitespace('https://example.com');
       expect(result.score).toBeGreaterThanOrEqual(90);
-      expect(result.grade).toBe('A');
+      // Grade property removed - using numeric score only
     });
   });
 });

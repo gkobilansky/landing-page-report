@@ -1,13 +1,15 @@
 import { createPuppeteerBrowser } from './puppeteer-config';
 
 export interface ImageOptimizationResult {
-  score: number;
+  score: number | null; // null when not applicable (no images)
+  applicable: boolean; // false when totalImages=0
   totalImages: number;
   modernFormats: number;
   withAltText: number;
   appropriatelySized: number;
   issues: string[];
   recommendations: string[];
+  loadTime: number; // Total analysis time in ms
   details: {
     formatBreakdown: Record<string, number>;
     avgImageSize: { width: number; height: number } | null;
@@ -34,6 +36,7 @@ export interface ImageOptimizationOptions {
 }
 
 export async function analyzeImageOptimization(url: string, options: ImageOptimizationOptions = {}): Promise<ImageOptimizationResult> {
+  const startTime = Date.now();
   console.log('🖼️ Starting image optimization analysis for:', url);
   
   let browser;
@@ -70,23 +73,30 @@ export async function analyzeImageOptimization(url: string, options: ImageOptimi
     console.log(`📊 Found ${images.length} images to analyze`);
     
     const result = analyzeImages(images);
+    const loadTime = Date.now() - startTime;
     
     console.log('✅ Image optimization analysis complete');
     console.log(`📈 Final score: ${result.score}/100`);
     
-    return result;
+    return {
+      ...result,
+      loadTime
+    };
     
   } catch (error) {
     console.error('❌ Error during image optimization analysis:', error);
     
+    const loadTime = Date.now() - startTime;
     return {
       score: 0,
+      applicable: true, // Error case is still considered applicable
       totalImages: 0,
       modernFormats: 0,
       withAltText: 0,
       appropriatelySized: 0,
       issues: [`Failed to analyze images: ${error instanceof Error ? error.message : 'Unknown error'}`],
       recommendations: ['Please check the URL and try again'],
+      loadTime,
       details: {
         formatBreakdown: {},
         avgImageSize: null,
@@ -101,13 +111,14 @@ export async function analyzeImageOptimization(url: string, options: ImageOptimi
   }
 }
 
-function analyzeImages(images: ImageData[]): ImageOptimizationResult {
+function analyzeImages(images: ImageData[]): Omit<ImageOptimizationResult, 'loadTime'> {
   console.log(`🔬 Analyzing ${images.length} images...`);
   
   if (images.length === 0) {
-    console.log('📭 No images found - returning perfect score');
+    console.log('📭 No images found - returning not applicable');
     return {
-      score: 100,
+      score: null,
+      applicable: false,
       totalImages: 0,
       modernFormats: 0,
       withAltText: 0,
@@ -220,6 +231,7 @@ function analyzeImages(images: ImageData[]): ImageOptimizationResult {
   
   return {
     score,
+    applicable: true, // Has images, analysis is applicable
     totalImages: images.length,
     modernFormats,
     withAltText,

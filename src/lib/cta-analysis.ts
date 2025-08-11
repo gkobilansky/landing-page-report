@@ -29,6 +29,7 @@ export interface CTAAnalysisResult {
   secondaryCTAs: CTAElement[];
   issues: string[];
   recommendations: string[];
+  loadTime: number; // Total analysis time in ms
 }
 
 interface AnalysisOptions {
@@ -44,6 +45,7 @@ interface AnalysisOptions {
 
 
 export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {}): Promise<CTAAnalysisResult> {
+  const startTime = Date.now();
   console.log('🔍 CTA Analysis starting...');
   
   let browser;
@@ -478,17 +480,22 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
 
     console.log(`🎯 CTA Analysis complete: ${uniqueCTAs.length} CTAs found (${ctaData.length} before deduplication), score: ${score}`);
     
+    const loadTime = Date.now() - startTime;
+    
     return {
       score,
       ctas: uniqueCTAs,
       primaryCTA,
       secondaryCTAs,
       issues,
-      recommendations
+      recommendations,
+      loadTime
     };
     
   } catch (error) {
     console.error('❌ CTA Analysis failed with error:', error);
+    
+    const loadTime = Date.now() - startTime;
     
     // Return empty results on error
     return {
@@ -497,7 +504,8 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
       primaryCTA: undefined,
       secondaryCTAs: [],
       issues: ['CTA analysis failed due to an error'],
-      recommendations: []
+      recommendations: [],
+      loadTime
     };
   } finally {
     if (browser) {
