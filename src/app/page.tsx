@@ -1,20 +1,18 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import UrlInput from '@/components/UrlInput'
 import EmailInput from '@/components/EmailInput'
-import AnalysisResults from '@/components/AnalysisResults'
 import ProgressiveLoader from '@/components/ProgressiveLoader'
 import Header from '@/components/Header'
 import ErrorNotification from '@/components/ErrorNotification'
-import CacheNotification from '@/components/CacheNotification'
 import FeaturesGrid from '@/components/FeaturesGrid'
 import AboutSection from '@/components/AboutSection'
 import SocialFooter from '@/components/SocialFooter'
 
 interface AnalysisState {
-  result: any
   isLoading: boolean
   error: string | null
   showEmailInput: boolean
@@ -25,11 +23,13 @@ interface AnalysisState {
   screenshotUrl: string | null
   analysisId: string | null
   emailLoading: boolean
+  siteTitle: string | null
+  siteDescription: string | null
 }
 
 export default function Home() {
+  const router = useRouter()
   const [analysisState, setAnalysisState] = useState<AnalysisState>({
-    result: null,
     isLoading: false,
     error: null,
     showEmailInput: false,
@@ -39,7 +39,9 @@ export default function Home() {
     emailSentToAPI: false,
     screenshotUrl: null,
     analysisId: null,
-    emailLoading: false
+    emailLoading: false,
+    siteTitle: null,
+    siteDescription: null
   })
 
   const [totalAnalyses, setTotalAnalyses] = useState<number>(0)
@@ -67,7 +69,6 @@ export default function Home() {
 
   const handleAnalyze = async (url: string, forceRescan = false) => {
     setAnalysisState({
-      result: null,
       isLoading: true,
       error: null,
       showEmailInput: true,
@@ -77,7 +78,9 @@ export default function Home() {
       emailSentToAPI: false,
       screenshotUrl: null,
       analysisId: null,
-      emailLoading: false
+      emailLoading: false,
+      siteTitle: null,
+      siteDescription: null
     })
 
     try {
@@ -122,25 +125,35 @@ export default function Home() {
       // Extract analysis data from API response structure
       const analysisData = result.analysis || result
       
-      setAnalysisState(prev => ({
-        ...prev,
-        result: analysisData,
-        isLoading: false,
-        error: null,
-        fromCache: result.fromCache || false,
-        analysisId: result.analysisId || null,
-        screenshotUrl: analysisData.screenshotUrl || prev.screenshotUrl
-      }))
-
+      // Update state with site metadata when available
+      if (analysisData.url_title || analysisData.url_description) {
+        setAnalysisState(prev => ({
+          ...prev,
+          siteTitle: analysisData.url_title || null,
+          siteDescription: analysisData.url_description || null
+        }))
+      }
+      
       // Process pending email submission if analysis is complete
       if (pendingEmailRef.current && result.analysisId) {
         await callEmailAPI(pendingEmailRef.current, result.analysisId);
         pendingEmailRef.current = null;
       }
+
+      // Redirect to the individual report page
+      if (result.analysisId) {
+        router.push(`/reports/${result.analysisId}`)
+      } else {
+        // Fallback if no analysisId is returned
+        setAnalysisState(prev => ({
+          ...prev,
+          isLoading: false,
+          error: 'Analysis completed but could not navigate to report',
+        }))
+      }
     } catch (error) {
       setAnalysisState(prev => ({
         ...prev,
-        result: null,
         isLoading: false,
         error: error instanceof Error ? error.message : 'An unexpected error occurred'
       }))
@@ -194,7 +207,6 @@ export default function Home() {
   const handleReset = () => {
     pendingEmailRef.current = null
     setAnalysisState({
-      result: null,
       isLoading: false,
       error: null,
       showEmailInput: false,
@@ -204,15 +216,13 @@ export default function Home() {
       emailSentToAPI: false,
       screenshotUrl: null,
       analysisId: null,
-      emailLoading: false
+      emailLoading: false,
+      siteTitle: null,
+      siteDescription: null
     })
   }
 
-  const handleForceRescan = () => {
-    if (analysisState.currentUrl) {
-      handleAnalyze(analysisState.currentUrl, true)
-    }
-  }
+
 
   return (
     <main className="min-h-screen">
@@ -247,7 +257,7 @@ export default function Home() {
 
       <div className="container mx-auto px-4">
         {/* Hero Section - Only show when no analysis in progress */}
-        {!analysisState.showEmailInput && !analysisState.result && !analysisState.isLoading && !analysisState.error && (
+        {!analysisState.showEmailInput && !analysisState.isLoading && !analysisState.error && (
           <div className="text-center py-20">
             {/* Free Analysis Badge */}
             <div className="inline-flex items-center gap-2 bg-[#FFCC00]/20 text-[#FFCC00] px-3 py-1 rounded-full text-xs font-medium mb-8 border border-[#FFCC00]/30">
@@ -361,9 +371,39 @@ export default function Home() {
           </div>
         )}
 
+        {/* Analysis Header - shown during loading */}
+        {analysisState.isLoading && analysisState.currentUrl && (
+          <div className="py-12">
+            <div className="text-center max-w-4xl mx-auto">
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                Running report for{' '}
+                <span className="text-[#FFCC00]">
+                  {analysisState.currentUrl.replace(/^https?:\/\//, '').replace(/\/+$/, '')}
+                </span>
+              </h1>
+              
+              {/* Show site title and description when available */}
+              {(analysisState.siteTitle || analysisState.siteDescription) && (
+                <div className="mt-6 p-6 bg-gray-800/40 rounded-xl border border-gray-700">
+                  {analysisState.siteTitle && (
+                    <h2 className="text-xl font-semibold text-gray-200 mb-2">
+                      {analysisState.siteTitle}
+                    </h2>
+                  )}
+                  {analysisState.siteDescription && (
+                    <p className="text-gray-400 leading-relaxed">
+                      {analysisState.siteDescription}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Email Input Section - shown while loading */}
         {analysisState.showEmailInput && analysisState.isLoading && (
-          <div className="py-16">
+          <div className="py-8">
             <EmailInput 
               onEmailSubmit={handleEmailSubmit}
               isLoading={analysisState.emailLoading}
@@ -384,38 +424,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* Cache Notification */}
-        {analysisState.result && !analysisState.isLoading && analysisState.fromCache && (
-          <CacheNotification onForceRescan={handleForceRescan} isLoading={analysisState.isLoading} />
-        )}
-
-        {/* Results Section */}
-        {analysisState.result && !analysisState.isLoading && (
-          <div className="py-8 space-y-8">
-            <div className="flex justify-center">
-              <button
-                onClick={handleReset}
-                className="bg-[#FFCC00] text-gray-900 px-6 py-3 rounded-lg hover:bg-yellow-400 transition-colors text-base font-semibold shadow-md"
-              >
-                Analyze Another Page
-              </button>
-            </div>
-            <AnalysisResults result={analysisState.result} analysisId={analysisState.analysisId || undefined} />
-            
-            {/* Email Input after results */}
-            <div className="mt-12 pt-8 border-t border-gray-700">
-              <EmailInput 
-                onEmailSubmit={handleEmailSubmit}
-                isLoading={analysisState.emailLoading}
-                isAnalysisComplete={true}
-                initialSubmittedState={analysisState.emailSubmitted}
-              />
-            </div>
-          </div>
-        )}
-
         {/* Features Grid - Only show when no analysis in progress */}
-        {!analysisState.result && !analysisState.isLoading && !analysisState.error && !analysisState.showEmailInput && (
+        {!analysisState.isLoading && !analysisState.error && !analysisState.showEmailInput && (
           <div className="pb-16">
             <FeaturesGrid />
           </div>
