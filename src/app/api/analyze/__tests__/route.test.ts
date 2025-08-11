@@ -177,7 +177,9 @@ describe('/api/analyze', () => {
     const data = await response.json();
 
     if (response.status !== 200) {
-      console.error('API Error:', data);
+      console.error('API Error Response:', response.status);
+      console.error('API Error Data:', data);
+      console.error('API Error Stack:', data.error);
     }
 
     expect(response.status).toBe(200);
@@ -243,6 +245,62 @@ describe('/api/analyze', () => {
     expect(data.error).toBe('Invalid URL format. Please provide a complete URL with a valid domain.');
   });
 
+  it('should return 400 for invalid component names', async () => {
+    const request = createRequest({ 
+      url: 'https://example.com',
+      component: 'invalidcomponent'
+    });
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toContain('Invalid component: \'invalidcomponent\'');
+    expect(data.error).toContain('speed');
+    expect(data.error).toContain('fonts');
+    expect(data.error).toContain('images');
+  });
+
+  it('should accept canonical component names', async () => {
+    const canonicalComponents = ['speed', 'fonts', 'images', 'cta', 'whitespace', 'social'];
+    
+    for (const component of canonicalComponents) {
+      const request = createRequest({ 
+        url: 'https://example.com',
+        component
+      });
+      const response = await POST(request);
+      
+      // Should not return 400 for valid component names
+      expect(response.status).not.toBe(400);
+    }
+  });
+
+  it('should accept legacy component names', async () => {
+    const legacyComponents = ['pageSpeed', 'font', 'image', 'spacing', 'socialProof'];
+    
+    for (const component of legacyComponents) {
+      const request = createRequest({ 
+        url: 'https://example.com',
+        component
+      });
+      const response = await POST(request);
+      
+      // Should not return 400 for valid legacy component names
+      expect(response.status).not.toBe(400);
+    }
+  });
+
+  it('should accept "all" as a component name', async () => {
+    const request = createRequest({ 
+      url: 'https://example.com',
+      component: 'all'
+    });
+    const response = await POST(request);
+    
+    // Should not return 400 for "all"
+    expect(response.status).not.toBe(400);
+  });
+
   it('should support component-based analysis (speed only)', async () => {
     const request = createRequest({ 
       url: 'https://example.com',
@@ -250,6 +308,12 @@ describe('/api/analyze', () => {
     });
     const response = await POST(request);
     const data = await response.json();
+
+    if (response.status !== 200) {
+      console.error('API Error Response:', response.status);
+      console.error('API Error Data:', data);
+      console.error('API Error Stack:', data.error);
+    }
 
     expect(response.status).toBe(200);
     expect(data.success).toBe(true);
@@ -271,6 +335,12 @@ describe('/api/analyze', () => {
     const response = await POST(request);
     const data = await response.json();
 
+    if (response.status !== 200) {
+      console.error('API Error Response:', response.status);
+      console.error('API Error Data:', data);
+      console.error('API Error Stack:', data.error);
+    }
+
     expect(response.status).toBe(200);
     expect(data.success).toBe(true);
     
@@ -281,6 +351,56 @@ describe('/api/analyze', () => {
     
     expect(data.analysis.whitespaceAssessment).toBeDefined();
     expect(data.analysis.overallScore).toBe(70); // Should be the whitespace score only
+  });
+
+  it('should support legacy component name mapping (font -> fonts)', async () => {
+    const request = createRequest({ 
+      url: 'https://example.com',
+      component: 'font'
+    });
+    const response = await POST(request);
+    const data = await response.json();
+
+    if (response.status !== 200) {
+      console.error('API Error Response:', response.status);
+      console.error('API Error Data:', data);
+      console.error('API Error Stack:', data.error);
+    }
+
+    expect(response.status).toBe(200);
+    expect(data.success).toBe(true);
+    
+    // Only font analysis should run (using legacy name "font" -> canonical "fonts")
+    expect(mockAnalyzeFontUsage).toHaveBeenCalledWith('https://example.com/', expect.any(Object));
+    expect(mockAnalyzePageSpeed).not.toHaveBeenCalled();
+    expect(mockAnalyzeImageOptimization).not.toHaveBeenCalled();
+    
+    expect(data.analysis.fontUsage).toBeDefined();
+  });
+
+  it('should support legacy component name mapping (image -> images)', async () => {
+    const request = createRequest({ 
+      url: 'https://example.com',
+      component: 'image'
+    });
+    const response = await POST(request);
+    const data = await response.json();
+
+    if (response.status !== 200) {
+      console.error('API Error Response:', response.status);
+      console.error('API Error Data:', data);
+      console.error('API Error Stack:', data.error);
+    }
+
+    expect(response.status).toBe(200);
+    expect(data.success).toBe(true);
+    
+    // Only image analysis should run (using legacy name "image" -> canonical "images")
+    expect(mockAnalyzeImageOptimization).toHaveBeenCalledWith('https://example.com/', expect.any(Object));
+    expect(mockAnalyzePageSpeed).not.toHaveBeenCalled();
+    expect(mockAnalyzeFontUsage).not.toHaveBeenCalled();
+    
+    expect(data.analysis.imageOptimization).toBeDefined();
   });
 
   it('should handle analysis function errors gracefully', async () => {

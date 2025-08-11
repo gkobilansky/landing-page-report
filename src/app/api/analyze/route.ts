@@ -8,6 +8,7 @@ import { analyzeSocialProof } from '@/lib/social-proof-analysis';
 import { supabaseAdmin } from '@/lib/supabase';
 import { captureAndStoreScreenshot } from '@/lib/screenshot-storage';
 import { extractPageMetadata } from '@/lib/page-metadata';
+import { shouldRunComponent, validateComponentName, getValidComponentNamesHelp } from '@/lib/component-mapping';
 
 export async function POST(request: NextRequest) {
   console.log('🔥 API /analyze endpoint called')
@@ -59,6 +60,17 @@ export async function POST(request: NextRequest) {
       console.log(`❌ URL validation failed: ${error instanceof Error ? error.message : 'invalid format'}`)
       return NextResponse.json(
         { error: 'Invalid URL format. Please provide a complete URL with a valid domain.' },
+        { status: 400 }
+      );
+    }
+
+    // Validate component parameter if provided
+    if (component && !validateComponentName(component)) {
+      console.log(`❌ Component validation failed: ${component}`)
+      return NextResponse.json(
+        { 
+          error: `Invalid component: '${component}'. ${getValidComponentNamesHelp()}` 
+        },
         { status: 400 }
       );
     }
@@ -364,10 +376,8 @@ export async function POST(request: NextRequest) {
 
     const scores: number[] = [];
 
-    // Component-based analysis
-    const shouldRun = (componentName: string) => !component || component === 'all' || component === componentName;
-
-    if (shouldRun('speed') || shouldRun('pageSpeed')) {
+    // Component-based analysis using new mapping system
+    if (shouldRunComponent('speed', component)) {
       console.log('🔄 Starting page speed analysis...')
       try {
         const pageSpeedResult = await analyzePageSpeed(validatedUrl.toString());
@@ -396,7 +406,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (shouldRun('font')) {
+    if (shouldRunComponent('fonts', component)) {
       console.log('🔄 Starting font usage analysis...')
       const fontUsageResult = await analyzeFontUsage(validatedUrl.toString(), {
         puppeteer: { forceBrowserless }
@@ -408,30 +418,36 @@ export async function POST(request: NextRequest) {
         systemFontCount: fontUsageResult.systemFontCount,
         webFontCount: fontUsageResult.webFontCount,
         issues: fontUsageResult.issues,
-        recommendations: fontUsageResult.recommendations
+        recommendations: fontUsageResult.recommendations,
+        loadTime: fontUsageResult.loadTime
       };
       scores.push(fontUsageResult.score);
     }
 
-    if (shouldRun('image')) {
+    if (shouldRunComponent('images', component)) {
       console.log('🔄 Starting image optimization analysis...')
       const imageOptimizationResult = await analyzeImageOptimization(validatedUrl.toString(), {
         puppeteer: { forceBrowserless }
       });
       analysisResult.imageOptimization = {
         score: imageOptimizationResult.score,
+        applicable: imageOptimizationResult.applicable,
         totalImages: imageOptimizationResult.totalImages,
         modernFormats: imageOptimizationResult.modernFormats,
         withAltText: imageOptimizationResult.withAltText,
         appropriatelySized: imageOptimizationResult.appropriatelySized,
         issues: imageOptimizationResult.issues,
         recommendations: imageOptimizationResult.recommendations,
+        loadTime: imageOptimizationResult.loadTime,
         details: imageOptimizationResult.details
       };
-      scores.push(imageOptimizationResult.score);
+      // Only include score in overall calculation if analysis is applicable
+      if (imageOptimizationResult.applicable && imageOptimizationResult.score !== null) {
+        scores.push(imageOptimizationResult.score);
+      }
     }
 
-    if (shouldRun('cta')) {
+    if (shouldRunComponent('cta', component)) {
       console.log('🔄 Starting CTA analysis...')
       
       try {
@@ -460,7 +476,8 @@ export async function POST(request: NextRequest) {
             context: ctaResult.primaryCTA.context
           } : undefined,
           issues: ctaResult.issues,
-          recommendations: ctaResult.recommendations
+          recommendations: ctaResult.recommendations,
+          loadTime: ctaResult.loadTime
         };
         scores.push(ctaResult.score);
       } catch (error) {
@@ -469,12 +486,13 @@ export async function POST(request: NextRequest) {
           score: 0,
           ctas: [],
           issues: ['CTA analysis failed due to error'],
-          recommendations: []
+          recommendations: [],
+          loadTime: 0
         };
       }
     }
 
-    if (shouldRun('whitespace') || shouldRun('spacing')) {
+    if (shouldRunComponent('whitespace', component)) {
       console.log('🔄 Starting whitespace assessment...')
       try {
         const whitespaceResult = await analyzeWhitespace(validatedUrl.toString(), {
@@ -534,7 +552,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (shouldRun('social') || shouldRun('socialProof')) {
+    if (shouldRunComponent('social', component)) {
       console.log('🔄 Starting social proof analysis...')
       try {
         const socialProofResult = await analyzeSocialProof(validatedUrl.toString(), {
@@ -557,7 +575,8 @@ export async function POST(request: NextRequest) {
           })),
           summary: socialProofResult.summary,
           issues: socialProofResult.issues,
-          recommendations: socialProofResult.recommendations
+          recommendations: socialProofResult.recommendations,
+          loadTime: socialProofResult.loadTime
         };
         scores.push(socialProofResult.score);
         console.log(`✅ Social proof analysis complete: ${socialProofResult.elements.length} elements found, score: ${socialProofResult.score}`);
@@ -581,7 +600,8 @@ export async function POST(request: NextRequest) {
             newsMentions: 0
           },
           issues: ['Social proof analysis failed due to error'],
-          recommendations: []
+          recommendations: [],
+          loadTime: 0
         };
       }
     }
