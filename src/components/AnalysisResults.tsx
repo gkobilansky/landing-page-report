@@ -124,10 +124,15 @@ interface AnalysisResultsProps {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 90) return 'text-green-300';
-  if (score >= 80) return 'text-yellow-300';
-  if (score >= 70) return 'text-orange-300';
-  return 'text-red-300';
+  if (score >= 90) return 'text-green-400';
+  if (score >= 60) return 'text-yellow-400';
+  return 'text-red-400';
+}
+
+function getScoreBarColor(score: number): string {
+  if (score >= 90) return 'bg-green-500';
+  if (score >= 60) return 'bg-yellow-500';
+  return 'bg-red-500';
 }
 
 function ScoreBadge({ score, testId }: { score: number; testId?: string }) {
@@ -234,7 +239,7 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                   </span>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold text-red-300">{result.pageLoadSpeed.score}/100</div>
+                  <div className={`text-3xl font-bold ${getScoreColor(result.pageLoadSpeed.score)}`}>{result.pageLoadSpeed.score}/100</div>
                 </div>
               </div>
 
@@ -243,7 +248,7 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                 <h4 className="text-gray-100 font-medium mb-2">Performance</h4>
                 <div className="w-full bg-gray-800 rounded-full h-2 mb-2">
                   <div 
-                    className="bg-red-500 h-2 rounded-full" 
+                    className={`${getScoreBarColor(result.pageLoadSpeed.score)} h-2 rounded-full`}
                     style={{width: `${result.pageLoadSpeed.score}%`}}
                   ></div>
                 </div>
@@ -300,7 +305,7 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                   </span>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold text-red-300">{result.ctaAnalysis.score}/100</div>
+                  <div className={`text-3xl font-bold ${getScoreColor(result.ctaAnalysis.score)}`}>{result.ctaAnalysis.score}/100</div>
                 </div>
               </div>
 
@@ -316,7 +321,7 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                       </div>
                       <div className="w-full bg-gray-800 rounded-full h-2">
                         <div 
-                          className="bg-red-500 h-2 rounded-full" 
+                          className={`${getScoreBarColor(result.ctaAnalysis.score)} h-2 rounded-full`}
                           style={{width: `${result.ctaAnalysis.score}%`}}
                         ></div>
                       </div>
@@ -387,7 +392,7 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                   </span>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold text-blue-300">{result.socialProof.score}/100</div>
+                  <div className={`text-3xl font-bold ${getScoreColor(result.socialProof.score)}`}>{result.socialProof.score}/100</div>
                 </div>
               </div>
               
@@ -488,7 +493,7 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                   </span>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold text-blue-300">{result.whitespaceAssessment.score}/100</div>
+                  <div className={`text-3xl font-bold ${getScoreColor(result.whitespaceAssessment.score)}`}>{result.whitespaceAssessment.score}/100</div>
                 </div>
               </div>
               
@@ -556,7 +561,7 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                   </span>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold text-blue-300">{result.imageOptimization.score}/100</div>
+                  <div className={`text-3xl font-bold ${getScoreColor(result.imageOptimization.score)}`}>{result.imageOptimization.score}/100</div>
                 </div>
               </div>
               
@@ -624,7 +629,7 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                   </span>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold text-blue-300">{result.fontUsage.score}/100</div>
+                  <div className={`text-3xl font-bold ${getScoreColor(result.fontUsage.score)}`}>{result.fontUsage.score}/100</div>
                 </div>
               </div>
               

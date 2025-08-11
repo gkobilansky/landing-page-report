@@ -165,14 +165,14 @@ export default function TopPerformingPages() {
                     <div 
                       className={`h-full rounded-full ${
                         performer.overall_score >= 90 ? 'bg-green-400' :
-                        performer.overall_score >= 70 ? 'bg-yellow-400' : 'bg-red-400'
+                        performer.overall_score >= 60 ? 'bg-yellow-400' : 'bg-red-400'
                       }`}
                       style={{ width: `${performer.overall_score}%` }}
                     />
                   </div>
                   <span className={`text-xs font-bold ${
                     performer.overall_score >= 90 ? 'text-green-400' :
-                    performer.overall_score >= 70 ? 'text-yellow-400' : 'text-red-400'
+                    performer.overall_score >= 60 ? 'text-yellow-400' : 'text-red-400'
                   }`}>
                     {performer.overall_score}
                   </span>
