@@ -3,21 +3,22 @@
 Concise, actionable tasks grouped by phase. Each task has acceptance criteria.
 
 ## Phase 1: Consistency and correctness
-- Task: Remove letter grade usage across API/UI/DB writes
+- ✅ **COMPLETED**: Remove letter grade usage across API/UI/DB writes
   - Change: Remove `grade` fields from module outputs and overall; stop writing `grade` to DB; update UI to show numeric scores only; update tests
   - Acceptance: `grade` absent in API responses; UI not expecting grades; DB writes omit or nullify `grade`; tests updated
-- Task: Normalize component names in API
+- ✅ **COMPLETED**: Normalize component names in API
   - Change: Map canonical names `speed|fonts|images|cta|whitespace|social` and synonyms to the checks in `src/app/api/analyze/route.ts`
-  - Acceptance: Unknown component returns 400; selective run executes only requested module(s)
-- Task: Overall score computation for selective runs
-  - Change: Only include executed/applicable modules in weight sum; omit overallScore when a single component is run (or return with flag `partial=true`)
-  - Acceptance: Unit tests cover selective runs; weighted average excludes NA modules
-- Task: Standardize module outputs (interim)
-  - Change: Ensure each module returns `loadTime`; remove `grade` from outputs; images return `applicable=false` if `totalImages===0` and `score=null`
+  - Acceptance: Unknown component returns 400; selective run executes only requested module(s); legacy names (`pageSpeed`, `font`, `image`, `spacing`, `socialProof`) map to canonical forms
+- ✅ **COMPLETED**: Standardize module outputs (interim)
+  - Change: Ensure each module returns `loadTime`; images return `applicable=false` if `totalImages===0` and `score=null`
   - Acceptance: Response schema includes these fields; tests updated
-- Task: Harden error handling
+- **NEXT PRIORITY**: Harden error handling
   - Change: Wrap `analyzeFontUsage` and others in try/catch in route; on error, set zero score and add error to `issues`
-  - Acceptance: API doesn’t fail on single module error; error is visible in output
+  - Acceptance: API doesn't fail on single module error; error is visible in output
+- **LOWER PRIORITY**: Overall score computation for selective runs
+  - Change: Only include executed/applicable modules in weight sum; omit overallScore when insufficient data
+  - Acceptance: Component-only runs return realistic scores; overall score absent or clearly provisional
+  - Note: Deprioritized since component-specific runs not used in production currently
 
 ## Phase 2: Performance and orchestration
 - Task: Single Puppeteer session in route

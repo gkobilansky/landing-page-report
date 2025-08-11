@@ -3,11 +3,12 @@
 Key deficiencies and opportunities to improve consistency, informativeness, and rigor.
 
 ## Consistency
-- Component filter mismatch: route expects `font` and `image`; docs use `fonts` and `images`.
-- Overall score includes default-zero modules for component-only runs; dilutes results.
-- Letter grades add complexity with limited value; prefer numeric scores and plan to remove grades from outputs.
-- Inconsistent module contracts: some include `grade` and `loadTime`, others do not.
-- Error handling varies; some modules swallow errors, others may bubble and fail the route.
+- ✅ **COMPLETED**: Component filter mismatch resolved: API now accepts canonical names (`speed|fonts|images|cta|whitespace|social`) with legacy synonym mapping.
+- **DEPRIORITIZED**: Overall score includes default-zero modules for component-only runs; dilutes results. (Not used in production currently)
+- ✅ **COMPLETED**: Letter grades removed from module outputs and API responses; numeric scores now used consistently.
+- ✅ **COMPLETED**: Component name validation implemented with helpful error messages for unknown components.
+- ✅ **COMPLETED**: Module output contracts standardized: all modules now return `loadTime` field consistently; images module returns `applicable=false` and `score=null` when no images found.
+- **NEXT PRIORITY**: Error handling varies; some modules swallow errors, others may bubble and fail the route.
 
 ## Rigor
 - Page speed metrics approximations (CLS/TBT, LCP) are rough; no Lighthouse/PSI fallback in route.
