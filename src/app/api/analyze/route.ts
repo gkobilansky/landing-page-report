@@ -386,7 +386,6 @@ export async function POST(request: NextRequest) {
           score: 0,
           metrics: {
             loadTime: 0,
-            performanceGrade: 'F',
             speedDescription: 'Unable to measure',
             relativeTo: 'Analysis unavailable'
           },

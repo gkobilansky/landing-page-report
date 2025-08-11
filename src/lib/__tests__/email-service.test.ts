@@ -26,12 +26,11 @@ describe('Email Service', () => {
       id: 'test-analysis-id',
       url: 'https://example.com',
       overallScore: 85,
-      grade: 'A',
-      pageSpeed: { score: 90, grade: 'A' },
+      pageSpeed: { score: 90 },
       fonts: { score: 80, fontCount: 2 },
       images: { score: 85, totalImages: 5 },
       cta: { score: 90, ctas: [{ text: 'Sign Up' }] },
-      whitespace: { score: 75, grade: 'B' },
+      whitespace: { score: 75 },
       socialProof: { score: 70, elements: [] },
       screenshotUrl: 'https://example.com/screenshot.png',
       createdAt: '2024-01-01T00:00:00Z'
@@ -45,7 +44,7 @@ describe('Email Service', () => {
 
       const result = await sendReportEmail(
         'test@example.com',
-        mockAnalysisData,
+        mockAnalysisData as any,
         'https://landingpage.report/report?id=test-analysis-id'
       );
 
@@ -56,7 +55,7 @@ describe('Email Service', () => {
         to: 'test@example.com',
         subject: 'Your Landing Page Report is Ready (Score: 85/100)',
         html: expect.stringContaining('https://example.com'),
-        reply_to: 'gene@lansky.tech'
+        replyTo: 'gene@lansky.tech'
       });
     });
 
@@ -68,7 +67,7 @@ describe('Email Service', () => {
 
       const result = await sendReportEmail(
         'test@example.com',
-        mockAnalysisData,
+        mockAnalysisData as any,
         'https://landingpage.report/report?id=test-analysis-id'
       );
 
@@ -81,7 +80,7 @@ describe('Email Service', () => {
 
       const result = await sendReportEmail(
         'test@example.com',
-        mockAnalysisData,
+        mockAnalysisData as any,
         'https://landingpage.report/report?id=test-analysis-id'
       );
 
@@ -92,7 +91,7 @@ describe('Email Service', () => {
     it('should validate required parameters', async () => {
       const result = await sendReportEmail(
         '',
-        mockAnalysisData,
+        mockAnalysisData as any,
         'https://landingpage.report/report?id=test-analysis-id'
       );
 
@@ -104,7 +103,7 @@ describe('Email Service', () => {
     it('should validate email format', async () => {
       const result = await sendReportEmail(
         'invalid-email',
-        mockAnalysisData,
+        mockAnalysisData as any,
         'https://landingpage.report/report?id=test-analysis-id'
       );
 
@@ -116,7 +115,7 @@ describe('Email Service', () => {
     it('should validate report URL', async () => {
       const result = await sendReportEmail(
         'test@example.com',
-        mockAnalysisData,
+        mockAnalysisData as any,
         'invalid-url'
       );
 
@@ -133,14 +132,13 @@ describe('Email Service', () => {
 
       await sendReportEmail(
         'test@example.com',
-        mockAnalysisData,
+        mockAnalysisData as any,
         'https://landingpage.report/report?id=test-analysis-id'
       );
 
       const emailCall = mockSend.mock.calls[0][0];
       expect(emailCall.html).toContain('https://example.com');
       expect(emailCall.html).toContain('85/100');
-      expect(emailCall.html).toContain('Grade A');
       expect(emailCall.html).toContain('https://landingpage.report/report?id=test-analysis-id');
     });
 
@@ -149,7 +147,7 @@ describe('Email Service', () => {
 
       const result = await sendReportEmail(
         'test@example.com',
-        mockAnalysisData,
+        mockAnalysisData as any,
         'https://landingpage.report/report?id=test-analysis-id'
       );
 
@@ -166,7 +164,7 @@ describe('Email Service', () => {
       // Test high score
       await sendReportEmail(
         'test@example.com',
-        { ...mockAnalysisData, overallScore: 95 },
+        { ...(mockAnalysisData as any), overallScore: 95 },
         'https://landingpage.report/report?id=test-analysis-id'
       );
 
@@ -180,7 +178,7 @@ describe('Email Service', () => {
       mockSend.mockClear();
       await sendReportEmail(
         'test@example.com',
-        { ...mockAnalysisData, overallScore: 45 },
+        { ...(mockAnalysisData as any), overallScore: 45 },
         'https://landingpage.report/report?id=test-analysis-id'
       );
 
@@ -199,12 +197,12 @@ describe('Email Service', () => {
 
       await sendReportEmail(
         'test@example.com',
-        mockAnalysisData,
+        mockAnalysisData as any,
         'https://landingpage.report/report?id=test-analysis-id'
       );
 
       const emailCall = mockSend.mock.calls[0][0];
-      expect(emailCall.html).toContain(mockAnalysisData.screenshotUrl);
+      expect(emailCall.html).toContain((mockAnalysisData as any).screenshotUrl);
     });
 
     it('should handle missing screenshot gracefully', async () => {
@@ -213,11 +211,11 @@ describe('Email Service', () => {
         error: null 
       });
 
-      const dataWithoutScreenshot = { ...mockAnalysisData, screenshotUrl: undefined };
+      const dataWithoutScreenshot = { ...(mockAnalysisData as any), screenshotUrl: undefined };
 
       const result = await sendReportEmail(
         'test@example.com',
-        dataWithoutScreenshot,
+        dataWithoutScreenshot as any,
         'https://landingpage.report/report?id=test-analysis-id'
       );
 
@@ -231,28 +229,26 @@ describe('Email Service', () => {
       id: 'test-id',
       url: 'https://example.com',
       overallScore: 75,
-      grade: 'B',
       screenshotUrl: 'https://example.com/screenshot.png',
       createdAt: '2024-01-01T00:00:00Z'
     };
 
     it('should generate HTML template with all required elements', () => {
       const html = EmailTemplate.generateReportEmail(
-        mockData,
+        mockData as any,
         'https://landingpage.report/report?id=123'
       );
 
       expect(html).toContain('Landing Page Report');
       expect(html).toContain('https://example.com');
       expect(html).toContain('75/100');
-      expect(html).toContain('Grade B');
       expect(html).toContain('https://landingpage.report/report?id=123');
       expect(html).toContain('View Full Report');
     });
 
     it('should handle different score ranges in template', () => {
-      const highScoreData = { ...mockData, overallScore: 95, grade: 'A' };
-      const lowScoreData = { ...mockData, overallScore: 35, grade: 'F' };
+      const highScoreData = { ...mockData, overallScore: 95 } as any;
+      const lowScoreData = { ...mockData, overallScore: 35 } as any;
 
       const highScoreHtml = EmailTemplate.generateReportEmail(
         highScoreData,
@@ -264,26 +260,24 @@ describe('Email Service', () => {
       );
 
       expect(highScoreHtml).toContain('95/100');
-      expect(highScoreHtml).toContain('Grade A');
       expect(lowScoreHtml).toContain('35/100');
-      expect(lowScoreHtml).toContain('Grade F');
     });
 
     it('should include screenshot when provided', () => {
       const html = EmailTemplate.generateReportEmail(
-        mockData,
+        mockData as any,
         'https://landingpage.report/report?id=123'
       );
 
       expect(html).toContain('<img');
-      expect(html).toContain(mockData.screenshotUrl);
+      expect(html).toContain((mockData as any).screenshotUrl);
     });
 
     it('should exclude screenshot section when not provided', () => {
       const dataWithoutScreenshot = { ...mockData, screenshotUrl: undefined };
 
       const html = EmailTemplate.generateReportEmail(
-        dataWithoutScreenshot,
+        dataWithoutScreenshot as any,
         'https://landingpage.report/report?id=123'
       );
 
@@ -295,7 +289,7 @@ describe('Email Service', () => {
       const dataWithHtml = {
         ...mockData,
         url: 'https://example.com/<script>alert("xss")</script>'
-      };
+      } as any;
 
       const html = EmailTemplate.generateReportEmail(
         dataWithHtml,
@@ -308,7 +302,7 @@ describe('Email Service', () => {
 
     it('should include branding and styling', () => {
       const html = EmailTemplate.generateReportEmail(
-        mockData,
+        mockData as any,
         'https://landingpage.report/report?id=123'
       );
 

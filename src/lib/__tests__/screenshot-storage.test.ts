@@ -3,7 +3,7 @@ import { jest } from '@jest/globals';
 // Mock @vercel/blob
 const mockPut = jest.fn() as jest.MockedFunction<any>;
 jest.mock('@vercel/blob', () => ({
-  put: mockPut
+  put: (...args: any[]) => mockPut(...args)
 }));
 
 // Mock puppeteer config
@@ -164,7 +164,8 @@ describe('Screenshot Storage', () => {
               type: 'png',
               quality: undefined,
               fullPage: true,
-              optimizeForSpeed: false
+              optimizeForSpeed: false,
+              blockConsentModals: true
             }
           })
         }

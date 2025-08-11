@@ -46,11 +46,11 @@ describe('Home Page', () => {
           fromCache: false,
           analysis: {
             url: 'https://example.com',
-            pageLoadSpeed: { score: 85, grade: 'B' },
+            pageLoadSpeed: { score: 85 },
             fontUsage: { score: 90 },
             imageOptimization: { score: 80 },
             ctaAnalysis: { score: 75 },
-            whitespaceAssessment: { score: 70, grade: 'C' },
+            whitespaceAssessment: { score: 70 },
             socialProof: { score: 65 },
             overallScore: 78
           },
@@ -142,11 +142,11 @@ describe('Home Page', () => {
           fromCache: true,
           analysis: {
             url: 'https://example.com',
-            pageLoadSpeed: { score: 85, grade: 'B' },
+            pageLoadSpeed: { score: 85 },
             fontUsage: { score: 90 },
             imageOptimization: { score: 80 },
             ctaAnalysis: { score: 75 },
-            whitespaceAssessment: { score: 70, grade: 'C' },
+            whitespaceAssessment: { score: 70 },
             socialProof: { score: 65 },
             overallScore: 78
           },
