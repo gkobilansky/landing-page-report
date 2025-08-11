@@ -433,7 +433,7 @@ export default function Home() {
         )}
 
         {/* Top Performing Pages - Only show when no analysis in progress */}
-        {!analysisState.result && !analysisState.isLoading && !analysisState.error && !analysisState.showEmailInput && (
+        {!analysisState.isLoading && !analysisState.error && !analysisState.showEmailInput && (
           <div className="pb-16">
             <TopPerformingPages />
           </div>
