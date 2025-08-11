@@ -25,7 +25,6 @@ export async function GET(
         url_description,
         schema_data,
         overall_score,
-        grade,
         screenshot_url,
         created_at,
         status,

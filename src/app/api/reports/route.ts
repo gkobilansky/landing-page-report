@@ -23,11 +23,9 @@ export async function GET(request: NextRequest) {
         url,
         url_title,
         overall_score,
-        grade,
         screenshot_url,
         created_at,
-        status,
-        page_speed_analysis
+        status
       `)
       .eq('status', 'completed')
       .not('overall_score', 'is', null)
@@ -76,7 +74,6 @@ export async function GET(request: NextRequest) {
       url: analysis.url,
       url_title: analysis.url_title || extractDomainFromUrl(analysis.url),
       overall_score: analysis.overall_score || 0,
-      grade: analysis.grade || (analysis.page_speed_analysis?.grade),
       screenshot_url: analysis.screenshot_url,
       created_at: analysis.created_at,
       status: analysis.status

@@ -2,14 +2,12 @@ import { analyzePageSpeedPuppeteer } from './page-speed-puppeteer';
 
 export interface PageSpeedMetrics {
   loadTime: number; // Page load time in seconds (marketing-friendly)
-  performanceGrade: string; // A, B, C, D, F
   speedDescription: string; // Marketing-friendly description
   relativeTo: string; // Comparison to other websites
 }
 
 export interface PageSpeedAnalysisResult {
   score: number; // 0-100 overall performance score
-  grade: 'A' | 'B' | 'C' | 'D' | 'F';
   metrics: PageSpeedMetrics;
   issues: string[];
   recommendations: string[];
@@ -42,7 +40,6 @@ export async function analyzePageSpeed(
     
     return {
       score: result.score,
-      grade: result.grade,
       metrics: marketingMetrics,
       issues: marketingIssues,
       recommendations: marketingRecommendations,
@@ -59,10 +56,8 @@ export async function analyzePageSpeed(
     
     return {
       score: 0,
-      grade: 'F',
       metrics: {
         loadTime: 0,
-        performanceGrade: 'F',
         speedDescription: 'Unable to measure',
         relativeTo: 'Analysis unavailable'
       },
@@ -110,18 +105,9 @@ function convertToMarketingMetrics(
   
   return {
     loadTime: loadTimeSeconds,
-    performanceGrade: getLetterGrade(score),
     speedDescription,
     relativeTo
   };
-}
-
-function getLetterGrade(score: number): string {
-  if (score >= 90) return 'A';
-  if (score >= 80) return 'B';
-  if (score >= 70) return 'C';
-  if (score >= 60) return 'D';
-  return 'F';
 }
 
 function convertToMarketingIssues(technicalIssues: string[]): string[] {

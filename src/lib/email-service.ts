@@ -4,7 +4,6 @@ interface AnalysisData {
   id: string;
   url: string;
   overallScore: number;
-  grade?: string;
   pageSpeed?: any;
   fonts?: any;
   images?: any;
@@ -245,7 +244,6 @@ export class EmailTemplate {
       <div style="text-align: center;">
         <div class="score-badge">
           Overall Score: ${analysisData.overallScore}/100
-          ${analysisData.grade ? ` (Grade ${analysisData.grade})` : ''}
         </div>
       </div>
       
