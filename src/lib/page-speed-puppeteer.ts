@@ -13,7 +13,6 @@ export interface PageSpeedMetrics {
 
 export interface PageSpeedAnalysisResult {
   score: number; // 0-100 overall performance score
-  grade: 'A' | 'B' | 'C' | 'D' | 'F';
   metrics: PageSpeedMetrics;
   issues: string[];
   recommendations: string[];
@@ -164,7 +163,6 @@ export async function analyzePageSpeedPuppeteer(
     
     // Calculate score based on metrics
     const score = calculatePerformanceScore(metrics);
-    const grade = getLetterGrade(score);
     const { issues, recommendations } = generateRecommendations(metrics);
     
     const loadTime = Date.now() - startTime;
@@ -173,7 +171,6 @@ export async function analyzePageSpeedPuppeteer(
     
     return {
       score,
-      grade,
       metrics,
       issues,
       recommendations,
@@ -224,14 +221,6 @@ function calculatePerformanceScore(metrics: PageSpeedMetrics): number {
   else if (sizeMB > 2) score -= 5;
 
   return Math.max(0, Math.round(score));
-}
-
-function getLetterGrade(score: number): 'A' | 'B' | 'C' | 'D' | 'F' {
-  if (score >= 90) return 'A';
-  if (score >= 80) return 'B';
-  if (score >= 70) return 'C';
-  if (score >= 60) return 'D';
-  return 'F';
 }
 
 function generateRecommendations(

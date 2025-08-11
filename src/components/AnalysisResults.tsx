@@ -7,10 +7,8 @@ interface AnalysisResult {
   url: string
   pageLoadSpeed?: {
     score: number
-    grade: string
     metrics: {
       loadTime: number; // Page load time in seconds (marketing-friendly)
-      performanceGrade: string; // A, B, C, D, F
       speedDescription: string; // Marketing-friendly description
       relativeTo: string; // Comparison to other websites
     }
@@ -62,7 +60,6 @@ interface AnalysisResult {
   }
   whitespaceAssessment?: {
     score: number
-    grade: string
     metrics: {
       whitespaceRatio: number
       elementDensityPerSection: {
@@ -131,14 +128,6 @@ function getScoreColor(score: number): string {
   if (score >= 80) return 'text-yellow-300';
   if (score >= 70) return 'text-orange-300';
   return 'text-red-300';
-}
-
-function getScoreGrade(score: number): string {
-  if (score >= 90) return 'A'
-  if (score >= 80) return 'B'
-  if (score >= 70) return 'C'
-  if (score >= 60) return 'D'
-  return 'F'
 }
 
 function ScoreBadge({ score, testId }: { score: number; testId?: string }) {

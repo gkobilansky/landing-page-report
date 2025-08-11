@@ -146,7 +146,6 @@ export async function POST(request: NextRequest) {
       id: analysis.id,
       url: analysis.url,
       overallScore: analysis.overall_score || 0,
-      grade: analysis.page_speed_analysis?.grade || 'N/A',
       pageSpeed: analysis.page_speed_analysis,
       fonts: analysis.font_analysis,
       images: analysis.image_analysis,

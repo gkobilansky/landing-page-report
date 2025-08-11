@@ -56,7 +56,6 @@ export interface WhitespaceMetrics {
 
 export interface WhitespaceAnalysisResult {
   score: number; // 0-100 overall whitespace score
-  grade: 'A' | 'B' | 'C' | 'D' | 'F';
   metrics: WhitespaceMetrics;
   issues: string[];
   recommendations: string[];
@@ -534,7 +533,6 @@ export async function analyzeWhitespace(
     // Calculate clutter score and final assessment
     const metrics = calculateWhitespaceMetrics(densityAnalysis, spacingAnalysis, overallMetrics, screenshotAnalysis);
     const score = calculateWhitespaceScore(metrics);
-    const grade = getLetterGrade(score);
     const { issues, recommendations } = generateWhitespaceRecommendations(metrics);
     
     
@@ -544,7 +542,6 @@ export async function analyzeWhitespace(
     
     return {
       score,
-      grade,
       metrics,
       issues,
       recommendations,
@@ -557,7 +554,6 @@ export async function analyzeWhitespace(
     
     return {
       score: 0,
-      grade: 'F',
       metrics: {
         whitespaceRatio: 0,
         elementDensityPerSection: {
@@ -685,14 +681,6 @@ function calculateWhitespaceScore(metrics: WhitespaceMetrics): number {
   const finalScore = Math.max(0, Math.min(100, Math.round(score)));
   
   return finalScore;
-}
-
-function getLetterGrade(score: number): 'A' | 'B' | 'C' | 'D' | 'F' {
-  if (score >= 90) return 'A';
-  if (score >= 80) return 'B';
-  if (score >= 70) return 'C';
-  if (score >= 60) return 'D';
-  return 'F';
 }
 
 function generateWhitespaceRecommendations(

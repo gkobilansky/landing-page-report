@@ -7,10 +7,8 @@ const mockAnalysisResult = {
   url: 'https://example.com',
   pageLoadSpeed: {
     score: 85,
-    grade: 'B',
     metrics: { 
       loadTime: 2.1, 
-      performanceGrade: 'B', 
       speedDescription: 'Good performance', 
       relativeTo: 'Most websites load in 3-4 seconds' 
     },
@@ -48,7 +46,6 @@ const mockAnalysisResult = {
   },
   whitespaceAssessment: {
     score: 78,
-    grade: 'C',
     metrics: {
       whitespaceRatio: 0.45,
       elementDensityPerSection: {
@@ -108,12 +105,56 @@ const mockAnalysisResult = {
   status: 'completed'
 }
 
+describe('AnalysisResults', () => {
+  it('renders scores and sections without letter grades', () => {
+    const result = {
+      url: 'https://example.com',
+      pageLoadSpeed: {
+        score: 85,
+        metrics: {
+          loadTime: 1.8,
+          speedDescription: 'Very fast',
+          relativeTo: 'Faster than 75% of websites'
+        },
+        issues: [],
+        recommendations: [],
+        loadTime: 1200
+      },
+      fontUsage: { score: 90, fontFamilies: ['Inter'], fontCount: 1, issues: [], recommendations: [] },
+      imageOptimization: { score: 80, totalImages: 2, modernFormats: 1, withAltText: 2, appropriatelySized: 2, issues: [], recommendations: [], details: {} },
+      ctaAnalysis: { score: 70, ctas: [], issues: [], recommendations: [] },
+      whitespaceAssessment: {
+        score: 75,
+        metrics: {
+          whitespaceRatio: 0.5,
+          elementDensityPerSection: { gridSections: 12, maxDensity: 5, averageDensity: 2.5, totalElements: 30 },
+          spacingAnalysis: { headlineSpacing: { adequate: true }, ctaSpacing: { adequate: true }, contentBlockSpacing: { adequate: true }, lineHeight: { adequate: true } },
+          clutterScore: 10,
+          hasAdequateSpacing: true
+        },
+        issues: [],
+        recommendations: [],
+        loadTime: 1000
+      },
+      socialProof: { score: 60, elements: [], summary: { totalElements: 0, aboveFoldElements: 0, testimonials: 0, reviews: 0, ratings: 0, trustBadges: 0, customerCounts: 0, socialMedia: 0, certifications: 0, partnerships: 0, caseStudies: 0, newsMentions: 0 }, issues: [], recommendations: [] },
+      overallScore: 78,
+      status: 'completed'
+    } as any
+
+    render(<AnalysisResults result={result} />)
+
+    expect(screen.getByText(/Page Load Speed/)).toBeInTheDocument()
+    expect(screen.getByText('85/100')).toBeInTheDocument()
+    expect(screen.queryByText(/Grade/)).not.toBeInTheDocument()
+  })
+})
+
 describe('AnalysisResults Component', () => {
-  it('should render overall score and grade', () => {
+  it('should render overall score', () => {
     render(<AnalysisResults result={mockAnalysisResult} />)
     
-    expect(screen.getByText(/overall score/i)).toBeInTheDocument()
-    expect(screen.getAllByText('78').length).toBeGreaterThanOrEqual(1) // Overall score and possibly whitespace score
+    expect(screen.getByText(/Overall Score/i)).toBeInTheDocument()
+    expect(screen.getAllByText('78').length).toBeGreaterThanOrEqual(1)
   })
 
   it('should display analyzed URL', () => {
@@ -183,8 +224,7 @@ describe('AnalysisResults Component', () => {
       ...mockAnalysisResult,
       pageLoadSpeed: {
         ...mockAnalysisResult.pageLoadSpeed,
-        score: 0,
-        grade: 'F'
+        score: 0
       },
       overallScore: 15
     }
@@ -214,10 +254,8 @@ describe('AnalysisResults Component', () => {
   it('should display page speed metrics correctly', () => {
     render(<AnalysisResults result={mockAnalysisResult} />)
     
-    expect(screen.getByText(/LCP:/)).toBeInTheDocument()
-    expect(screen.getByText(/FCP:/)).toBeInTheDocument()
-    expect(screen.getByText(/CLS:/)).toBeInTheDocument()
-    expect(screen.getAllByText('2ms')).toHaveLength(2) // LCP and FCP both round to 2ms
+    // In the simplified component, we don't render raw LCP/FCP numbers, so just ensure description present
+    expect(screen.getByText(/Good performance/)).toBeInTheDocument()
   })
 
   it('should handle missing or incomplete data gracefully', () => {

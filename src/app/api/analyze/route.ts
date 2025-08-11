@@ -279,7 +279,6 @@ export async function POST(request: NextRequest) {
       url: validatedUrl.toString(),
       pageLoadSpeed: { 
         score: 0, 
-        grade: 'F',
         metrics: { lcp: 0, fcp: 0, cls: 0, tbt: 0, si: 0 },
         lighthouseScore: 0,
         issues: [],
@@ -291,7 +290,6 @@ export async function POST(request: NextRequest) {
       ctaAnalysis: { score: 0, ctas: [], issues: [], recommendations: [] },
       whitespaceAssessment: { 
         score: 0, 
-        grade: 'F',
         metrics: {
           whitespaceRatio: 0,
           elementDensityPerSection: {
@@ -375,22 +373,19 @@ export async function POST(request: NextRequest) {
         const pageSpeedResult = await analyzePageSpeed(validatedUrl.toString());
         analysisResult.pageLoadSpeed = {
           score: pageSpeedResult.score,
-          grade: pageSpeedResult.grade,
           metrics: pageSpeedResult.metrics,
           issues: pageSpeedResult.issues,
           recommendations: pageSpeedResult.recommendations,
           loadTime: pageSpeedResult.loadTime
         };
         scores.push(pageSpeedResult.score);
-        console.log(`✅ Page speed analysis complete: Score ${pageSpeedResult.score}, Grade ${pageSpeedResult.grade}`);
+        console.log(`✅ Page speed analysis complete: Score ${pageSpeedResult.score}`);
       } catch (error) {
         console.error('❌ Page speed analysis failed:', error);
         analysisResult.pageLoadSpeed = {
           score: 0,
-          grade: 'F',
           metrics: {
             loadTime: 0,
-            performanceGrade: 'F',
             speedDescription: 'Unable to measure',
             relativeTo: 'Analysis unavailable'
           },
@@ -488,7 +483,6 @@ export async function POST(request: NextRequest) {
         });
         analysisResult.whitespaceAssessment = {
           score: whitespaceResult.score,
-          grade: whitespaceResult.grade,
           metrics: {
             whitespaceRatio: whitespaceResult.metrics.whitespaceRatio,
             elementDensityPerSection: {
@@ -511,12 +505,11 @@ export async function POST(request: NextRequest) {
           loadTime: whitespaceResult.loadTime
         };
         scores.push(whitespaceResult.score);
-        console.log(`✅ Whitespace assessment complete: Score ${whitespaceResult.score}, Grade ${whitespaceResult.grade}`);
+        console.log(`✅ Whitespace assessment complete: Score ${whitespaceResult.score}`);
       } catch (error) {
         console.error('❌ Whitespace assessment failed:', error);
         analysisResult.whitespaceAssessment = {
           score: 0,
-          grade: 'F',
           metrics: {
             whitespaceRatio: 0,
             elementDensityPerSection: {
@@ -651,7 +644,6 @@ export async function POST(request: NextRequest) {
             whitespace_analysis: analysisResult.whitespaceAssessment,
             social_proof_analysis: analysisResult.socialProof,
             overall_score: analysisResult.overallScore,
-            grade: analysisResult.pageLoadSpeed.grade || 'F',
             analysis_duration_ms: analysisTimeMs,
             completed_at: new Date().toISOString()
           })

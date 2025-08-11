@@ -10,10 +10,8 @@ export interface AnalysisResult {
   email: string;
   pageLoadSpeed: {
     score: number;
-    grade: 'A' | 'B' | 'C' | 'D' | 'F';
     metrics: {
       loadTime: number; // Page load time in seconds (marketing-friendly)
-      performanceGrade: string; // A, B, C, D, F
       speedDescription: string; // Marketing-friendly description
       relativeTo: string; // Comparison to other websites
     };
@@ -61,7 +59,6 @@ export interface AnalysisResult {
   };
   whitespaceAssessment: {
     score: number;
-    grade: 'A' | 'B' | 'C' | 'D' | 'F';
     metrics: {
       whitespaceRatio: number;
       elementDensityPerSection: {
@@ -171,16 +168,14 @@ export class LandingPageAnalyzer {
     try {
       console.log('🚀 Starting comprehensive page speed analysis...');
       const result = await analyzePageSpeed(url);
-      console.log(`✅ Page speed analysis complete. Score: ${result.score}, Grade: ${result.grade}`);
+      console.log(`✅ Page speed analysis complete. Score: ${result.score}`);
       return result;
     } catch (error) {
       console.error('❌ Page speed analysis failed:', error);
       return {
         score: 0,
-        grade: 'F' as const,
         metrics: {
           loadTime: 0,
-          performanceGrade: 'F',
           speedDescription: 'Unable to measure',
           relativeTo: 'Analysis unavailable'
         },
@@ -196,11 +191,11 @@ export class LandingPageAnalyzer {
     const images = await page.evaluate(() => {
       const imgElements = Array.from(document.querySelectorAll('img'));
       return imgElements.map(img => ({
-        src: img.src,
-        format: img.src.split('.').pop()?.toLowerCase() || 'unknown',
-        width: img.naturalWidth,
-        height: img.naturalHeight,
-        alt: img.alt
+        src: (img as HTMLImageElement).src,
+        format: (img as HTMLImageElement).src.split('.').pop()?.toLowerCase() || 'unknown',
+        width: (img as HTMLImageElement).naturalWidth,
+        height: (img as HTMLImageElement).naturalHeight,
+        alt: (img as HTMLImageElement).alt
       }));
     });
 
@@ -307,12 +302,11 @@ export class LandingPageAnalyzer {
     try {
       console.log('🔍 Starting comprehensive whitespace analysis...');
       const result = await analyzeWhitespace(url);
-      console.log(`✅ Whitespace analysis complete. Score: ${result.score}, Grade: ${result.grade}`);
+      console.log(`✅ Whitespace analysis complete. Score: ${result.score}`);
       
       // Transform the result to match the expected interface
       return {
         score: result.score,
-        grade: result.grade,
         metrics: {
           whitespaceRatio: result.metrics.whitespaceRatio,
           elementDensityPerSection: {
@@ -340,7 +334,6 @@ export class LandingPageAnalyzer {
       // Fallback to basic scoring
       return {
         score: 0,
-        grade: 'F' as const,
         metrics: {
           whitespaceRatio: 0,
           elementDensityPerSection: {
