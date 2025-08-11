@@ -33,8 +33,45 @@ jest.mock('@/lib/screenshot-storage', () => ({
   captureAndStoreScreenshot: jest.fn()
 }));
 
-// Note: Using real Supabase connection for integration testing
-// This tests that database storage actually works with the local Supabase instance
+// Mock Supabase for unit testing
+jest.mock('@/lib/supabase', () => ({
+  supabaseAdmin: {
+    from: jest.fn(() => ({
+      select: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          single: jest.fn(() => ({
+            data: { id: 'mock-user-id' },
+            error: null
+          })),
+          limit: jest.fn(() => ({
+            data: [],
+            error: null
+          })),
+          order: jest.fn(() => ({
+            limit: jest.fn(() => ({
+              data: [],
+              error: null
+            }))
+          }))
+        }))
+      })),
+      insert: jest.fn(() => ({
+        select: jest.fn(() => ({
+          single: jest.fn(() => ({
+            data: { id: 'mock-analysis-id' },
+            error: null
+          }))
+        }))
+      })),
+      update: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          data: null,
+          error: null
+        }))
+      }))
+    }))
+  }
+}));
 
 describe('/api/analyze', () => {
   // Get the mocked functions
@@ -66,17 +103,20 @@ describe('/api/analyze', () => {
       webFontCount: 0,
       score: 95,
       issues: [],
-      recommendations: ['Good font choice']
+      recommendations: ['Good font choice'],
+      loadTime: 1500
     });
 
     mockAnalyzeImageOptimization.mockResolvedValue({
       score: 80,
+      applicable: true,
       totalImages: 2,
       modernFormats: 1,
       withAltText: 2,
       appropriatelySized: 2,
       issues: ['1 image using legacy format'],
       recommendations: ['Convert to WebP'],
+      loadTime: 2000,
       details: {}
     });
 
@@ -115,7 +155,8 @@ describe('/api/analyze', () => {
       ctas: [{ text: 'Sign Up', type: 'primary', isAboveFold: true, actionStrength: 'strong' }],
       primaryCTA: { text: 'Sign Up', type: 'primary' },
       issues: [],
-      recommendations: ['Good CTA implementation']
+      recommendations: ['Good CTA implementation'],
+      loadTime: 1800
     });
 
     mockAnalyzeSocialProof.mockResolvedValue({
@@ -123,7 +164,8 @@ describe('/api/analyze', () => {
       elements: [{ type: 'testimonial', text: 'Great service!', score: 80 }],
       summary: { totalElements: 1, testimonials: 1 },
       issues: ['Limited social proof'],
-      recommendations: ['Add more testimonials']
+      recommendations: ['Add more testimonials'],
+      loadTime: 1600
     });
 
     mockExtractPageMetadata.mockResolvedValue({
@@ -419,6 +461,123 @@ describe('/api/analyze', () => {
     // Should continue with other analyses even if one fails
     expect(data.analysis.pageLoadSpeed.score).toBe(0); // Default for failed analysis
     expect(data.analysis.fontUsage.score).toBe(95); // Should still have this
+  });
+
+  it('should handle font analysis errors gracefully', async () => {
+    // Mock font analysis to throw an error
+    mockAnalyzeFontUsage.mockRejectedValue(new Error('Font parsing failed'));
+    
+    const request = createRequest({ 
+      url: 'https://example.com'
+    });
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.success).toBe(true);
+    
+    // Font analysis should have fallback values
+    expect(data.analysis.fontUsage.score).toBe(0);
+    expect(data.analysis.fontUsage.fontFamilies).toEqual([]);
+    expect(data.analysis.fontUsage.fontCount).toBe(0);
+    expect(data.analysis.fontUsage.systemFontCount).toBe(0);
+    expect(data.analysis.fontUsage.webFontCount).toBe(0);
+    expect(data.analysis.fontUsage.issues).toEqual(['Font usage analysis failed due to error']);
+    expect(data.analysis.fontUsage.recommendations).toEqual([]);
+    expect(data.analysis.fontUsage.loadTime).toBe(0);
+    
+    // Other analyses should still work
+    expect(data.analysis.imageOptimization.score).toBe(80);
+    expect(data.analysis.pageLoadSpeed.score).toBe(75);
+  });
+
+  it('should handle image optimization analysis errors gracefully', async () => {
+    // Mock image optimization to throw an error
+    mockAnalyzeImageOptimization.mockRejectedValue(new Error('Image analysis timeout'));
+    
+    const request = createRequest({ 
+      url: 'https://example.com'
+    });
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.success).toBe(true);
+    
+    // Image analysis should have fallback values
+    expect(data.analysis.imageOptimization.score).toBe(0);
+    expect(data.analysis.imageOptimization.applicable).toBe(false);
+    expect(data.analysis.imageOptimization.totalImages).toBe(0);
+    expect(data.analysis.imageOptimization.modernFormats).toBe(0);
+    expect(data.analysis.imageOptimization.withAltText).toBe(0);
+    expect(data.analysis.imageOptimization.appropriatelySized).toBe(0);
+    expect(data.analysis.imageOptimization.issues).toEqual(['Image optimization analysis failed due to error']);
+    expect(data.analysis.imageOptimization.recommendations).toEqual([]);
+    expect(data.analysis.imageOptimization.loadTime).toBe(0);
+    expect(data.analysis.imageOptimization.details).toEqual({});
+    
+    // Other analyses should still work
+    expect(data.analysis.fontUsage.score).toBe(95);
+    expect(data.analysis.pageLoadSpeed.score).toBe(75);
+  });
+
+  it('should handle multiple module errors gracefully', async () => {
+    // Mock multiple functions to throw errors
+    mockAnalyzeFontUsage.mockRejectedValue(new Error('Font analysis failed'));
+    mockAnalyzeImageOptimization.mockRejectedValue(new Error('Image analysis failed'));
+    mockAnalyzePageSpeed.mockRejectedValue(new Error('Speed analysis failed'));
+    
+    const request = createRequest({ 
+      url: 'https://example.com'
+    });
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.success).toBe(true);
+    
+    // All failed analyses should have fallback values
+    expect(data.analysis.fontUsage.score).toBe(0);
+    expect(data.analysis.imageOptimization.score).toBe(0);
+    expect(data.analysis.pageLoadSpeed.score).toBe(0);
+    
+    // Working analyses should still complete
+    expect(data.analysis.ctaAnalysis.score).toBe(85);
+    expect(data.analysis.whitespaceAssessment.score).toBe(70);
+    expect(data.analysis.socialProof.score).toBe(60);
+    
+    // Overall score should be calculated from successful analyses only
+    expect(data.analysis.overallScore).toBeGreaterThan(0);
+  });
+
+  it('should not include failed analysis scores in overall calculation', async () => {
+    // Mock font analysis to fail (should not be included in score calculation)
+    mockAnalyzeFontUsage.mockRejectedValue(new Error('Font analysis failed'));
+    
+    // Set specific scores for working analyses
+    mockAnalyzePageSpeed.mockResolvedValue({ score: 80, metrics: {}, lighthouseScore: 80, issues: [], recommendations: [], loadTime: 2000 });
+    mockAnalyzeCTA.mockResolvedValue({ score: 60, ctas: [], issues: [], recommendations: [], loadTime: 1000 });
+    mockAnalyzeWhitespace.mockResolvedValue({ score: 40, metrics: {}, issues: [], recommendations: [], loadTime: 1500 });
+    mockAnalyzeSocialProof.mockResolvedValue({ score: 80, elements: [], summary: {}, issues: [], recommendations: [], loadTime: 1000 });
+    mockAnalyzeImageOptimization.mockResolvedValue({ score: 60, applicable: true, totalImages: 1, modernFormats: 1, withAltText: 1, appropriatelySized: 1, issues: [], recommendations: [], loadTime: 1000, details: {} });
+    
+    const request = createRequest({ 
+      url: 'https://example.com'
+    });
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.success).toBe(true);
+    
+    // Font analysis should have failed
+    expect(data.analysis.fontUsage.score).toBe(0);
+    
+    // Overall score should not include the failed font analysis (score 0)
+    // Should be weighted average of: speed(80*0.25) + cta(60*0.25) + social(80*0.20) + whitespace(40*0.15) + images(60*0.10)
+    // = 20 + 15 + 16 + 6 + 6 = 63 / 0.95 (total weight without fonts) = ~66
+    expect(data.analysis.overallScore).toBeGreaterThanOrEqual(65);
+    expect(data.analysis.overallScore).toBeLessThanOrEqual(67);
   });
 
   it('should calculate overall score as average of completed analyses', async () => {

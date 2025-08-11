@@ -408,42 +408,74 @@ export async function POST(request: NextRequest) {
 
     if (shouldRunComponent('fonts', component)) {
       console.log('🔄 Starting font usage analysis...')
-      const fontUsageResult = await analyzeFontUsage(validatedUrl.toString(), {
-        puppeteer: { forceBrowserless }
-      });
-      analysisResult.fontUsage = {
-        score: fontUsageResult.score,
-        fontFamilies: fontUsageResult.fontFamilies,
-        fontCount: fontUsageResult.fontCount,
-        systemFontCount: fontUsageResult.systemFontCount,
-        webFontCount: fontUsageResult.webFontCount,
-        issues: fontUsageResult.issues,
-        recommendations: fontUsageResult.recommendations,
-        loadTime: fontUsageResult.loadTime
-      };
-      scores.push(fontUsageResult.score);
+      try {
+        const fontUsageResult = await analyzeFontUsage(validatedUrl.toString(), {
+          puppeteer: { forceBrowserless }
+        });
+        analysisResult.fontUsage = {
+          score: fontUsageResult.score,
+          fontFamilies: fontUsageResult.fontFamilies,
+          fontCount: fontUsageResult.fontCount,
+          systemFontCount: fontUsageResult.systemFontCount,
+          webFontCount: fontUsageResult.webFontCount,
+          issues: fontUsageResult.issues,
+          recommendations: fontUsageResult.recommendations,
+          loadTime: fontUsageResult.loadTime
+        };
+        scores.push(fontUsageResult.score);
+        console.log(`✅ Font usage analysis complete: Score ${fontUsageResult.score}`);
+      } catch (error) {
+        console.error('❌ Font usage analysis failed:', error);
+        analysisResult.fontUsage = {
+          score: 0,
+          fontFamilies: [],
+          fontCount: 0,
+          systemFontCount: 0,
+          webFontCount: 0,
+          issues: ['Font usage analysis failed due to error'],
+          recommendations: [],
+          loadTime: 0
+        };
+      }
     }
 
     if (shouldRunComponent('images', component)) {
       console.log('🔄 Starting image optimization analysis...')
-      const imageOptimizationResult = await analyzeImageOptimization(validatedUrl.toString(), {
-        puppeteer: { forceBrowserless }
-      });
-      analysisResult.imageOptimization = {
-        score: imageOptimizationResult.score,
-        applicable: imageOptimizationResult.applicable,
-        totalImages: imageOptimizationResult.totalImages,
-        modernFormats: imageOptimizationResult.modernFormats,
-        withAltText: imageOptimizationResult.withAltText,
-        appropriatelySized: imageOptimizationResult.appropriatelySized,
-        issues: imageOptimizationResult.issues,
-        recommendations: imageOptimizationResult.recommendations,
-        loadTime: imageOptimizationResult.loadTime,
-        details: imageOptimizationResult.details
-      };
-      // Only include score in overall calculation if analysis is applicable
-      if (imageOptimizationResult.applicable && imageOptimizationResult.score !== null) {
-        scores.push(imageOptimizationResult.score);
+      try {
+        const imageOptimizationResult = await analyzeImageOptimization(validatedUrl.toString(), {
+          puppeteer: { forceBrowserless }
+        });
+        analysisResult.imageOptimization = {
+          score: imageOptimizationResult.score,
+          applicable: imageOptimizationResult.applicable,
+          totalImages: imageOptimizationResult.totalImages,
+          modernFormats: imageOptimizationResult.modernFormats,
+          withAltText: imageOptimizationResult.withAltText,
+          appropriatelySized: imageOptimizationResult.appropriatelySized,
+          issues: imageOptimizationResult.issues,
+          recommendations: imageOptimizationResult.recommendations,
+          loadTime: imageOptimizationResult.loadTime,
+          details: imageOptimizationResult.details
+        };
+        // Only include score in overall calculation if analysis is applicable
+        if (imageOptimizationResult.applicable && imageOptimizationResult.score !== null) {
+          scores.push(imageOptimizationResult.score);
+        }
+        console.log(`✅ Image optimization analysis complete: Score ${imageOptimizationResult.score}, Applicable: ${imageOptimizationResult.applicable}`);
+      } catch (error) {
+        console.error('❌ Image optimization analysis failed:', error);
+        analysisResult.imageOptimization = {
+          score: 0,
+          applicable: false,
+          totalImages: 0,
+          modernFormats: 0,
+          withAltText: 0,
+          appropriatelySized: 0,
+          issues: ['Image optimization analysis failed due to error'],
+          recommendations: [],
+          loadTime: 0,
+          details: {}
+        };
       }
     }
 

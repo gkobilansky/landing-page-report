@@ -12,7 +12,7 @@ Phased approach to improve consistency, informativeness, rigor, and performance.
 - Normalize module contracts to a shared shape (interim)
   - Ensure each module returns: `score`, `issues[]`, `recommendations[]`, `loadTime`
   - Treat “N/A” modules (e.g., no images) as `applicable=false` with `score: null` and exclude from weights
-- Harden error handling
+- ✅ Harden error handling
   - Wrap every module in try/catch; on failure return zero score, error issue, and `confidence=0` later
 
 Acceptance criteria:

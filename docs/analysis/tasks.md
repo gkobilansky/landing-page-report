@@ -12,10 +12,10 @@ Concise, actionable tasks grouped by phase. Each task has acceptance criteria.
 - ✅ **COMPLETED**: Standardize module outputs (interim)
   - Change: Ensure each module returns `loadTime`; images return `applicable=false` if `totalImages===0` and `score=null`
   - Acceptance: Response schema includes these fields; tests updated
-- **NEXT PRIORITY**: Harden error handling
+- ✅ **COMPLETED**: Harden error handling
   - Change: Wrap `analyzeFontUsage` and others in try/catch in route; on error, set zero score and add error to `issues`
   - Acceptance: API doesn't fail on single module error; error is visible in output
-- **LOWER PRIORITY**: Overall score computation for selective runs
+- **NEXT PRIORITY**: Overall score computation for selective runs
   - Change: Only include executed/applicable modules in weight sum; omit overallScore when insufficient data
   - Acceptance: Component-only runs return realistic scores; overall score absent or clearly provisional
   - Note: Deprioritized since component-specific runs not used in production currently
