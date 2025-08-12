@@ -7,8 +7,6 @@ This folder organizes the documentation for improving the analysis system: curre
 
 ## Contents
 - Current State: `./current-state.md`
-- Findings: `./findings.md`
-- Implementation Plan: `./implementation-plan.md`
 - Roadmap: `./roadmap.md`
 - Tasks (handoff-ready): `./tasks.md`
 - Checklists: `./checklists/grades-deprecation.md`
