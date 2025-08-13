@@ -135,13 +135,45 @@ function getScoreBarColor(score: number): string {
   return 'bg-red-500';
 }
 
+// Standardized Badge Components
 function ScoreBadge({ score, testId }: { score: number; testId?: string }) {
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getScoreColor(score)} border border-current`}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${getScoreColor(score)} border border-current bg-current/10`}
       data-testid={testId}
     >
-      {score}
+      {score}/100
+    </span>
+  )
+}
+
+function ImpactBadge({ impact, colorTheme }: { impact: string; colorTheme: string }) {
+  const getImpactStyle = (level: string, theme: string) => {
+    switch (level) {
+      case 'High Impact':
+        return 'bg-red-900/30 text-red-300 border-red-700/50'
+      case 'Medium Impact':
+        return 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50'
+      case 'Low Impact':
+        return 'bg-blue-900/30 text-blue-300 border-blue-700/50'
+      case 'Needs Attention':
+        return 'bg-orange-900/30 text-orange-300 border-orange-700/50'
+      default:
+        return `bg-${theme}-900/30 text-${theme}-300 border-${theme}-700/50`
+    }
+  }
+
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getImpactStyle(impact, colorTheme)}`}>
+      {impact}
+    </span>
+  )
+}
+
+function CategoryTag({ children, colorTheme }: { children: React.ReactNode; colorTheme: string }) {
+  return (
+    <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-medium bg-${colorTheme}-900/20 text-${colorTheme}-300 border border-${colorTheme}-800/30`}>
+      {children}
     </span>
   )
 }
@@ -153,65 +185,100 @@ const categoryConfig = {
     colorTheme: 'blue',
     bgClass: 'bg-blue-950/20',
     borderClass: 'border-blue-800/40',
-    iconClass: 'text-blue-400'
+    iconClass: 'text-blue-400',
+    impact: 'High Impact'
   },
   'CTA Analysis': {
     icon: '🎯',
     colorTheme: 'purple', 
     bgClass: 'bg-purple-950/20',
     borderClass: 'border-purple-800/40',
-    iconClass: 'text-purple-400'
+    iconClass: 'text-purple-400',
+    impact: 'Needs Attention'
   },
   'Social Proof': {
     icon: '⭐',
     colorTheme: 'amber',
     bgClass: 'bg-amber-950/20', 
     borderClass: 'border-amber-800/40',
-    iconClass: 'text-amber-400'
+    iconClass: 'text-amber-400',
+    impact: 'Medium Impact'
   },
   'Whitespace Assessment': {
     icon: '📐',
     colorTheme: 'green',
     bgClass: 'bg-green-950/20',
     borderClass: 'border-green-800/40', 
-    iconClass: 'text-green-400'
+    iconClass: 'text-green-400',
+    impact: 'Medium Impact'
   },
   'Image Optimization': {
     icon: '🖼️',
     colorTheme: 'indigo',
     bgClass: 'bg-indigo-950/20',
     borderClass: 'border-indigo-800/40',
-    iconClass: 'text-indigo-400'
+    iconClass: 'text-indigo-400',
+    impact: 'Low Impact'
   },
   'Font Usage': {
     icon: '🔤',
     colorTheme: 'teal',
     bgClass: 'bg-teal-950/20',
     borderClass: 'border-teal-800/40',
-    iconClass: 'text-teal-400'
+    iconClass: 'text-teal-400',
+    impact: 'Low Impact'
   }
 } as const;
 
-function CategoryCard({ title, score, children }: { title: string; score?: number; children: React.ReactNode }) {
-  const config = categoryConfig[title as keyof typeof categoryConfig];
-  const cardClasses = config 
-    ? `rounded-lg border p-6 ${config.bgClass} ${config.borderClass}`
-    : "rounded-lg border border-gray-700 p-6 bg-gray-800/20";
-
+// Standardized Section Header Component
+function SectionHeader({ title, score, config }: { title: string; score: number; config: any }) {
   return (
-    <div className={cardClasses}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          {config && (
-            <span className={`text-2xl ${config.iconClass}`} aria-hidden="true">
-              {config.icon}
-            </span>
-          )}
-          <h3 className="text-lg font-semibold text-gray-100">{title}</h3>
-        </div>
-        {score !== undefined && <ScoreBadge score={score} testId={`score-badge-${title.toLowerCase().replace(/\s+/g, '-')}`} />}
+    <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-3">
+        <span className={`text-2xl ${config.iconClass}`} aria-hidden="true">
+          {config.icon}
+        </span>
+        <h3 className="text-xl font-bold text-gray-100">{title}</h3>
+        <ImpactBadge impact={config.impact} colorTheme={config.colorTheme} />
       </div>
+      <ScoreBadge score={score} testId={`score-badge-${title.toLowerCase().replace(/\s+/g, '-')}`} />
+    </div>
+  )
+}
+
+// Standardized Metrics Grid Component
+function MetricsGrid({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`grid grid-cols-2 gap-4 text-sm mb-6 ${className}`}>
       {children}
+    </div>
+  )
+}
+
+function MetricItem({ label, value, colorTheme = "gray" }: { label: string; value: string | number; colorTheme?: string }) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-1">{label}</span>
+      <span className={`text-gray-100 font-semibold`}>{value}</span>
+    </div>
+  )
+}
+
+// Standardized Performance Bar Component
+function PerformanceBar({ score, description, colorTheme }: { score: number; description: string; colorTheme: string }) {
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-gray-100 font-semibold text-sm uppercase tracking-wide">Performance</h4>
+        <span className="text-sm text-gray-400">{score}%</span>
+      </div>
+      <div className="w-full bg-gray-800 rounded-full h-2.5 mb-3">
+        <div 
+          className={`${getScoreBarColor(score)} h-2.5 rounded-full transition-all duration-300`}
+          style={{width: `${score}%`}}
+        ></div>
+      </div>
+      <p className="text-sm text-gray-300 leading-relaxed">{description}</p>
     </div>
   )
 }
@@ -220,42 +287,24 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
   const [showAllCtas, setShowAllCtas] = React.useState(false)
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-
+    <div className="w-full max-w-6xl mx-auto space-y-8">
       {/* Analysis Categories - Ordered by Priority/Weight */}
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-8">
         {/* Page Load Speed - 25% weight */}
         {result.pageLoadSpeed && (
           <div id="speed-section">
-            <div className="rounded-lg border border-blue-800/40 p-6 bg-blue-950/20">
-              {/* Header with icon, title, impact badge, and score */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl text-blue-400" aria-hidden="true">⚡</span>
-                  <h3 className="text-lg font-semibold text-gray-100">Page Load Speed</h3>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-900/30 text-red-300 border border-red-700/50">
-                    High Impact
-                  </span>
-                </div>
-                <div className="text-right">
-                  <div className={`text-3xl font-bold ${getScoreColor(result.pageLoadSpeed.score)}`}>{result.pageLoadSpeed.score}/100</div>
-                </div>
-              </div>
+            <div className={`rounded-xl border p-8 ${categoryConfig['Page Load Speed'].bgClass} ${categoryConfig['Page Load Speed'].borderClass}`}>
+              <SectionHeader 
+                title="Page Load Speed" 
+                score={result.pageLoadSpeed.score} 
+                config={categoryConfig['Page Load Speed']} 
+              />
 
-              {/* Performance Bar */}
-              <div className="mb-6">
-                <h4 className="text-gray-100 font-medium mb-2">Performance</h4>
-                <div className="w-full bg-gray-800 rounded-full h-2 mb-2">
-                  <div 
-                    className={`${getScoreBarColor(result.pageLoadSpeed.score)} h-2 rounded-full`}
-                    style={{width: `${result.pageLoadSpeed.score}%`}}
-                  ></div>
-                </div>
-                <div className="text-lg font-medium text-gray-100">
-                  {result.pageLoadSpeed.metrics.speedDescription} - {result.pageLoadSpeed.metrics.relativeTo}
-                </div>
-              </div>
+              <PerformanceBar 
+                score={result.pageLoadSpeed.score}
+                description={`${result.pageLoadSpeed.metrics.speedDescription} - ${result.pageLoadSpeed.metrics.relativeTo}`}
+                colorTheme={categoryConfig['Page Load Speed'].colorTheme}
+              />
 
               {(() => {
                 const categorized = categorizeContent(result.pageLoadSpeed.issues, result.pageLoadSpeed.recommendations)
@@ -263,7 +312,7 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                 const groupedRecommendations = groupByImpact(categorized.recommendations)
                 
                 return (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {Object.entries(groupedIssues).map(([impact, items]) => (
                       <AccordionSection
                         key={`issues-${impact}`}
@@ -294,86 +343,104 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
         {/* CTA Analysis - 25% weight */}
         {result.ctaAnalysis && (
           <div id="cta-section">
-            <div className="rounded-lg border border-blue-800/40 p-6 bg-blue-950/20">
-              {/* Header with icon, title, impact badge, and score */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl text-blue-400" aria-hidden="true">🎯</span>
-                  <h3 className="text-lg font-semibold text-gray-100">CTA Analysis</h3>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-900/30 text-red-300 border border-red-700/50">
-                    Needs Attention
-                  </span>
-                </div>
-                <div className="text-right">
-                  <div className={`text-3xl font-bold ${getScoreColor(result.ctaAnalysis.score)}`}>{result.ctaAnalysis.score}/100</div>
-                </div>
-              </div>
+            <div className={`rounded-xl border p-8 ${categoryConfig['CTA Analysis'].bgClass} ${categoryConfig['CTA Analysis'].borderClass}`}>
+              <SectionHeader 
+                title="CTA Analysis" 
+                score={result.ctaAnalysis.score} 
+                config={categoryConfig['CTA Analysis']} 
+              />
 
               {/* Two Column Layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
                 {/* Left Column - Primary CTA */}
                 <div>
-                  <h4 className="text-gray-100 font-medium mb-4">Primary CTA</h4>
+                  <h4 className="text-gray-100 font-semibold text-sm uppercase tracking-wide mb-4">Primary CTA</h4>
                   {result.ctaAnalysis.primaryCTA ? (
                     <div className="space-y-4">
-                      <div className="text-2xl font-medium text-gray-100">
-                        {result.ctaAnalysis.primaryCTA.text}
+                      <div className="text-xl font-semibold text-gray-100 leading-relaxed">
+                        "{result.ctaAnalysis.primaryCTA.text}"
                       </div>
-                      <div className="w-full bg-gray-800 rounded-full h-2">
+                      <div className="w-full bg-gray-800 rounded-full h-2.5">
                         <div 
-                          className={`${getScoreBarColor(result.ctaAnalysis.score)} h-2 rounded-full`}
+                          className={`${getScoreBarColor(result.ctaAnalysis.score)} h-2.5 rounded-full transition-all duration-300`}
                           style={{width: `${result.ctaAnalysis.score}%`}}
                         ></div>
                       </div>
-                      <div className="text-sm text-gray-300">
-                        <div>{result.ctaAnalysis.primaryCTA.text}: <span className="text-gray-400">Strength: {result.ctaAnalysis.primaryCTA.actionStrength}, Visibility: {result.ctaAnalysis.primaryCTA.visibility}</span></div>
-                        {result.ctaAnalysis.ctas && result.ctaAnalysis.ctas.slice(1, 3).map((cta, index) => (
-                          <div key={index} className="mt-1">
-                            {cta.text}: <span className="text-gray-400">Strength: {cta.actionStrength}, Visibility: {cta.visibility}</span>
-                          </div>
-                        ))}
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400">Strength:</span>
+                          <CategoryTag colorTheme={categoryConfig['CTA Analysis'].colorTheme}>
+                            {result.ctaAnalysis.primaryCTA.actionStrength}
+                          </CategoryTag>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400">Visibility:</span>
+                          <CategoryTag colorTheme={categoryConfig['CTA Analysis'].colorTheme}>
+                            {result.ctaAnalysis.primaryCTA.visibility}
+                          </CategoryTag>
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-gray-400">No primary CTA identified</div>
+                    <div className="text-gray-400 text-sm">No primary CTA identified</div>
                   )}
                 </div>
 
-                {/* Right Column - Key Issues */}
+                {/* Right Column - Secondary CTAs */}
                 <div>
-                  <h4 className="text-gray-100 font-medium mb-4">Key Issues Identified</h4>
-                  {(() => {
-                    const categorized = categorizeContent(result.ctaAnalysis.issues, result.ctaAnalysis.recommendations)
-                    const groupedIssues = groupByImpact(categorized.issues)
-                    const groupedRecommendations = groupByImpact(categorized.recommendations)
-                    
-                    return (
-                      <div className="space-y-3">
-                        {Object.entries(groupedIssues).map(([impact, items]) => (
-                          <AccordionSection
-                            key={`cta-issues-${impact}`}
-                            title="Issues"
-                            impact={impact as any}
-                            items={items}
-                            type="issues"
-                            defaultOpen={impact === 'High'}
-                          />
-                        ))}
-                        {Object.entries(groupedRecommendations).map(([impact, items]) => (
-                          <AccordionSection
-                            key={`cta-recommendations-${impact}`}
-                            title="Recommendations"
-                            impact={impact as any}
-                            items={items}
-                            type="recommendations"
-                            defaultOpen={impact === 'High'}
-                          />
-                        ))}
-                      </div>
-                    )
-                  })()}
+                  <h4 className="text-gray-100 font-semibold text-sm uppercase tracking-wide mb-4">Secondary CTAs</h4>
+                  {result.ctaAnalysis.ctas && result.ctaAnalysis.ctas.length > 1 ? (
+                    <div className="space-y-3">
+                      {result.ctaAnalysis.ctas.slice(1, 4).map((cta, index) => (
+                        <div key={index} className="p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                          <div className="text-sm font-medium text-gray-200 mb-2">"{cta.text}"</div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <CategoryTag colorTheme={categoryConfig['CTA Analysis'].colorTheme}>
+                              {cta.actionStrength}
+                            </CategoryTag>
+                            <CategoryTag colorTheme={categoryConfig['CTA Analysis'].colorTheme}>
+                              {cta.visibility}
+                            </CategoryTag>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-gray-400 text-sm">No secondary CTAs found</div>
+                  )}
                 </div>
               </div>
+
+              {(() => {
+                const categorized = categorizeContent(result.ctaAnalysis.issues, result.ctaAnalysis.recommendations)
+                const groupedIssues = groupByImpact(categorized.issues)
+                const groupedRecommendations = groupByImpact(categorized.recommendations)
+                
+                return (
+                  <div className="space-y-4">
+                    {Object.entries(groupedIssues).map(([impact, items]) => (
+                      <AccordionSection
+                        key={`cta-issues-${impact}`}
+                        title="Issues"
+                        impact={impact as any}
+                        items={items}
+                        type="issues"
+                        defaultOpen={impact === 'High'}
+                      />
+                    ))}
+                    {Object.entries(groupedRecommendations).map(([impact, items]) => (
+                      <AccordionSection
+                        key={`cta-recommendations-${impact}`}
+                        title="Recommendations"
+                        impact={impact as any}
+                        items={items}
+                        type="recommendations"
+                        defaultOpen={impact === 'High'}
+                      />
+                    ))}
+                  </div>
+                )
+              })()}
             </div>
           </div>
         )}
@@ -381,67 +448,50 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
         {/* Social Proof - 20% weight */}
         {result.socialProof && (
           <div id="social-section">
-            <div className="rounded-lg border border-blue-800/40 p-6 bg-blue-950/20">
-              {/* Header with icon, title, impact badge, and score */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl text-blue-400" aria-hidden="true">⭐</span>
-                  <h3 className="text-lg font-semibold text-gray-100">Social Proof</h3>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-900/30 text-yellow-300 border border-yellow-700/50">
-                    Medium Impact
-                  </span>
-                </div>
-                <div className="text-right">
-                  <div className={`text-3xl font-bold ${getScoreColor(result.socialProof.score)}`}>{result.socialProof.score}/100</div>
-                </div>
-              </div>
+            <div className={`rounded-xl border p-8 ${categoryConfig['Social Proof'].bgClass} ${categoryConfig['Social Proof'].borderClass}`}>
+              <SectionHeader 
+                title="Social Proof" 
+                score={result.socialProof.score} 
+                config={categoryConfig['Social Proof']} 
+              />
               
-              <div className="space-y-4 text-gray-300">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-300 font-medium">Total Elements:</span> <span className="text-gray-100">{result.socialProof.summary.totalElements}</span>
-                </div>
-                <div>
-                  <span className="text-gray-300 font-medium">Above Fold:</span> <span className="text-gray-100">{result.socialProof.summary.aboveFoldElements}</span>
-                </div>
-                <div>
-                  <span className="text-gray-300 font-medium">Testimonials:</span> <span className="text-gray-100">{result.socialProof.summary.testimonials}</span>
-                </div>
-                <div>
-                  <span className="text-gray-300 font-medium">Reviews:</span> <span className="text-gray-100">{result.socialProof.summary.reviews}</span>
-                </div>
-                <div>
-                  <span className="text-gray-300 font-medium">Trust Badges:</span> <span className="text-gray-100">{result.socialProof.summary.trustBadges}</span>
-                </div>
-                <div>
-                  <span className="text-gray-300 font-medium">Customer Counts:</span> <span className="text-gray-100">{result.socialProof.summary.customerCounts}</span>
-                </div>
-              </div>
+              <MetricsGrid className="mb-6">
+                <MetricItem label="Total Elements" value={result.socialProof.summary.totalElements} />
+                <MetricItem label="Above Fold" value={result.socialProof.summary.aboveFoldElements} />
+                <MetricItem label="Testimonials" value={result.socialProof.summary.testimonials} />
+                <MetricItem label="Reviews" value={result.socialProof.summary.reviews} />
+                <MetricItem label="Trust Badges" value={result.socialProof.summary.trustBadges} />
+                <MetricItem label="Customer Counts" value={result.socialProof.summary.customerCounts} />
+              </MetricsGrid>
               
               {result.socialProof.elements.length > 0 ? (
-                <div>
-                  <h4 className="font-medium text-gray-100 mb-2 mt-3">Social Proof Elements:</h4>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                <div className="mb-6">
+                  <h4 className="font-semibold text-sm uppercase tracking-wide text-gray-100 mb-4">Social Proof Elements</h4>
+                  <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
                     {result.socialProof.elements.map((element, index) => (
-                      <div key={index} className="border-b border-gray-700 py-2 last:border-b-0">
-                        <div className="text-sm">
-                          <span className="inline-block bg-gray-700 text-gray-200 px-2 py-1 rounded mr-2 text-xs capitalize">
+                      <div key={index} className="p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <CategoryTag colorTheme={categoryConfig['Social Proof'].colorTheme}>
                             {element.type.replace('-', ' ')}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            ({element.isAboveFold ? 'Above Fold' : 'Below Fold'}, 
-                            Credibility: {element.credibilityScore}/100)
-                          </span>
+                          </CategoryTag>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${element.isAboveFold ? 'bg-green-900/30 text-green-300' : 'bg-gray-700/30 text-gray-400'}`}>
+                              {element.isAboveFold ? 'Above Fold' : 'Below Fold'}
+                            </span>
+                            <span className="text-gray-500">
+                              {element.credibilityScore}/100
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-sm mt-1 text-gray-300">
-                          {element.text.length > 80 ? element.text.substring(0, 80) + '...' : element.text}
+                        <p className="text-sm text-gray-300 leading-relaxed">
+                          {element.text.length > 120 ? element.text.substring(0, 120) + '...' : element.text}
                         </p>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <p className="text-sm">No social proof elements detected.</p>
+                <div className="text-gray-400 text-sm mb-6">No social proof elements detected.</div>
               )}
               
               {(() => {
@@ -450,7 +500,7 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                 const groupedRecommendations = groupByImpact(categorized.recommendations)
                 
                 return (
-                  <div className="space-y-3 mt-4">
+                  <div className="space-y-4">
                     {Object.entries(groupedIssues).map(([impact, items]) => (
                       <AccordionSection
                         key={`social-issues-${impact}`}
@@ -475,50 +525,33 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                 )
               })()}
             </div>
-            </div>
           </div>
         )}
 
         {/* Whitespace Assessment - 15% weight */}
         {result.whitespaceAssessment && (
           <div id="whitespace-section">
-            <div className="rounded-lg border border-blue-800/40 p-6 bg-blue-950/20">
-              {/* Header with icon, title, impact badge, and score */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl text-blue-400" aria-hidden="true">📐</span>
-                  <h3 className="text-lg font-semibold text-gray-100">Whitespace Assessment</h3>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-900/30 text-orange-300 border border-orange-700/50">
-                    Medium Impact
-                  </span>
-                </div>
-                <div className="text-right">
-                  <div className={`text-3xl font-bold ${getScoreColor(result.whitespaceAssessment.score)}`}>{result.whitespaceAssessment.score}/100</div>
-                </div>
-              </div>
+            <div className={`rounded-xl border p-8 ${categoryConfig['Whitespace Assessment'].bgClass} ${categoryConfig['Whitespace Assessment'].borderClass}`}>
+              <SectionHeader 
+                title="Whitespace Assessment" 
+                score={result.whitespaceAssessment.score} 
+                config={categoryConfig['Whitespace Assessment']} 
+              />
               
-              <div className="space-y-4 text-gray-300">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-300 font-medium">Whitespace Ratio:</span> <span className="text-gray-100">{result.whitespaceAssessment.metrics.whitespaceRatio.toFixed(2)}</span>
-                </div>
-                <div>
-                  <span className="text-gray-300 font-medium">Clutter Score:</span> <span className="text-gray-100">{result.whitespaceAssessment.metrics.clutterScore}</span>
-                </div>
-                <div>
-                  <span className="text-gray-300 font-medium">Avg Element Density:</span> <span className="text-gray-100">{result.whitespaceAssessment.metrics.elementDensityPerSection.averageDensity.toFixed(2)}</span>
-                </div>
-                 <div>
-                  <span className="text-gray-300 font-medium">Spacing Adequate:</span> <span className="text-gray-100">{result.whitespaceAssessment.metrics.hasAdequateSpacing ? 'Yes' : 'No'}</span>
-                </div>
-              </div>
+              <MetricsGrid className="mb-6">
+                <MetricItem label="Whitespace Ratio" value={result.whitespaceAssessment.metrics.whitespaceRatio.toFixed(2)} />
+                <MetricItem label="Clutter Score" value={result.whitespaceAssessment.metrics.clutterScore} />
+                <MetricItem label="Avg Element Density" value={result.whitespaceAssessment.metrics.elementDensityPerSection.averageDensity.toFixed(2)} />
+                <MetricItem label="Spacing Adequate" value={result.whitespaceAssessment.metrics.hasAdequateSpacing ? 'Yes' : 'No'} />
+              </MetricsGrid>
+
               {(() => {
                 const categorized = categorizeContent(result.whitespaceAssessment.issues, result.whitespaceAssessment.recommendations)
                 const groupedIssues = groupByImpact(categorized.issues)
                 const groupedRecommendations = groupByImpact(categorized.recommendations)
                 
                 return (
-                  <div className="space-y-3 mt-4">
+                  <div className="space-y-4">
                     {Object.entries(groupedIssues).map(([impact, items]) => (
                       <AccordionSection
                         key={`whitespace-issues-${impact}`}
@@ -543,50 +576,33 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                 )
               })()}
             </div>
-            </div>
           </div>
         )}
 
         {/* Image Optimization - 10% weight */}
         {result.imageOptimization && (
           <div id="images-section">
-            <div className="rounded-lg border border-blue-800/40 p-6 bg-blue-950/20">
-              {/* Header with icon, title, impact badge, and score */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl text-blue-400" aria-hidden="true">🖼️</span>
-                  <h3 className="text-lg font-semibold text-gray-100">Image Optimization</h3>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900/30 text-blue-300 border border-blue-700/50">
-                    Low Impact
-                  </span>
-                </div>
-                <div className="text-right">
-                  <div className={`text-3xl font-bold ${getScoreColor(result.imageOptimization.score)}`}>{result.imageOptimization.score}/100</div>
-                </div>
-              </div>
+            <div className={`rounded-xl border p-8 ${categoryConfig['Image Optimization'].bgClass} ${categoryConfig['Image Optimization'].borderClass}`}>
+              <SectionHeader 
+                title="Image Optimization" 
+                score={result.imageOptimization.score} 
+                config={categoryConfig['Image Optimization']} 
+              />
               
-              <div className="space-y-4 text-gray-300">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-300 font-medium">Total Images:</span> <span className="text-gray-100">{result.imageOptimization.totalImages}</span>
-                </div>
-                <div>
-                  <span className="text-gray-300 font-medium">Modern Formats:</span> <span className="text-gray-100">{result.imageOptimization.modernFormats}</span>
-                </div>
-                <div>
-                  <span className="text-gray-300 font-medium">With Alt Text:</span> <span className="text-gray-100">{result.imageOptimization.withAltText}</span>
-                </div>
-                <div>
-                  <span className="text-gray-300 font-medium">Properly Sized:</span> <span className="text-gray-100">{result.imageOptimization.appropriatelySized}</span>
-                </div>
-              </div>
+              <MetricsGrid className="mb-6">
+                <MetricItem label="Total Images" value={result.imageOptimization.totalImages} />
+                <MetricItem label="Modern Formats" value={result.imageOptimization.modernFormats} />
+                <MetricItem label="With Alt Text" value={result.imageOptimization.withAltText} />
+                <MetricItem label="Properly Sized" value={result.imageOptimization.appropriatelySized} />
+              </MetricsGrid>
+
               {(() => {
                 const categorized = categorizeContent(result.imageOptimization.issues, result.imageOptimization.recommendations)
                 const groupedIssues = groupByImpact(categorized.issues)
                 const groupedRecommendations = groupByImpact(categorized.recommendations)
                 
                 return (
-                  <div className="space-y-3 mt-4">
+                  <div className="space-y-4">
                     {Object.entries(groupedIssues).map(([impact, items]) => (
                       <AccordionSection
                         key={`images-issues-${impact}`}
@@ -611,57 +627,50 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                 )
               })()}
             </div>
-            </div>
           </div>
         )}
 
         {/* Font Usage - 5% weight */}
         {result.fontUsage && (
           <div id="fonts-section">
-            <div className="rounded-lg border border-blue-800/40 p-6 bg-blue-950/20">
-              {/* Header with icon, title, impact badge, and score */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl text-blue-400" aria-hidden="true">🔤</span>
-                  <h3 className="text-lg font-semibold text-gray-100">Font Usage</h3>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900/30 text-blue-300 border border-blue-700/50">
-                    Low Impact
-                  </span>
-                </div>
-                <div className="text-right">
-                  <div className={`text-3xl font-bold ${getScoreColor(result.fontUsage.score)}`}>{result.fontUsage.score}/100</div>
-                </div>
-              </div>
+            <div className={`rounded-xl border p-8 ${categoryConfig['Font Usage'].bgClass} ${categoryConfig['Font Usage'].borderClass}`}>
+              <SectionHeader 
+                title="Font Usage" 
+                score={result.fontUsage.score} 
+                config={categoryConfig['Font Usage']} 
+              />
               
-              <div className="space-y-4 text-gray-300">
-              <div className="text-sm space-y-3">
-                <div>
-                  <span className="text-gray-300 font-medium">Total Font Families: </span>
-                  <span className="text-gray-100">{result.fontUsage.fontCount}</span>
-                  {result.fontUsage.systemFontCount !== undefined && result.fontUsage.webFontCount !== undefined && (
-                    <span className="text-gray-400 ml-2">
-                      ({result.fontUsage.systemFontCount} system, {result.fontUsage.webFontCount} web)
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <span className="text-gray-300 font-medium">Font Families:</span>
-                  <div className="mt-2">
-                    {result.fontUsage.fontFamilies.map((font, index) => (
-                      <span key={index} className="inline-block bg-gray-700 text-gray-200 px-2 py-1 rounded mr-2 mb-1 text-xs">
-                        {font}
-                      </span>
-                    ))}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-sm uppercase tracking-wide text-gray-100">Font Families</h4>
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="text-gray-400">Total: <span className="text-gray-100 font-semibold">{result.fontUsage.fontCount}</span></span>
+                    {result.fontUsage.systemFontCount !== undefined && result.fontUsage.webFontCount !== undefined && (
+                      <>
+                        <span className="text-gray-500">•</span>
+                        <span className="text-gray-400">System: <span className="text-gray-100">{result.fontUsage.systemFontCount}</span></span>
+                        <span className="text-gray-500">•</span>
+                        <span className="text-gray-400">Web: <span className="text-gray-100">{result.fontUsage.webFontCount}</span></span>
+                      </>
+                    )}
                   </div>
                 </div>
+                <div className="flex flex-wrap gap-2">
+                  {result.fontUsage.fontFamilies.map((font, index) => (
+                    <CategoryTag key={index} colorTheme={categoryConfig['Font Usage'].colorTheme}>
+                      {font}
+                    </CategoryTag>
+                  ))}
+                </div>
               </div>
+
               {(() => {
                 const categorized = categorizeContent(result.fontUsage.issues, result.fontUsage.recommendations)
                 const groupedIssues = groupByImpact(categorized.issues)
                 const groupedRecommendations = groupByImpact(categorized.recommendations)
                 
                 return (
-                  <div className="space-y-3 mt-4">
+                  <div className="space-y-4">
                     {Object.entries(groupedIssues).map(([impact, items]) => (
                       <AccordionSection
                         key={`fonts-issues-${impact}`}
@@ -686,19 +695,16 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                 )
               })()}
             </div>
-            </div>
           </div>
         )}
-
-        
       </div>
 
       {/* Screenshot Section */}
       {result.screenshotUrl && (
-        <div className="rounded-lg border border-gray-700 p-6" style={{ backgroundColor: 'var(--color-bg-card)' }}>
-          <div className="flex items-center gap-3 mb-4">
+        <div className="rounded-xl border border-gray-700 p-8 bg-gray-800/20">
+          <div className="flex items-center gap-3 mb-6">
             <span className="text-2xl text-blue-400" aria-hidden="true">📸</span>
-            <h3 className="text-lg font-semibold text-gray-100">Full Landing Page Screenshot</h3>
+            <h3 className="text-xl font-bold text-gray-100">Full Landing Page Screenshot</h3>
           </div>
           <div className="relative bg-gray-800 rounded-lg overflow-hidden">
             <div className="max-h-96 overflow-y-auto">
@@ -719,7 +725,7 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
               </svg>
             </div>
           </div>
-          <p className="text-sm text-gray-400 mt-3">
+          <p className="text-sm text-gray-400 mt-4 leading-relaxed">
             Full-page screenshot captured during analysis for visual reference and whitespace assessment.
           </p>
         </div>

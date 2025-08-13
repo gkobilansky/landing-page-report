@@ -181,7 +181,7 @@ export default function IndividualReportPage() {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-main)] py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-12">
           <Link 
@@ -216,7 +216,26 @@ export default function IndividualReportPage() {
                 
                 {/* Page info */}
                 <div className="flex-1 space-y-2">
-                  <h2 className="text-gray-300 text-base sm:text-lg font-medium break-all">{analysis.url}</h2>
+                  <span className="inline-flex items-center gap-1">
+                    <a
+                      href={analysis.url}
+                      target="_blank"
+                      rel="ugc noopener noreferrer"
+                      className="text-gray-300 text-base sm:text-lg font-medium break-all inline-flex items-center gap-1"
+                    >
+                      {analysis.url}
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-4 h-4 ml-1 inline-block text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        aria-label="Opens in new tab"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 3h7m0 0v7m0-7L10 14m-4 7h11a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v11a2 2 0 002 2z" />
+                      </svg>
+                    </a>
+                  </span>
                   <p className="text-gray-500 text-sm">
                     Analyzed {formatRelativeTime(analysis.created_at)}
                   </p>
@@ -267,7 +286,10 @@ export default function IndividualReportPage() {
             </div>
             
             <p className="text-gray-300 text-lg leading-relaxed mb-8">
-              We&apos;ve run {cleanAnalysisUrl} through a series of automated tests analyzing the most important conversion elements: <em className="text-gray-200">speed, space, and story.</em>
+              We&apos;ve run {cleanAnalysisUrl} through a series of automated tests analyzing the most important conversion elements: <em className="text-gray-200">speed, call to action, social proof and plenty of space.</em>
+            </p>
+            <p className="text-gray-300 text-lg mb-8">
+               
             </p>
 
             {/* Score Bar */}

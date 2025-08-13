@@ -243,14 +243,8 @@ export default function Home() {
                 href="/reports" 
                 className="text-gray-300 hover:text-primary hover:underline transition-colors text-sm font-medium"
               >
-                View All Reports
+                📊 View All Reports
               </Link>
-              <a 
-                href="/blueprint" 
-                className="text-gray-300 hover:text-primary hover:underline transition-colors text-sm font-medium"
-              >
-                The Conversion Blueprint
-              </a>
             </nav>
           </div>
         </div>
