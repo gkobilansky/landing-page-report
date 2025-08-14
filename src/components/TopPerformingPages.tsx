@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface TopPerformer {
   id: string
@@ -142,10 +143,11 @@ export default function TopPerformingPages() {
               {/* Screenshot or Placeholder */}
               <div className="h-32 bg-gray-700 relative overflow-hidden">
                 {performer.screenshot_url ? (
-                  <img
+                  <Image
                     src={performer.screenshot_url}
                     alt={`Screenshot of ${performer.url_title || performer.url}`}
-                    className="w-full h-full object-cover object-top-left group-hover:scale-110 transition-transform duration-300"
+                    fill
+                    className="object-cover object-top-left group-hover:scale-110 transition-transform duration-300"
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">

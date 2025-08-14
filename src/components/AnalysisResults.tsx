@@ -358,7 +358,7 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                   {result.ctaAnalysis.primaryCTA ? (
                     <div className="space-y-4">
                       <div className="text-xl font-semibold text-gray-100 leading-relaxed">
-                        "{result.ctaAnalysis.primaryCTA.text}"
+                        &ldquo;{result.ctaAnalysis.primaryCTA.text}&rdquo;
                       </div>
                       <div className="w-full bg-gray-800 rounded-full h-2.5">
                         <div 
@@ -393,7 +393,7 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
                     <div className="space-y-3">
                       {result.ctaAnalysis.ctas.slice(1, 4).map((cta, index) => (
                         <div key={index} className="p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
-                          <div className="text-sm font-medium text-gray-200 mb-2">"{cta.text}"</div>
+                          <div className="text-sm font-medium text-gray-200 mb-2">&ldquo;{cta.text}&rdquo;</div>
                           <div className="flex items-center gap-2 text-xs">
                             <CategoryTag colorTheme={categoryConfig['CTA Analysis'].colorTheme}>
                               {cta.actionStrength}
