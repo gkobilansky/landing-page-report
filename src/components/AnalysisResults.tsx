@@ -132,31 +132,30 @@ interface AnalysisResultsProps {
 export default function AnalysisResults({ result, analysisId }: AnalysisResultsProps) {
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8">
-      {/* Analysis Categories - Ordered by Priority/Weight */}
       <div className="grid grid-cols-1 gap-8">
-        {/* Page Load Speed - 25% weight */}
-        {result.pageLoadSpeed && (
-          <PageSpeedSection pageLoadSpeed={result.pageLoadSpeed} />
-        )}
-
         {/* CTA Analysis - 25% weight */}
         {result.ctaAnalysis && (
           <CTASection ctaAnalysis={result.ctaAnalysis} />
         )}
 
-        {/* Social Proof - 20% weight */}
+          {/* Social Proof - 20% weight */}
         {result.socialProof && (
           <SocialProofSection socialProof={result.socialProof} />
+        )}
+
+        {/* Page Load Speed - 25% weight */}
+        {result.pageLoadSpeed && (
+          <PageSpeedSection pageLoadSpeed={result.pageLoadSpeed} />
+        )}
+
+         {/* Image Optimization - 10% weight */}
+        {result.imageOptimization && (
+          <ImageOptimizationSection imageOptimization={result.imageOptimization} />
         )}
 
         {/* Whitespace Assessment - 15% weight */}
         {result.whitespaceAssessment && (
           <WhitespaceSection whitespaceAssessment={result.whitespaceAssessment} />
-        )}
-
-        {/* Image Optimization - 10% weight */}
-        {result.imageOptimization && (
-          <ImageOptimizationSection imageOptimization={result.imageOptimization} />
         )}
 
         {/* Font Usage - 5% weight */}

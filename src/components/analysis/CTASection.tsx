@@ -38,7 +38,7 @@ const categoryConfig = {
   bgClass: 'bg-purple-950/20',
   borderClass: 'border-purple-800/40',
   iconClass: 'text-purple-400',
-  impact: 'Needs Attention'
+  impact: 'High Impact'
 }
 
 function getScoreBarColor(score: number): string {
