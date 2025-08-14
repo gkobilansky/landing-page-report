@@ -73,12 +73,9 @@ export default function AccordionSection({
       
       {isOpen && (
         <div className="px-4 py-3 bg-gray-900/20">
-          <ul className={`space-y-2 text-sm ${typeColor}`}>
+          <ul className={`list-disc list-inside`}>
             {items.map((item, index) => (
-              <li key={index} className="flex items-start gap-2">
-                <span className="text-gray-500 mt-1 flex-shrink-0">•</span>
-                <span>{item}</span>
-              </li>
+              <li key={index}>{item}</li>
             ))}
           </ul>
         </div>
