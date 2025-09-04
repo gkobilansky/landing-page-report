@@ -18,6 +18,19 @@ const mockBrowser = {
   close: jest.fn(),
 };
 
+// Helper function to create image data with responsive attributes
+const createImageData = (overrides = {}) => ({
+  type: 'img',
+  hasLazyLoading: false,
+  hasSrcset: false,
+  hasSizesAttribute: false,
+  loadingPriority: 'auto',
+  isAboveFold: false,
+  hasBlurPlaceholder: false,
+  fetchPriority: 'auto',
+  ...overrides
+});
+
 describe('Image Optimization Analysis', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -27,8 +40,8 @@ describe('Image Optimization Analysis', () => {
   describe('Modern Image Formats', () => {
     it('should give perfect score for all WebP images', async () => {
       mockPage.evaluate.mockResolvedValue([
-        { src: 'https://example.com/image1.webp', alt: 'Alt text 1', width: 800, height: 600 },
-        { src: 'https://example.com/image2.webp', alt: 'Alt text 2', width: 400, height: 300 }
+        createImageData({ src: 'https://example.com/image1.webp', alt: 'Alt text 1', width: 800, height: 600, hasSrcset: true, hasSizesAttribute: true, isAboveFold: true, hasBlurPlaceholder: true, fetchPriority: 'high', loadingPriority: 'eager' }),
+        createImageData({ src: 'https://example.com/image2.webp', alt: 'Alt text 2', width: 400, height: 300, hasSrcset: true, hasSizesAttribute: true, hasLazyLoading: true, loadingPriority: 'lazy', hasBlurPlaceholder: true })
       ]);
 
       const result = await analyzeImageOptimization('https://example.com');
@@ -60,7 +73,7 @@ describe('Image Optimization Analysis', () => {
 
     it('should recognize AVIF as modern format', async () => {
       mockPage.evaluate.mockResolvedValue([
-        { src: 'https://example.com/ultra-modern.avif', alt: 'Ultra modern', width: 800, height: 600 }
+        createImageData({ src: 'https://example.com/ultra-modern.avif', alt: 'Ultra modern', width: 800, height: 600, hasSrcset: true, hasSizesAttribute: true, isAboveFold: true, hasBlurPlaceholder: true, fetchPriority: 'high', loadingPriority: 'eager' })
       ]);
 
       const result = await analyzeImageOptimization('https://example.com');
@@ -286,6 +299,86 @@ describe('Image Optimization Analysis', () => {
       expect(result.modernFormats).toBe(2); // Two WebP images
       expect(result.withAltText).toBe(4); // All should be considered properly handled
       expect(result.status).toBe('analyzed');
+    });
+  });
+
+  describe('Responsive Image Analysis', () => {
+    it('should detect responsive images with srcset and sizes', async () => {
+      mockPage.evaluate.mockResolvedValue([
+        createImageData({ src: 'https://example.com/responsive.webp', alt: 'Responsive image', width: 800, height: 600, hasSrcset: true, hasSizesAttribute: true }),
+        createImageData({ src: 'https://example.com/non-responsive.webp', alt: 'Non-responsive image', width: 800, height: 600, hasSrcset: false, hasSizesAttribute: false })
+      ]);
+
+      const result = await analyzeImageOptimization('https://example.com');
+
+      expect(result.responsiveImages).toBe(1);
+      expect(result.issues).toContain('1 images missing responsive attributes (srcset/sizes)');
+      expect(result.recommendations).toContain('Add srcset and sizes attributes to images for responsive loading');
+    });
+
+    it('should detect proper loading strategies', async () => {
+      mockPage.evaluate.mockResolvedValue([
+        // Above-fold image with proper loading (eager/not lazy)
+        createImageData({ src: 'https://example.com/above-fold.webp', alt: 'Above fold', width: 800, height: 600, isAboveFold: true, loadingPriority: 'eager', hasLazyLoading: false }),
+        // Below-fold image with proper loading (lazy)
+        createImageData({ src: 'https://example.com/below-fold.webp', alt: 'Below fold', width: 800, height: 600, isAboveFold: false, loadingPriority: 'lazy', hasLazyLoading: true }),
+        // Above-fold image with WRONG loading (lazy)
+        createImageData({ src: 'https://example.com/wrong-above.webp', alt: 'Wrong above', width: 800, height: 600, isAboveFold: true, loadingPriority: 'lazy', hasLazyLoading: true }),
+        // Below-fold image with WRONG loading (not lazy)
+        createImageData({ src: 'https://example.com/wrong-below.webp', alt: 'Wrong below', width: 800, height: 600, isAboveFold: false, loadingPriority: 'auto', hasLazyLoading: false })
+      ]);
+
+      const result = await analyzeImageOptimization('https://example.com');
+
+      expect(result.properlyLoadedImages).toBe(2);
+      expect(result.aboveFoldImages).toBe(2);
+      expect(result.issues).toContain('2 images have suboptimal loading strategy');
+      expect(result.recommendations).toContain('Use loading="lazy" for below-fold images and loading="eager" for above-fold images');
+    });
+
+    it('should track fetch priority usage for above-fold images', async () => {
+      mockPage.evaluate.mockResolvedValue([
+        // Above-fold image with high priority
+        createImageData({ src: 'https://example.com/priority-high.webp', alt: 'High priority', width: 800, height: 600, isAboveFold: true, fetchPriority: 'high' }),
+        // Above-fold image without priority
+        createImageData({ src: 'https://example.com/no-priority.webp', alt: 'No priority', width: 800, height: 600, isAboveFold: true, fetchPriority: 'auto' }),
+        // Below-fold image (priority doesn't matter)
+        createImageData({ src: 'https://example.com/below.webp', alt: 'Below fold', width: 800, height: 600, isAboveFold: false, fetchPriority: 'auto' })
+      ]);
+
+      const result = await analyzeImageOptimization('https://example.com');
+
+      expect(result.aboveFoldImages).toBe(2);
+      expect(result.details.fetchPriorityUsage.high).toBe(1);
+      expect(result.details.fetchPriorityUsage.auto).toBe(2);
+      expect(result.issues).toContain('1 above-fold images missing fetchpriority="high"');
+      expect(result.recommendations).toContain('Add fetchpriority="high" to above-fold images for faster loading');
+    });
+
+    it('should track placeholder usage', async () => {
+      mockPage.evaluate.mockResolvedValue([
+        createImageData({ src: 'https://example.com/with-placeholder.webp', alt: 'With placeholder', width: 800, height: 600, hasBlurPlaceholder: true }),
+        createImageData({ src: 'https://example.com/without-placeholder.webp', alt: 'Without placeholder', width: 800, height: 600, hasBlurPlaceholder: false })
+      ]);
+
+      const result = await analyzeImageOptimization('https://example.com');
+
+      expect(result.details.placeholderUsage).toBe(1);
+      expect(result.recommendations).toContain('Consider adding blur placeholders to more images for better perceived performance');
+    });
+
+    it('should provide proper loading strategy breakdown', async () => {
+      mockPage.evaluate.mockResolvedValue([
+        createImageData({ src: 'https://example.com/eager.webp', alt: 'Eager', width: 800, height: 600, loadingPriority: 'eager' }),
+        createImageData({ src: 'https://example.com/lazy.webp', alt: 'Lazy', width: 800, height: 600, loadingPriority: 'lazy' }),
+        createImageData({ src: 'https://example.com/auto.webp', alt: 'Auto', width: 800, height: 600, loadingPriority: 'auto' })
+      ]);
+
+      const result = await analyzeImageOptimization('https://example.com');
+
+      expect(result.details.loadingStrategies.eager).toBe(1);
+      expect(result.details.loadingStrategies.lazy).toBe(1);
+      expect(result.details.loadingStrategies.auto).toBe(1);
     });
   });
 });

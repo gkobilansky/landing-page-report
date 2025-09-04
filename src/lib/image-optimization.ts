@@ -7,12 +7,20 @@ export interface ImageOptimizationResult {
   modernFormats: number;
   withAltText: number;
   appropriatelySized: number;
+  // New responsive metrics
+  responsiveImages: number;
+  properlyLoadedImages: number;
+  aboveFoldImages: number;
   issues: string[];
   recommendations: string[];
   details: {
     formatBreakdown: Record<string, number>;
     avgImageSize: { width: number; height: number } | null;
     largestImage: { width: number; height: number; src: string } | null;
+    // New responsive details
+    loadingStrategies: Record<string, number>;
+    fetchPriorityUsage: Record<string, number>;
+    placeholderUsage: number;
   };
 }
 
@@ -23,6 +31,14 @@ interface ImageData {
   height: number;
   role?: string;
   type?: 'img' | 'background';
+  // Modern responsive attributes
+  hasLazyLoading?: boolean;
+  hasSrcset?: boolean;
+  hasSizesAttribute?: boolean;
+  loadingPriority?: 'eager' | 'lazy' | 'auto';
+  isAboveFold?: boolean;
+  hasBlurPlaceholder?: boolean;
+  fetchPriority?: 'high' | 'low' | 'auto';
 }
 
 const MODERN_FORMATS = ['webp', 'avif'];
@@ -56,10 +72,30 @@ export async function analyzeImageOptimization(url: string, options: ImageOptimi
       const imgElements = Array.from(document.querySelectorAll('img'));
       const allElements = Array.from(document.querySelectorAll('*'));
       
-      // Extract img tag data
+      // Get viewport info for above-fold detection
+      const viewportHeight = window.innerHeight;
+      
+      // Extract img tag data with modern attributes
       const imgData = imgElements.map(img => {
         const computedStyle = window.getComputedStyle(img);
         const rect = img.getBoundingClientRect();
+        
+        // Check if image is above the fold
+        const isAboveFold = rect.top < viewportHeight && rect.top + rect.height > 0;
+        
+        // Extract modern attributes
+        const loadingAttr = img.getAttribute('loading') || 'auto';
+        const hasLazyLoading = loadingAttr === 'lazy';
+        const hasSrcset = Boolean(img.getAttribute('srcset'));
+        const hasSizesAttribute = Boolean(img.getAttribute('sizes'));
+        const fetchPriority = (img.getAttribute('fetchpriority') as 'high' | 'low' | 'auto') || 'auto';
+        
+        // Check for blur placeholder (data URL or low quality image)
+        const hasBlurPlaceholder = Boolean(
+          img.getAttribute('data-placeholder-blur') ||
+          img.getAttribute('placeholder') ||
+          (img.src && img.src.startsWith('data:image/'))
+        );
         
         return {
           src: img.src || img.getAttribute('src') || '',
@@ -67,7 +103,15 @@ export async function analyzeImageOptimization(url: string, options: ImageOptimi
           width: img.naturalWidth || rect.width || 0,
           height: img.naturalHeight || rect.height || 0,
           role: img.getAttribute('role') || undefined,
-          type: 'img' as const
+          type: 'img' as const,
+          // Modern responsive attributes
+          hasLazyLoading,
+          hasSrcset,
+          hasSizesAttribute,
+          loadingPriority: loadingAttr as 'eager' | 'lazy' | 'auto',
+          isAboveFold,
+          hasBlurPlaceholder,
+          fetchPriority
         };
       }).filter(img => img.src && img.src !== '');
       
@@ -79,6 +123,13 @@ export async function analyzeImageOptimization(url: string, options: ImageOptimi
         height: number;
         role?: string;
         type: 'background';
+        hasLazyLoading?: boolean;
+        hasSrcset?: boolean;
+        hasSizesAttribute?: boolean;
+        loadingPriority?: 'eager' | 'lazy' | 'auto';
+        isAboveFold?: boolean;
+        hasBlurPlaceholder?: boolean;
+        fetchPriority?: 'high' | 'low' | 'auto';
       }> = [];
       
       allElements.forEach(element => {
@@ -93,13 +144,24 @@ export async function analyzeImageOptimization(url: string, options: ImageOptimi
             const ariaLabel = element.getAttribute('aria-label');
             const altText = element.getAttribute('data-alt') || ariaLabel;
             
+            // Check if background is above the fold
+            const isAboveFold = rect.top < viewportHeight && rect.top + rect.height > 0;
+            
             backgroundImages.push({
               src: urlMatch[1],
               alt: altText || null,
               width: rect.width || 0,
               height: rect.height || 0,
               role: element.getAttribute('role') || undefined,
-              type: 'background'
+              type: 'background',
+              // CSS backgrounds don't have modern responsive attributes, set defaults
+              hasLazyLoading: false,
+              hasSrcset: false,
+              hasSizesAttribute: false,
+              loadingPriority: 'auto',
+              isAboveFold,
+              hasBlurPlaceholder: false,
+              fetchPriority: 'auto'
             });
           }
         }
@@ -127,12 +189,18 @@ export async function analyzeImageOptimization(url: string, options: ImageOptimi
       modernFormats: 0,
       withAltText: 0,
       appropriatelySized: 0,
+      responsiveImages: 0,
+      properlyLoadedImages: 0,
+      aboveFoldImages: 0,
       issues: [`Failed to analyze images: ${error instanceof Error ? error.message : 'Unknown error'}`],
       recommendations: ['Please check the URL and try again'],
       details: {
         formatBreakdown: {},
         avgImageSize: null,
-        largestImage: null
+        largestImage: null,
+        loadingStrategies: {},
+        fetchPriorityUsage: {},
+        placeholderUsage: 0
       }
     };
     
@@ -155,12 +223,18 @@ function analyzeImages(images: ImageData[]): ImageOptimizationResult {
       modernFormats: 0,
       withAltText: 0,
       appropriatelySized: 0,
+      responsiveImages: 0,
+      properlyLoadedImages: 0,
+      aboveFoldImages: 0,
       issues: [],
       recommendations: ['Consider adding relevant images if appropriate for your content'],
       details: {
         formatBreakdown: {},
         avgImageSize: null,
-        largestImage: null
+        largestImage: null,
+        loadingStrategies: {},
+        fetchPriorityUsage: {},
+        placeholderUsage: 0
       }
     };
   }
@@ -168,10 +242,16 @@ function analyzeImages(images: ImageData[]): ImageOptimizationResult {
   const issues: string[] = [];
   const recommendations: string[] = [];
   const formatBreakdown: Record<string, number> = {};
+  const loadingStrategies: Record<string, number> = {};
+  const fetchPriorityUsage: Record<string, number> = {};
   
   let modernFormats = 0;
   let withAltText = 0;
   let appropriatelySized = 0;
+  let responsiveImages = 0;
+  let properlyLoadedImages = 0;
+  let aboveFoldImages = 0;
+  let placeholderUsage = 0;
   let totalWidth = 0;
   let totalHeight = 0;
   let largestImage: { width: number; height: number; src: string } | null = null;
@@ -240,6 +320,51 @@ function analyzeImages(images: ImageData[]): ImageOptimizationResult {
     } else {
       console.log(`⚠️ Unknown dimensions for image`);
     }
+    
+    // New responsive analysis (only for img tags, not CSS backgrounds)
+    if (img.type === 'img') {
+      // Track loading strategies
+      const loadingStrategy = img.loadingPriority || 'auto';
+      loadingStrategies[loadingStrategy] = (loadingStrategies[loadingStrategy] || 0) + 1;
+      
+      // Track fetch priority usage
+      const fetchPriority = img.fetchPriority || 'auto';
+      fetchPriorityUsage[fetchPriority] = (fetchPriorityUsage[fetchPriority] || 0) + 1;
+      
+      // Check if image is responsive (has srcset and sizes)
+      if (img.hasSrcset && img.hasSizesAttribute) {
+        responsiveImages++;
+        console.log(`✅ Responsive image with srcset and sizes`);
+      } else if (img.hasSrcset) {
+        console.log(`⚠️ Has srcset but missing sizes attribute`);
+      } else {
+        console.log(`⚠️ Missing responsive image attributes`);
+      }
+      
+      // Check loading optimization
+      const isProperlyLoaded = 
+        (img.isAboveFold && img.loadingPriority !== 'lazy') ||
+        (!img.isAboveFold && img.hasLazyLoading);
+      
+      if (isProperlyLoaded) {
+        properlyLoadedImages++;
+        console.log(`✅ Proper loading strategy for ${img.isAboveFold ? 'above-fold' : 'below-fold'} image`);
+      } else {
+        console.log(`⚠️ Suboptimal loading: ${img.isAboveFold ? 'above-fold with lazy loading' : 'below-fold without lazy loading'}`);
+      }
+      
+      // Track above-fold images
+      if (img.isAboveFold) {
+        aboveFoldImages++;
+        console.log(`📍 Above-fold image detected`);
+      }
+      
+      // Track placeholder usage
+      if (img.hasBlurPlaceholder) {
+        placeholderUsage++;
+        console.log(`✅ Has blur placeholder`);
+      }
+    }
   });
   
   // Generate issues and recommendations
@@ -268,17 +393,66 @@ function analyzeImages(images: ImageData[]): ImageOptimizationResult {
     recommendations.push('Ensure all images have proper width/height attributes');
   }
   
-  // Calculate weighted score
-  const formatScore = (modernFormats / images.length) * 40; // 40% weight
-  const altTextScore = (withAltText / images.length) * 35; // 35% weight
-  const sizingScore = (appropriatelySized / images.length) * 25; // 25% weight
+  // New responsive image issues and recommendations
+  const imgTagsCount = images.filter(img => img.type === 'img').length;
+  const nonResponsiveCount = imgTagsCount - responsiveImages;
   
-  const score = Math.round(formatScore + altTextScore + sizingScore);
+  if (nonResponsiveCount > 0 && imgTagsCount > 0) {
+    issues.push(`${nonResponsiveCount} images missing responsive attributes (srcset/sizes)`);
+    recommendations.push('Add srcset and sizes attributes to images for responsive loading');
+  }
+  
+  const improperlyLoadedCount = imgTagsCount - properlyLoadedImages;
+  if (improperlyLoadedCount > 0 && imgTagsCount > 0) {
+    issues.push(`${improperlyLoadedCount} images have suboptimal loading strategy`);
+    recommendations.push('Use loading="lazy" for below-fold images and loading="eager" for above-fold images');
+  }
+  
+  // Above-fold images without fetchpriority="high"
+  const aboveFoldImgTags = images.filter(img => img.type === 'img' && img.isAboveFold);
+  const aboveFoldWithoutPriority = aboveFoldImgTags.filter(img => img.fetchPriority !== 'high').length;
+  
+  if (aboveFoldWithoutPriority > 0 && aboveFoldImages > 0) {
+    issues.push(`${aboveFoldWithoutPriority} above-fold images missing fetchpriority="high"`);
+    recommendations.push('Add fetchpriority="high" to above-fold images for faster loading');
+  }
+  
+  // Placeholder usage recommendations
+  if (placeholderUsage < imgTagsCount && imgTagsCount > 0) {
+    if (placeholderUsage === 0) {
+      recommendations.push('Consider adding blur placeholders for better perceived performance');
+    } else {
+      recommendations.push('Consider adding blur placeholders to more images for better perceived performance');
+    }
+  }
+  
+  // Calculate weighted score with new responsive metrics
+  const formatScore = (modernFormats / images.length) * 25; // Reduced from 40%
+  const altTextScore = (withAltText / images.length) * 20; // Reduced from 35%
+  const sizingScore = (appropriatelySized / images.length) * 15; // Reduced from 25%
+  
+  // New responsive scoring (for img tags only)
+  let responsiveScore = 0;
+  let loadingScore = 0;
+  let performanceScore = 0;
+  
+  if (imgTagsCount > 0) {
+    responsiveScore = (responsiveImages / imgTagsCount) * 20; // 20% weight for responsive
+    loadingScore = (properlyLoadedImages / imgTagsCount) * 10; // 10% weight for loading
+    performanceScore = (placeholderUsage / imgTagsCount) * 10; // 10% weight for performance features
+  }
+  
+  const score = Math.round(formatScore + altTextScore + sizingScore + responsiveScore + loadingScore + performanceScore);
   
   console.log(`📊 Scoring breakdown:`);
   console.log(`   Format: ${modernFormats}/${images.length} = ${formatScore.toFixed(1)} points`);
   console.log(`   Alt text: ${withAltText}/${images.length} = ${altTextScore.toFixed(1)} points`);
   console.log(`   Sizing: ${appropriatelySized}/${images.length} = ${sizingScore.toFixed(1)} points`);
+  if (imgTagsCount > 0) {
+    console.log(`   Responsive: ${responsiveImages}/${imgTagsCount} = ${responsiveScore.toFixed(1)} points`);
+    console.log(`   Loading: ${properlyLoadedImages}/${imgTagsCount} = ${loadingScore.toFixed(1)} points`);
+    console.log(`   Performance: ${placeholderUsage}/${imgTagsCount} = ${performanceScore.toFixed(1)} points`);
+  }
   
   return {
     score,
@@ -287,6 +461,9 @@ function analyzeImages(images: ImageData[]): ImageOptimizationResult {
     modernFormats,
     withAltText,
     appropriatelySized,
+    responsiveImages,
+    properlyLoadedImages,
+    aboveFoldImages,
     issues,
     recommendations,
     details: {
@@ -295,7 +472,10 @@ function analyzeImages(images: ImageData[]): ImageOptimizationResult {
         width: Math.round(totalWidth / images.length),
         height: Math.round(totalHeight / images.length)
       } : null,
-      largestImage
+      largestImage,
+      loadingStrategies,
+      fetchPriorityUsage,
+      placeholderUsage
     }
   };
 }
