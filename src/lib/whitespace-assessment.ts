@@ -45,6 +45,20 @@ export interface ScreenshotAnalysis {
   threshold: number;
 }
 
+export interface AdaptiveWhitespaceMetrics extends WhitespaceMetrics {
+  theme: 'light' | 'dark' | 'mixed';
+  adaptiveThreshold: number;
+  contrastRatio: number;
+}
+
+export interface ThemeDetectionResult {
+  theme: 'light' | 'dark' | 'mixed';
+  averageBackgroundLuminance: number;
+  adaptiveThreshold: number;
+  contrastRatio: number;
+  hasDarkModeMediaQuery?: boolean;
+}
+
 export interface WhitespaceMetrics {
   whitespaceRatio: number; // Percentage of page that is whitespace
   elementDensityPerSection: ElementDensityAnalysis;
@@ -56,7 +70,7 @@ export interface WhitespaceMetrics {
 
 export interface WhitespaceAnalysisResult {
   score: number; // 0-100 overall whitespace score
-  metrics: WhitespaceMetrics;
+  metrics: AdaptiveWhitespaceMetrics;
   issues: string[];
   recommendations: string[];
   loadTime: number; // Total analysis time in ms
@@ -76,6 +90,152 @@ interface WhitespaceOptions {
   puppeteer?: {
     forceBrowserless?: boolean;
   };
+}
+
+export async function detectPageTheme(page: any): Promise<ThemeDetectionResult> {
+  console.log('🎨 Detecting page theme...');
+  
+  const themeData = await page.evaluate(() => {
+    // Check for CSS media query dark mode preference
+    const hasDarkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Sample background colors across the viewport
+    const samplePoints: { x: number; y: number }[] = [];
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    
+    // Create a grid of sample points (5x5 grid)
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 5; col++) {
+        samplePoints.push({
+          x: (col + 0.5) * (viewport.width / 5),
+          y: (row + 0.5) * (viewport.height / 5)
+        });
+      }
+    }
+    
+    // Get background colors at sample points
+    const luminanceValues: number[] = [];
+    
+    samplePoints.forEach(point => {
+      const element = document.elementFromPoint(point.x, point.y);
+      if (element) {
+        const computedStyle = window.getComputedStyle(element);
+        const backgroundColor = computedStyle.backgroundColor;
+        
+        // Parse RGB values
+        const rgbMatch = backgroundColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        if (rgbMatch) {
+          const r = parseInt(rgbMatch[1]);
+          const g = parseInt(rgbMatch[2]);
+          const b = parseInt(rgbMatch[3]);
+          
+          // Calculate luminance using standard formula
+          const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+          luminanceValues.push(luminance);
+        } else if (backgroundColor === 'transparent' || backgroundColor === 'rgba(0, 0, 0, 0)') {
+          // Check parent elements for background
+          let parent = element.parentElement;
+          while (parent && parent !== document.body) {
+            const parentStyle = window.getComputedStyle(parent);
+            const parentBg = parentStyle.backgroundColor;
+            const parentRgbMatch = parentBg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            
+            if (parentRgbMatch) {
+              const r = parseInt(parentRgbMatch[1]);
+              const g = parseInt(parentRgbMatch[2]);
+              const b = parseInt(parentRgbMatch[3]);
+              const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+              luminanceValues.push(luminance);
+              break;
+            }
+            parent = parent.parentElement;
+          }
+          
+          // If no background found, assume white
+          if (!parent || parent === document.body) {
+            luminanceValues.push(255);
+          }
+        }
+      }
+    });
+    
+    // Calculate average luminance
+    const averageLuminance = luminanceValues.length > 0 
+      ? luminanceValues.reduce((sum, val) => sum + val, 0) / luminanceValues.length
+      : 128; // Default to middle gray if no samples
+    
+    // Determine theme based on average luminance
+    let theme: 'light' | 'dark' | 'mixed';
+    let contrastRatio = 1;
+    
+    if (averageLuminance > 200) {
+      theme = 'light';
+      // Estimate contrast ratio for light theme (text usually dark on light bg)
+      contrastRatio = (averageLuminance + 0.05) / (30 + 0.05); // Assuming dark text
+    } else if (averageLuminance < 80) {
+      theme = 'dark';
+      // Estimate contrast ratio for dark theme (text usually light on dark bg)
+      contrastRatio = (230 + 0.05) / (averageLuminance + 0.05); // Assuming light text
+    } else {
+      theme = 'mixed';
+      // Mixed themes have moderate contrast
+      contrastRatio = Math.max(
+        (200 + 0.05) / (averageLuminance + 0.05),
+        (averageLuminance + 0.05) / (80 + 0.05)
+      );
+    }
+    
+    return {
+      averageLuminance,
+      theme,
+      contrastRatio,
+      hasDarkModeMediaQuery,
+      sampleCount: luminanceValues.length
+    };
+  });
+  
+  return {
+    theme: themeData.theme,
+    averageBackgroundLuminance: themeData.averageLuminance,
+    adaptiveThreshold: calculateAdaptiveThreshold(themeData.theme, themeData.averageLuminance),
+    contrastRatio: themeData.contrastRatio,
+    hasDarkModeMediaQuery: themeData.hasDarkModeMediaQuery
+  };
+}
+
+export function calculateAdaptiveThreshold(theme: 'light' | 'dark' | 'mixed', averageLuminance: number): number {
+  // Base thresholds for different themes
+  const thresholds = {
+    light: 240,  // Higher threshold for light themes
+    dark: 100,   // Lower threshold for dark themes  
+    mixed: 170   // Intermediate threshold for mixed themes
+  };
+  
+  let baseThreshold = thresholds[theme];
+  
+  // Fine-tune based on actual luminance values
+  if (theme === 'light') {
+    // For very bright backgrounds, might need even higher threshold
+    if (averageLuminance > 250) {
+      baseThreshold = 250;
+    } else if (averageLuminance < 180) {
+      // Not as bright as expected, reduce threshold slightly
+      baseThreshold = 220;
+    }
+  } else if (theme === 'dark') {
+    // For very dark backgrounds, might need even lower threshold
+    if (averageLuminance < 30) {
+      baseThreshold = 80;
+    } else if (averageLuminance > 60) {
+      // Not as dark as expected, increase threshold slightly
+      baseThreshold = 120;
+    }
+  } else {
+    // Mixed themes - adjust based on luminance
+    baseThreshold = Math.max(100, Math.min(240, 170 + (averageLuminance - 128) * 0.5));
+  }
+  
+  return Math.round(baseThreshold);
 }
 
 async function analyzeScreenshotWhitespace(
@@ -386,26 +546,45 @@ export async function analyzeWhitespace(
       };
     });
 
-    console.log('📸 Taking screenshot for visual analysis...');
+    console.log('🎨 Detecting page theme for adaptive threshold...');
     
-    // 3. Screenshot-based whitespace analysis (more accurate than DOM-based)
+    // 3. Theme detection for adaptive threshold
+    let themeDetection: ThemeDetectionResult;
+    try {
+      themeDetection = await detectPageTheme(page);
+    } catch (error) {
+      console.warn('⚠️ Theme detection failed, using default light theme:', error);
+      themeDetection = {
+        theme: 'light',
+        averageBackgroundLuminance: 240,
+        adaptiveThreshold: 240,
+        contrastRatio: 4.5
+      };
+    }
+
+    console.log(`📸 Taking screenshot for visual analysis (adaptive threshold: ${themeDetection.adaptiveThreshold})...`);
+    
+    // 4. Screenshot-based whitespace analysis with adaptive threshold
     let screenshotAnalysis: ScreenshotAnalysis;
     
     if (options.useScreenshot !== false) {
       try {
+        // Use adaptive threshold instead of fixed one
+        const adaptiveThreshold = options.pixelThreshold || themeDetection.adaptiveThreshold;
+        
         if (options.screenshotUrl) {
           // Use existing screenshot
           console.log(`📷 Using existing screenshot: ${options.screenshotUrl}`);
           screenshotAnalysis = await analyzeScreenshotWhitespace(
             options.screenshotUrl, 
-            options.pixelThreshold || 240, 
+            adaptiveThreshold, 
             true
           );
         } else {
           // Capture new screenshot
           screenshotAnalysis = await analyzeScreenshotWhitespace(
             page, 
-            options.pixelThreshold || 240, 
+            adaptiveThreshold, 
             false
           );
         }
@@ -416,7 +595,7 @@ export async function analyzeWhitespace(
           contentPixels: 0,
           whitespacePixels: 0,
           visualWhitespaceRatio: 0,
-          threshold: options.pixelThreshold || 240
+          threshold: themeDetection.adaptiveThreshold
         };
       }
     } else {
@@ -425,7 +604,7 @@ export async function analyzeWhitespace(
         contentPixels: 0,
         whitespacePixels: 0,
         visualWhitespaceRatio: 0,
-        threshold: options.pixelThreshold || 240
+        threshold: themeDetection.adaptiveThreshold
       };
     }
 
@@ -530,10 +709,11 @@ export async function analyzeWhitespace(
       };
     });
 
-    // Calculate clutter score and final assessment
+    // Calculate clutter score and final assessment with theme-aware scoring
     const metrics = calculateWhitespaceMetrics(densityAnalysis, spacingAnalysis, overallMetrics, screenshotAnalysis);
-    const score = calculateWhitespaceScore(metrics);
-    const { issues, recommendations } = generateWhitespaceRecommendations(metrics);
+    const adaptiveMetrics = enhanceMetricsWithThemeData(metrics, themeDetection);
+    const score = calculateAdaptiveWhitespaceScore(adaptiveMetrics);
+    const { issues, recommendations } = generateWhitespaceRecommendations(adaptiveMetrics);
     
     
     const loadTime = Date.now() - startTime;
@@ -542,7 +722,7 @@ export async function analyzeWhitespace(
     
     return {
       score,
-      metrics,
+      metrics: adaptiveMetrics,
       issues,
       recommendations,
       loadTime
@@ -577,7 +757,10 @@ export async function analyzeWhitespace(
           threshold: 240
         },
         clutterScore: 100,
-        hasAdequateSpacing: false
+        hasAdequateSpacing: false,
+        theme: 'light',
+        adaptiveThreshold: 240,
+        contrastRatio: 1
       },
       issues: ['Whitespace analysis failed due to error'],
       recommendations: ['Unable to analyze whitespace - please check URL accessibility'],
@@ -648,6 +831,97 @@ function calculateWhitespaceMetrics(
   };
 }
 
+function enhanceMetricsWithThemeData(
+  metrics: WhitespaceMetrics, 
+  themeDetection: ThemeDetectionResult
+): AdaptiveWhitespaceMetrics {
+  return {
+    ...metrics,
+    theme: themeDetection.theme,
+    adaptiveThreshold: themeDetection.adaptiveThreshold,
+    contrastRatio: themeDetection.contrastRatio
+  };
+}
+
+function calculateAdaptiveWhitespaceScore(metrics: AdaptiveWhitespaceMetrics): number {
+  let score = 100;
+
+  // Ensure we have valid numbers to work with
+  const clutterScore = isNaN(metrics.clutterScore) ? 0 : metrics.clutterScore;
+  const whitespaceRatio = isNaN(metrics.whitespaceRatio) ? 0 : metrics.whitespaceRatio;
+  const maxDensity = isNaN(metrics.elementDensityPerSection.maxDensity) ? 0 : metrics.elementDensityPerSection.maxDensity;
+
+  // Adaptive whitespace ratio thresholds based on theme
+  const thresholds = {
+    light: { very: 0.25, cluttered: 0.35, somewhat: 0.45, slightly: 0.55 },
+    dark: { very: 0.20, cluttered: 0.30, somewhat: 0.40, slightly: 0.50 }, // Tighter for dark themes
+    mixed: { very: 0.23, cluttered: 0.33, somewhat: 0.43, slightly: 0.53 }
+  };
+
+  const t = thresholds[metrics.theme];
+
+  // Recalculate clutter score with adaptive thresholds
+  let adaptiveClutterScore = 0;
+
+  // Dynamic cluttering scoring based on theme
+  if (whitespaceRatio < t.very) adaptiveClutterScore += 60;
+  else if (whitespaceRatio < t.cluttered) adaptiveClutterScore += 40;
+  else if (whitespaceRatio < t.somewhat) adaptiveClutterScore += 20;
+  else if (whitespaceRatio < t.slightly) adaptiveClutterScore += 5;
+
+  // Element density contribution - more strict penalties
+  if (maxDensity > 50) adaptiveClutterScore += 30;
+  else if (maxDensity > 30) adaptiveClutterScore += 25;
+  else if (maxDensity > 15) adaptiveClutterScore += 15; // Lower threshold
+  else if (maxDensity > 10) adaptiveClutterScore += 8;
+
+  // Spacing adequacy contribution - increased penalties
+  const spacingPenalties = [
+    !metrics.spacingAnalysis.headlineSpacing.adequate ? 8 : 0,
+    !metrics.spacingAnalysis.ctaSpacing.adequate ? 10 : 0,
+    !metrics.spacingAnalysis.contentBlockSpacing.adequate ? 6 : 0,
+    !metrics.spacingAnalysis.lineHeight.adequate ? 18 : 0 // Higher penalty for line height
+  ];
+  adaptiveClutterScore += spacingPenalties.reduce((sum, penalty) => sum + penalty, 0);
+
+  // Deduct based on adaptive clutter score
+  score -= Math.min(100, Math.max(0, adaptiveClutterScore));
+
+  // Bonus for excellent whitespace ratio (theme-adjusted)
+  if (metrics.screenshotAnalysis.visualWhitespaceRatio > 0) {
+    // Use screenshot-based bonuses with theme adjustment
+    const excellentThreshold = metrics.theme === 'dark' ? 0.5 : 0.6;
+    const goodThreshold = metrics.theme === 'dark' ? 0.4 : 0.5;
+    
+    if (metrics.screenshotAnalysis.visualWhitespaceRatio >= excellentThreshold) {
+      score += 10; // Excellent whitespace
+    } else if (metrics.screenshotAnalysis.visualWhitespaceRatio >= goodThreshold) {
+      score += 5;  // Good whitespace
+    }
+  } else if (whitespaceRatio >= t.slightly) {
+    score += 5; // Fallback to DOM-based bonus
+  }
+
+  // Bonus for low maximum density (with theme-aware thresholds)
+  const densityThresholds = metrics.theme === 'dark' ? [12, 20] : [15, 25];
+  if (maxDensity <= densityThresholds[0]) {
+    score += 5;
+  } else if (maxDensity <= densityThresholds[1]) {
+    score += 2;
+  }
+
+  // Bonus for appropriate contrast ratio
+  if (metrics.contrastRatio >= 7) {
+    score += 5; // WCAG AAA
+  } else if (metrics.contrastRatio >= 4.5) {
+    score += 3; // WCAG AA
+  }
+
+  const finalScore = Math.max(0, Math.min(100, Math.round(score)));
+  
+  return finalScore;
+}
+
 function calculateWhitespaceScore(metrics: WhitespaceMetrics): number {
   let score = 100;
 
@@ -684,7 +958,7 @@ function calculateWhitespaceScore(metrics: WhitespaceMetrics): number {
 }
 
 function generateWhitespaceRecommendations(
-  metrics: WhitespaceMetrics
+  metrics: AdaptiveWhitespaceMetrics
 ): { issues: string[]; recommendations: string[] } {
   const issues: string[] = [];
   const recommendations: string[] = [];
@@ -725,23 +999,40 @@ function generateWhitespaceRecommendations(
     recommendations.push('Increase line height to at least 1.4 for better text readability');
   }
 
-  // Whitespace ratio issues (prefer screenshot analysis if available)
+  // Theme-aware whitespace ratio issues
   const displayRatio = metrics.screenshotAnalysis.visualWhitespaceRatio > 0 
     ? metrics.screenshotAnalysis.visualWhitespaceRatio 
     : metrics.whitespaceRatio;
   const analysisMethod = metrics.screenshotAnalysis.visualWhitespaceRatio > 0 
-    ? 'visual analysis' 
+    ? `visual analysis with ${metrics.theme} theme (threshold: ${metrics.adaptiveThreshold})` 
     : 'DOM analysis';
 
-  if (displayRatio < 0.25) {
+  // Use theme-specific thresholds for recommendations
+  const thresholds = {
+    light: { very: 0.25, low: 0.35, moderate: 0.45, target: 35 },
+    dark: { very: 0.20, low: 0.30, moderate: 0.40, target: 30 }, // Tighter for dark themes
+    mixed: { very: 0.23, low: 0.33, moderate: 0.43, target: 33 }
+  };
+  
+  const t = thresholds[metrics.theme];
+
+  if (displayRatio < t.very) {
     issues.push(`Very low whitespace ratio (${Math.round(displayRatio * 100)}% via ${analysisMethod})`);
-    recommendations.push('Significantly increase whitespace - aim for at least 35% of page area');
-  } else if (displayRatio < 0.35) {
+    recommendations.push(`Significantly increase whitespace - aim for at least ${t.target}% of page area (adjusted for ${metrics.theme} theme)`);
+  } else if (displayRatio < t.low) {
     issues.push(`Low whitespace ratio (${Math.round(displayRatio * 100)}% via ${analysisMethod})`);
-    recommendations.push('Increase overall whitespace for better visual breathing room');
-  } else if (displayRatio < 0.45) {
+    recommendations.push(`Increase overall whitespace for better visual breathing room (${metrics.theme} theme detected)`);
+  } else if (displayRatio < t.moderate) {
     issues.push(`Moderate whitespace ratio (${Math.round(displayRatio * 100)}% via ${analysisMethod})`);
-    recommendations.push('Consider adding more spacing between content sections');
+    recommendations.push(`Consider adding more spacing between content sections (optimized for ${metrics.theme} theme)`);
+  }
+
+  // Contrast ratio feedback
+  if (metrics.contrastRatio < 3) {
+    issues.push('Poor contrast ratio - text may be difficult to read');
+    recommendations.push('Improve color contrast between text and background elements');
+  } else if (metrics.contrastRatio >= 7) {
+    recommendations.push(`Excellent contrast ratio (${metrics.contrastRatio.toFixed(1)}) - great accessibility!`);
   }
 
   // Positive feedback for good whitespace
