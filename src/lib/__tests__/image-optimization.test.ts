@@ -155,15 +155,16 @@ describe('Image Optimization Analysis', () => {
       expect(result.recommendations.length).toBeGreaterThan(0);
     });
 
-    it('should handle pages with no images', async () => {
+    it('should handle pages with no images by returning N/A status', async () => {
       mockPage.evaluate.mockResolvedValue([]);
 
       const result = await analyzeImageOptimization('https://example.com');
 
       expect(result.totalImages).toBe(0);
-      expect(result.score).toBe(100); // Perfect score if no images to optimize
+      expect(result.score).toBe(null); // N/A instead of perfect score
+      expect(result.status).toBe('not_applicable');
       expect(result.issues).toHaveLength(0);
-      expect(result.recommendations).toContain('Consider adding relevant images to enhance user engagement');
+      expect(result.recommendations).toContain('Consider adding relevant images if appropriate for your content');
     });
   });
 
@@ -198,8 +199,9 @@ describe('Image Optimization Analysis', () => {
       const result = await analyzeImageOptimization('https://example.com');
 
       expect(result.totalImages).toBe(0);
-      expect(result.score).toBe(100);
-      expect(result.recommendations).toContain('Consider adding relevant images to enhance user engagement');
+      expect(result.score).toBe(null);
+      expect(result.status).toBe('not_applicable');
+      expect(result.recommendations).toContain('Consider adding relevant images if appropriate for your content');
     });
 
     it('should handle typical e-commerce site', async () => {
@@ -218,6 +220,72 @@ describe('Image Optimization Analysis', () => {
       expect(result.modernFormats).toBe(1); // Only WebP counts as modern for raster images
       expect(result.withAltText).toBe(3); // Logo and products have alt, banner is missing alt but not decorative
       expect(result.appropriatelySized).toBe(4); // All within reasonable bounds
+    });
+  });
+
+  describe('CSS Background Image Detection', () => {
+    it('should detect CSS background images with proper alt handling', async () => {
+      mockPage.evaluate.mockResolvedValue([
+        // Regular img tag
+        { src: 'https://example.com/content.webp', alt: 'Content image', width: 800, height: 600, type: 'img' },
+        // CSS background with alt (content image)
+        { src: 'https://example.com/hero-bg.jpg', alt: 'Hero background with people', width: 1920, height: 600, type: 'background' },
+        // CSS background without alt (decorative, small)
+        { src: 'https://example.com/pattern.png', alt: null, width: 50, height: 50, type: 'background' }
+      ]);
+
+      const result = await analyzeImageOptimization('https://example.com');
+
+      expect(result.totalImages).toBe(3);
+      expect(result.modernFormats).toBe(1); // Only WebP counts as modern
+      expect(result.withAltText).toBe(3); // Content image + background with alt + small decorative background (assumed OK)
+      expect(result.appropriatelySized).toBe(3); // All within bounds
+      expect(result.status).toBe('analyzed');
+      expect(result.score).toBeGreaterThan(0);
+    });
+
+    it('should properly handle large CSS background images without alt', async () => {
+      mockPage.evaluate.mockResolvedValue([
+        // Large CSS background without alt (should be flagged)
+        { src: 'https://example.com/large-hero.jpg', alt: null, width: 1920, height: 800, type: 'background' },
+        // Small CSS background without alt (should be OK)
+        { src: 'https://example.com/icon.png', alt: null, width: 32, height: 32, type: 'background' }
+      ]);
+
+      const result = await analyzeImageOptimization('https://example.com');
+
+      expect(result.totalImages).toBe(2);
+      expect(result.withAltText).toBe(1); // Only the small decorative one is considered properly handled
+      expect(result.issues).toContain('1 images missing descriptive alt text');
+    });
+
+    it('should handle CSS backgrounds with role=presentation', async () => {
+      mockPage.evaluate.mockResolvedValue([
+        { src: 'https://example.com/decorative.jpg', alt: null, width: 500, height: 300, type: 'background', role: 'presentation' }
+      ]);
+
+      const result = await analyzeImageOptimization('https://example.com');
+
+      expect(result.totalImages).toBe(1);
+      expect(result.withAltText).toBe(1); // Decorative with role=presentation is OK
+      expect(result.issues.filter(issue => issue.includes('alt text'))).toHaveLength(0);
+    });
+
+    it('should handle mixed img tags and CSS backgrounds', async () => {
+      mockPage.evaluate.mockResolvedValue([
+        // Mix of img tags and CSS backgrounds
+        { src: 'https://example.com/product.webp', alt: 'Product photo', width: 400, height: 400, type: 'img' },
+        { src: 'https://example.com/hero.jpg', alt: '', width: 32, height: 32, type: 'img', role: 'presentation' },
+        { src: 'https://example.com/bg-pattern.png', alt: null, width: 100, height: 100, type: 'background' },
+        { src: 'https://example.com/hero-bg.webp', alt: 'Team working together', width: 1600, height: 600, type: 'background' }
+      ]);
+
+      const result = await analyzeImageOptimization('https://example.com');
+
+      expect(result.totalImages).toBe(4);
+      expect(result.modernFormats).toBe(2); // Two WebP images
+      expect(result.withAltText).toBe(4); // All should be considered properly handled
+      expect(result.status).toBe('analyzed');
     });
   });
 });
