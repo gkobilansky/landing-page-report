@@ -53,3 +53,4 @@
 - `docs/analysis/current-state.md`: Flow, caching, DB writes, constraints.
 - `docs/analysis/module-analysis.md`: Detailed module behavior and improvement areas.
 - `docs/analysis/tasks.md`: Handoff‑ready tasks and priorities.
+ - `README.md`: Quick links to core modules and docs.
