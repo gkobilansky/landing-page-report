@@ -420,6 +420,7 @@ export async function POST(request: NextRequest) {
       });
       analysisResult.imageOptimization = {
         score: imageOptimizationResult.score,
+        status: imageOptimizationResult.status,
         totalImages: imageOptimizationResult.totalImages,
         modernFormats: imageOptimizationResult.modernFormats,
         withAltText: imageOptimizationResult.withAltText,
@@ -428,7 +429,9 @@ export async function POST(request: NextRequest) {
         recommendations: imageOptimizationResult.recommendations,
         details: imageOptimizationResult.details
       };
-      scores.push(imageOptimizationResult.score);
+      if (imageOptimizationResult.score !== null) {
+        scores.push(imageOptimizationResult.score);
+      }
     }
 
     if (shouldRun('cta')) {
@@ -600,32 +603,34 @@ export async function POST(request: NextRequest) {
     let weightedSum = 0;
     let totalWeight = 0;
     
-    if (analysisResult.pageLoadSpeed?.score !== undefined) {
+    if (analysisResult.pageLoadSpeed?.score !== undefined && analysisResult.pageLoadSpeed?.score !== null) {
       weightedSum += analysisResult.pageLoadSpeed.score * weights.speed;
       totalWeight += weights.speed;
     }
-    if (analysisResult.ctaAnalysis?.score !== undefined) {
+    if (analysisResult.ctaAnalysis?.score !== undefined && analysisResult.ctaAnalysis?.score !== null) {
       weightedSum += analysisResult.ctaAnalysis.score * weights.cta;
       totalWeight += weights.cta;
     }
-    if (analysisResult.socialProof?.score !== undefined) {
+    if (analysisResult.socialProof?.score !== undefined && analysisResult.socialProof?.score !== null) {
       weightedSum += analysisResult.socialProof.score * weights.socialProof;
       totalWeight += weights.socialProof;
     }
-    if (analysisResult.whitespaceAssessment?.score !== undefined) {
+    if (analysisResult.whitespaceAssessment?.score !== undefined && analysisResult.whitespaceAssessment?.score !== null) {
       weightedSum += analysisResult.whitespaceAssessment.score * weights.whitespace;
       totalWeight += weights.whitespace;
     }
-    if (analysisResult.imageOptimization?.score !== undefined) {
+    if (analysisResult.imageOptimization?.score !== undefined && analysisResult.imageOptimization?.score !== null) {
       weightedSum += analysisResult.imageOptimization.score * weights.images;
       totalWeight += weights.images;
     }
-    if (analysisResult.fontUsage?.score !== undefined) {
+    if (analysisResult.fontUsage?.score !== undefined && analysisResult.fontUsage?.score !== null) {
       weightedSum += analysisResult.fontUsage.score * weights.fonts;
       totalWeight += weights.fonts;
     }
     
     analysisResult.overallScore = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
+    
+    console.log(`📊 Score calculation: weightedSum=${weightedSum.toFixed(2)}, totalWeight=${totalWeight.toFixed(2)}, overall=${analysisResult.overallScore}`);
 
     // Update database record with final results
     if (analysisId) {

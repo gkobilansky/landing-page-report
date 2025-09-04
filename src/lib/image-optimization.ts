@@ -1,7 +1,8 @@
 import { createPuppeteerBrowser } from './puppeteer-config';
 
 export interface ImageOptimizationResult {
-  score: number;
+  score: number | null;
+  status: 'analyzed' | 'not_applicable' | 'error';
   totalImages: number;
   modernFormats: number;
   withAltText: number;
@@ -21,6 +22,7 @@ interface ImageData {
   width: number;
   height: number;
   role?: string;
+  type?: 'img' | 'background';
 }
 
 const MODERN_FORMATS = ['webp', 'avif'];
@@ -52,8 +54,10 @@ export async function analyzeImageOptimization(url: string, options: ImageOptimi
     console.log('🔍 Extracting image data...');
     const images = await page.evaluate(() => {
       const imgElements = Array.from(document.querySelectorAll('img'));
+      const allElements = Array.from(document.querySelectorAll('*'));
       
-      return imgElements.map(img => {
+      // Extract img tag data
+      const imgData = imgElements.map(img => {
         const computedStyle = window.getComputedStyle(img);
         const rect = img.getBoundingClientRect();
         
@@ -62,9 +66,46 @@ export async function analyzeImageOptimization(url: string, options: ImageOptimi
           alt: img.alt || null,
           width: img.naturalWidth || rect.width || 0,
           height: img.naturalHeight || rect.height || 0,
-          role: img.getAttribute('role') || undefined
+          role: img.getAttribute('role') || undefined,
+          type: 'img' as const
         };
-      }).filter(img => img.src && img.src !== ''); // Filter out empty sources
+      }).filter(img => img.src && img.src !== '');
+      
+      // Extract CSS background images
+      const backgroundImages: Array<{
+        src: string;
+        alt: string | null;
+        width: number;
+        height: number;
+        role?: string;
+        type: 'background';
+      }> = [];
+      
+      allElements.forEach(element => {
+        const computedStyle = window.getComputedStyle(element);
+        const backgroundImage = computedStyle.backgroundImage;
+        
+        if (backgroundImage && backgroundImage !== 'none') {
+          // Extract URL from background-image property
+          const urlMatch = backgroundImage.match(/url\(["']?([^"')]+)["']?\)/);
+          if (urlMatch && urlMatch[1]) {
+            const rect = element.getBoundingClientRect();
+            const ariaLabel = element.getAttribute('aria-label');
+            const altText = element.getAttribute('data-alt') || ariaLabel;
+            
+            backgroundImages.push({
+              src: urlMatch[1],
+              alt: altText || null,
+              width: rect.width || 0,
+              height: rect.height || 0,
+              role: element.getAttribute('role') || undefined,
+              type: 'background'
+            });
+          }
+        }
+      });
+      
+      return [...imgData, ...backgroundImages];
     });
     
     console.log(`📊 Found ${images.length} images to analyze`);
@@ -81,6 +122,7 @@ export async function analyzeImageOptimization(url: string, options: ImageOptimi
     
     return {
       score: 0,
+      status: 'error',
       totalImages: 0,
       modernFormats: 0,
       withAltText: 0,
@@ -105,15 +147,16 @@ function analyzeImages(images: ImageData[]): ImageOptimizationResult {
   console.log(`🔬 Analyzing ${images.length} images...`);
   
   if (images.length === 0) {
-    console.log('📭 No images found - returning perfect score');
+    console.log('📭 No images found - returning N/A status');
     return {
-      score: 100,
+      score: null,
+      status: 'not_applicable',
       totalImages: 0,
       modernFormats: 0,
       withAltText: 0,
       appropriatelySized: 0,
       issues: [],
-      recommendations: ['Consider adding relevant images to enhance user engagement'],
+      recommendations: ['Consider adding relevant images if appropriate for your content'],
       details: {
         formatBreakdown: {},
         avgImageSize: null,
@@ -148,15 +191,34 @@ function analyzeImages(images: ImageData[]): ImageOptimizationResult {
       console.log(`⚠️ Legacy format detected: ${extension}`);
     }
     
-    // Check alt text (consider decorative images with role="presentation" as properly handled)
-    const hasProperAltText = Boolean(img.alt && img.alt.trim().length > 0) || 
-                             (img.role === 'presentation' && img.alt === '');
+    // Check alt text (handle img tags and CSS backgrounds differently)
+    let hasProperAltText = false;
+    
+    if (img.type === 'background') {
+      // CSS background images are often decorative, so more lenient
+      hasProperAltText = Boolean(img.alt && img.alt.trim().length > 0) || 
+                        img.role === 'presentation' || 
+                        img.role === 'img'; // Decorative background assumed if no alt
+      
+      if (!img.alt && img.role !== 'presentation') {
+        // Only flag if it's clearly meant to be content
+        const elementRect = { width: img.width, height: img.height };
+        const isContentImage = elementRect.width > 100 && elementRect.height > 100;
+        hasProperAltText = !isContentImage; // Small backgrounds assumed decorative
+      } else {
+        hasProperAltText = true;
+      }
+    } else {
+      // Regular img tags need proper alt text or role="presentation"
+      hasProperAltText = Boolean(img.alt && img.alt.trim().length > 0) || 
+                        (img.role === 'presentation' && img.alt === '');
+    }
     
     if (hasProperAltText) {
       withAltText++;
-      console.log(`✅ Proper alt text: "${img.alt}"`);
+      console.log(`✅ Proper alt handling (${img.type}): "${img.alt}"`);
     } else {
-      console.log(`⚠️ Missing or inadequate alt text: "${img.alt}"`);
+      console.log(`⚠️ Missing alt text for ${img.type}: "${img.alt}"`);
     }
     
     // Check image sizing
@@ -220,6 +282,7 @@ function analyzeImages(images: ImageData[]): ImageOptimizationResult {
   
   return {
     score,
+    status: 'analyzed',
     totalImages: images.length,
     modernFormats,
     withAltText,
