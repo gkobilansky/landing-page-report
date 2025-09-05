@@ -68,6 +68,34 @@ export async function GET(request: NextRequest) {
       console.warn('⚠️ Failed to get total count:', countError);
     }
 
+    // Compute aggregate stats for header metrics
+    // Excellent count (90+)
+    const { count: excellentCount, error: excellentError } = await supabaseAdmin
+      .from('analyses')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'completed')
+      .not('overall_score', 'is', null)
+      .gte('overall_score', 90);
+
+    if (excellentError) {
+      console.warn('⚠️ Failed to get excellent count:', excellentError);
+    }
+
+    // Average score across all completed analyses
+    let averageScore: number | null = null;
+    const { data: allScores, error: avgError } = await supabaseAdmin
+      .from('analyses')
+      .select('overall_score')
+      .eq('status', 'completed')
+      .not('overall_score', 'is', null);
+
+    if (avgError) {
+      console.warn('⚠️ Failed to get scores for average:', avgError);
+    } else if (allScores && allScores.length > 0) {
+      const sum = allScores.reduce((acc: number, row: any) => acc + (row.overall_score || 0), 0);
+      averageScore = sum / allScores.length;
+    }
+
     // Process the results to ensure we have good data
     const processedReports = analyses.map(analysis => ({
       id: analysis.id,
@@ -84,6 +112,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       reports: processedReports,
       total: count || processedReports.length,
+      excellentCount: excellentCount ?? null,
+      averageScore, // may be null if aggregation failed
       offset,
       limit,
       hasMore: (count || 0) > offset + limit

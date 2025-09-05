@@ -94,6 +94,9 @@ function ReportCard({ report }: ReportCardProps) {
 
 export default function ReportsPage() {
   const [reports, setReports] = useState<AnalysisReport[]>([])
+  const [totalReports, setTotalReports] = useState<number>(0)
+  const [excellentCount, setExcellentCount] = useState<number | null>(null)
+  const [averageScore, setAverageScore] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -111,7 +114,11 @@ export default function ReportsPage() {
       }
 
       const data = await response.json()
-      setReports(data.reports || [])
+      const fetchedReports: AnalysisReport[] = data.reports || []
+      setReports(fetchedReports)
+      setTotalReports(typeof data.total === 'number' ? data.total : fetchedReports.length)
+      setExcellentCount(typeof data.excellentCount === 'number' ? data.excellentCount : null)
+      setAverageScore(typeof data.averageScore === 'number' ? data.averageScore : null)
     } catch (err) {
       console.error('Error fetching reports:', err)
       setError('Failed to load reports')
@@ -187,18 +194,26 @@ export default function ReportsPage() {
         <div className="bg-gray-800 rounded-lg p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
             <div>
-              <div className="text-3xl font-bold text-brand-yellow">{reports.length}</div>
+              <div className="text-3xl font-bold text-brand-yellow">{totalReports}</div>
               <div className="text-gray-400">Total Reports</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-green-500">
-                {reports.filter(r => r.overall_score >= 90).length}
+                {excellentCount !== null ? excellentCount : reports.filter(r => r.overall_score >= 90).length}
               </div>
               <div className="text-gray-400">Excellent Scores (90+)</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-blue-500">
-                {Math.round(reports.reduce((sum, r) => sum + r.overall_score, 0) / reports.length) || 0}
+                {(() => {
+                  if (averageScore !== null && !Number.isNaN(averageScore)) {
+                    return Math.round(averageScore)
+                  }
+                  const count = reports.length
+                  if (count === 0) return 0
+                  const sum = reports.reduce((acc, r) => acc + (r.overall_score || 0), 0)
+                  return Math.round(sum / count)
+                })()}
               </div>
               <div className="text-gray-400">Average Score</div>
             </div>
