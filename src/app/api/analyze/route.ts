@@ -278,18 +278,18 @@ export async function POST(request: NextRequest) {
     let analysisResult: any = {
       url: validatedUrl.toString(),
       pageLoadSpeed: { 
-        score: 0, 
+        score: null, 
         metrics: { lcp: 0, fcp: 0, cls: 0, tbt: 0, si: 0 },
         lighthouseScore: 0,
         issues: [],
         recommendations: [],
         loadTime: 0
       },
-      fontUsage: { score: 0, fontFamilies: [], fontCount: 0, systemFontCount: 0, webFontCount: 0, issues: [], recommendations: [] },
-      imageOptimization: { score: 0, totalImages: 0, modernFormats: 0, withAltText: 0, appropriatelySized: 0, issues: [], recommendations: [], details: {} },
-      ctaAnalysis: { score: 0, ctas: [], issues: [], recommendations: [] },
+      fontUsage: { score: null, fontFamilies: [], fontCount: 0, systemFontCount: 0, webFontCount: 0, issues: [], recommendations: [] },
+      imageOptimization: { score: null, totalImages: 0, modernFormats: 0, withAltText: 0, appropriatelySized: 0, issues: [], recommendations: [], details: {} },
+      ctaAnalysis: { score: null, ctas: [], issues: [], recommendations: [] },
       whitespaceAssessment: { 
-        score: 0, 
+        score: null, 
         metrics: {
           whitespaceRatio: 0,
           elementDensityPerSection: {
@@ -312,7 +312,7 @@ export async function POST(request: NextRequest) {
         loadTime: 0
       },
       socialProof: { 
-        score: 0, 
+        score: null, 
         elements: [], 
         summary: {
           totalElements: 0,
