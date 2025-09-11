@@ -64,7 +64,7 @@ export default function EmailInput({ onEmailSubmit, isLoading = false, isAnalysi
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <div className="text-center mb-4">
           {isAnalysisComplete ? (
             <p className="text-gray-300 text-lg mb-2">

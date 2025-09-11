@@ -24,7 +24,7 @@ export const CTA_DICTIONARY = {
     'sign up free', 'start trial', 'book demo', 'request demo', 
     'buy now', 'add to cart', 'purchase', 'order now', 'shop now', 
     'get access', 'join now', 'start building', 'create account', 
-    'start today'
+    'start today', 'join waitlist', 'join the waitlist'
   ],
 
   // Urgency indicators that create time pressure
@@ -66,7 +66,7 @@ export const CTA_DICTIONARY = {
     'try free', 'buy now', 'learn more', 'contact', 'demo', 'subscribe', 
     'start your project', 'request demo', 'book demo', 'start trial', 
     'add to cart', 'shop now', 'order now', 'start building', 
-    'create account', 'get access'
+    'create account', 'get access', 'join waitlist', 'join the waitlist'
   ],
 
   // CSS class patterns for primary CTAs

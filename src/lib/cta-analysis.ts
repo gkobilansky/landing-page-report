@@ -565,8 +565,8 @@ function calculateCTAScore(
   
   const aboveFoldCTAs = ctas.filter(cta => cta.isAboveFold);
   
-  // No CTA above the fold - major penalty
-  if (aboveFoldCTAs.length === 0) {
+  // If we have CTAs but none above the fold
+  if (ctas.length > 0 && aboveFoldCTAs.length === 0) {
     issues.push('No clear CTA above the fold');
     score -= 50;
   }
@@ -580,7 +580,7 @@ function calculateCTAScore(
   
   // No CTAs at all - severe penalty
   if (ctas.length === 0) {
-    issues.push('No clear CTA above the fold');
+    issues.push('No CTAs found on page');
     score -= 50;
   }
   

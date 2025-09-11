@@ -1,5 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom'
 import EmailInput from '../EmailInput'
 
@@ -31,25 +32,19 @@ describe('EmailInput Component', () => {
     })
 
     it('should show error for invalid email format', async () => {
+      const user = userEvent.setup()
       render(<EmailInput onEmailSubmit={mockOnEmailSubmit} />)
       
       const input = screen.getByPlaceholderText('your.email@example.com')
       const button = screen.getByRole('button', { name: /notify me/i })
       
-      fireEvent.change(input, {
-        target: { value: 'notvalidemail' }
-      })
-      
-      // Wait for React to process the change
-      await waitFor(() => {
-        expect(input).toHaveValue('notvalidemail')
-      })
-      
-      fireEvent.click(button)
+      await user.clear(input)
+      await user.type(input, 'notvalidemail')
+      await user.click(button)
       
       await waitFor(() => {
         expect(screen.getByText('Please enter a valid email address')).toBeInTheDocument()
-      }, { timeout: 5000 })
+      })
       
       expect(mockOnEmailSubmit).not.toHaveBeenCalled()
     })
@@ -129,12 +124,13 @@ describe('EmailInput Component', () => {
     })
 
     it('should validate email even when analysis is complete', async () => {
+      const user = userEvent.setup()
       render(<EmailInput onEmailSubmit={mockOnEmailSubmit} isAnalysisComplete={true} />)
       
-      fireEvent.change(screen.getByPlaceholderText('your.email@example.com'), {
-        target: { value: 'notvalidemail' }
-      })
-      fireEvent.click(screen.getByRole('button', { name: /notify me/i }))
+      const input = screen.getByPlaceholderText('your.email@example.com')
+      await user.clear(input)
+      await user.type(input, 'notvalidemail')
+      await user.click(screen.getByRole('button', { name: /notify me/i }))
       
       await waitFor(() => {
         expect(screen.getByText('Please enter a valid email address')).toBeInTheDocument()
@@ -222,22 +218,24 @@ describe('EmailInput Component', () => {
     it('should reject invalid email formats', async () => {
       const invalidEmails = [
         'notanemail',
-        '@example.com',
+        '@example.com', 
         'test@',
         'test@com',
         ''
       ]
 
       for (const email of invalidEmails) {
+        const user = userEvent.setup()
         jest.clearAllMocks()
         const { unmount } = render(<EmailInput onEmailSubmit={mockOnEmailSubmit} />)
         
+        const input = screen.getByPlaceholderText('your.email@example.com')
+        
         if (email) {
-          fireEvent.change(screen.getByPlaceholderText('your.email@example.com'), {
-            target: { value: email }
-          })
+          await user.clear(input)
+          await user.type(input, email)
         }
-        fireEvent.click(screen.getByRole('button', { name: /notify me/i }))
+        await user.click(screen.getByRole('button', { name: /notify me/i }))
         
         await waitFor(() => {
           const errorMessage = email === '' 
