@@ -5,7 +5,6 @@ let Jimp: any;
 if (process.env.NODE_ENV !== 'test') {
   try {
     // Support both CJS and ESM shapes of jimp
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const mod = require('jimp');
     Jimp = (mod && typeof mod.read === 'function') ? mod : (mod && mod.default ? mod.default : mod);
   } catch {
