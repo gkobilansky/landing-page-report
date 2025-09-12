@@ -3,7 +3,14 @@ import { createPuppeteerBrowser } from './puppeteer-config';
 // Conditional import for Jimp to avoid test environment issues
 let Jimp: any;
 if (process.env.NODE_ENV !== 'test') {
-  Jimp = require('jimp');
+  try {
+    // Support both CJS and ESM shapes of jimp
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod = require('jimp');
+    Jimp = (mod && typeof mod.read === 'function') ? mod : (mod && mod.default ? mod.default : mod);
+  } catch {
+    Jimp = null;
+  }
 }
 
 export interface ElementDensityAnalysis {
@@ -301,26 +308,55 @@ async function analyzeScreenshotWhitespace(
   
   console.log('🔍 Processing screenshot for pixel analysis...');
   
-  // Load and process the image with Jimp
-  const img = await Jimp.read(screenshotBuffer);
+  // Load and process the image with Jimp (support dynamic ESM import)
+  let J: any = Jimp;
+  if (!J || typeof J.read !== 'function') {
+    const mod: any = await import('jimp');
+    J = mod?.default ?? mod;
+  }
+  const img = await J.read(screenshotBuffer);
   const { width, height } = img.bitmap;
   
   let contentPixels = 0;
   const totalPixels = width * height;
   
-  // Process every pixel
+  // Helper to compute grayscale at a given pixel index
+  const grayAt = (i: number) => {
+    const r = img.bitmap.data[i];
+    const g = img.bitmap.data[i + 1];
+    const b = img.bitmap.data[i + 2];
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+  };
+
+  // Process every pixel with a light local-contrast check so subtle
+  // near-white graphics (watermarks, soft shadows/gradients) are not
+  // over-counted as content.
+  const nearWhiteBand = 20; // pixels within (threshold - 20 .. threshold) treated carefully
+  const lowGradient = 10;   // small local change means likely background
+
   img.scan(0, 0, width, height, (x: number, y: number, idx: number) => {
-    // Get RGBA values from bitmap data
-    const r = img.bitmap.data[idx];
-    const g = img.bitmap.data[idx + 1];
-    const b = img.bitmap.data[idx + 2];
-    // Skip alpha channel (img.bitmap.data[idx + 3])
-    
-    // Convert to grayscale using luminance formula
-    const grayscale = 0.299 * r + 0.587 * g + 0.114 * b;
-    
-    // If pixel is darker than threshold, it's "content"
-    if (grayscale < threshold) {
+    const g = grayAt(idx);
+
+    // Fast path: clearly darker than band -> content
+    if (g < threshold - nearWhiteBand) {
+      contentPixels++;
+      return;
+    }
+
+    // Border pixels: use only absolute threshold
+    if (x === width - 1 || y === height - 1) {
+      if (g < threshold) contentPixels++;
+      return;
+    }
+
+    // Local gradient check against right/bottom neighbors
+    const rightIdx = idx + 4; // (x+1, y)
+    const downIdx = idx + width * 4; // (x, y+1)
+    const grad = Math.abs(g - grayAt(rightIdx)) + Math.abs(g - grayAt(downIdx));
+
+    // Treat as content only if either clearly darker than threshold or
+    // shows sufficient local contrast (i.e., real edge/details)
+    if (g < threshold && grad >= lowGradient) {
       contentPixels++;
     }
   });
@@ -443,10 +479,19 @@ export async function analyzeWhitespace(
         const computedStyle = window.getComputedStyle(headline);
         const marginTop = parseFloat(computedStyle.marginTop) || 0;
         const marginBottom = parseFloat(computedStyle.marginBottom) || 0;
+        const parent = headline.parentElement as HTMLElement | null;
+        const parentStyle: any = parent ? window.getComputedStyle(parent) : {};
+        const gap = parseFloat((parentStyle && (parentStyle.rowGap || parentStyle.gap)) || '0') || 0;
+        const padTop = parseFloat((parentStyle && parentStyle.paddingTop) || '0') || 0;
+        const padBottom = parseFloat((parentStyle && parentStyle.paddingBottom) || '0') || 0;
+
+        // Effective vertical spacing: margins plus half of container gap/padding
+        const effectiveTop = marginTop + gap * 0.5 + padTop * 0.5;
+        const effectiveBottom = marginBottom + gap * 0.5 + padBottom * 0.5;
         
-        if (marginTop > 0 || marginBottom > 0) {
-          totalHeadlineMarginTop += marginTop;
-          totalHeadlineMarginBottom += marginBottom;
+        if (effectiveTop > 0 || effectiveBottom > 0) {
+          totalHeadlineMarginTop += effectiveTop;
+          totalHeadlineMarginBottom += effectiveBottom;
           headlineCount++;
         }
       });
@@ -464,10 +509,23 @@ export async function analyzeWhitespace(
 
       ctas.forEach(cta => {
         const computedStyle = window.getComputedStyle(cta);
-        totalCtaMarginTop += parseFloat(computedStyle.marginTop) || 0;
-        totalCtaMarginBottom += parseFloat(computedStyle.marginBottom) || 0;
-        totalCtaMarginLeft += parseFloat(computedStyle.marginLeft) || 0;
-        totalCtaMarginRight += parseFloat(computedStyle.marginRight) || 0;
+        const parent = cta.parentElement as HTMLElement | null;
+        const parentStyle: any = parent ? window.getComputedStyle(parent) : {};
+        const gap = parseFloat((parentStyle && (parentStyle.rowGap || parentStyle.gap)) || '0') || 0;
+        const padTop = parseFloat((parentStyle && parentStyle.paddingTop) || '0') || 0;
+        const padBottom = parseFloat((parentStyle && parentStyle.paddingBottom) || '0') || 0;
+        const padLeft = parseFloat((parentStyle && parentStyle.paddingLeft) || '0') || 0;
+        const padRight = parseFloat((parentStyle && parentStyle.paddingRight) || '0') || 0;
+
+        const effTop = (parseFloat(computedStyle.marginTop) || 0) + gap * 0.5 + padTop * 0.5;
+        const effBottom = (parseFloat(computedStyle.marginBottom) || 0) + gap * 0.5 + padBottom * 0.5;
+        const effLeft = (parseFloat(computedStyle.marginLeft) || 0) + padLeft * 0.25;
+        const effRight = (parseFloat(computedStyle.marginRight) || 0) + padRight * 0.25;
+
+        totalCtaMarginTop += effTop;
+        totalCtaMarginBottom += effBottom;
+        totalCtaMarginLeft += effLeft;
+        totalCtaMarginRight += effRight;
         ctaCount++;
       });
 
@@ -483,9 +541,14 @@ export async function analyzeWhitespace(
 
       contentBlocks.forEach(block => {
         const computedStyle = window.getComputedStyle(block);
+        const parent = block.parentElement as HTMLElement | null;
+        const parentStyle: any = parent ? window.getComputedStyle(parent) : {};
+        const gap = parseFloat((parentStyle && (parentStyle.rowGap || parentStyle.gap)) || '0') || 0;
+        const padBottom = parseFloat(computedStyle.paddingBottom || '0') || 0;
         const marginBottom = parseFloat(computedStyle.marginBottom) || 0;
-        if (marginBottom > 0) {
-          totalContentMargin += marginBottom;
+        const effective = marginBottom + gap + padBottom * 0.5; // count some padding as contributing spacing
+        if (effective > 0) {
+          totalContentMargin += effective;
           contentBlockCount++;
         }
       });
@@ -701,7 +764,8 @@ export async function analyzeWhitespace(
 
       return {
         totalElements: contentElements.length,
-        whitespaceRatio: Math.round(whitespaceRatio * 100) / 100,
+        // Preserve precision to avoid collapsing small but present whitespace to 0.0
+        whitespaceRatio: parseFloat(whitespaceRatio.toFixed(4)),
         viewportArea,
         contentArea: totalContentArea,
         whitespaceArea: whitespaceArea,
@@ -853,9 +917,11 @@ function calculateAdaptiveWhitespaceScore(metrics: AdaptiveWhitespaceMetrics): n
 
   // Adaptive whitespace ratio thresholds based on theme
   const thresholds = {
-    light: { very: 0.25, cluttered: 0.35, somewhat: 0.45, slightly: 0.55 },
-    dark: { very: 0.20, cluttered: 0.30, somewhat: 0.40, slightly: 0.50 }, // Tighter for dark themes
-    mixed: { very: 0.23, cluttered: 0.33, somewhat: 0.43, slightly: 0.53 }
+    // Raise "very low" to be less punitive while leaving other bands
+    // intact to preserve historical interpretation.
+    light: { very: 0.30, cluttered: 0.35, somewhat: 0.45, slightly: 0.55 },
+    dark:  { very: 0.24, cluttered: 0.30, somewhat: 0.40, slightly: 0.50 },
+    mixed: { very: 0.28, cluttered: 0.33, somewhat: 0.43, slightly: 0.53 }
   };
 
   const t = thresholds[metrics.theme];
@@ -1009,9 +1075,9 @@ function generateWhitespaceRecommendations(
 
   // Use theme-specific thresholds for recommendations
   const thresholds = {
-    light: { very: 0.25, low: 0.35, moderate: 0.45, target: 35 },
-    dark: { very: 0.20, low: 0.30, moderate: 0.40, target: 30 }, // Tighter for dark themes
-    mixed: { very: 0.23, low: 0.33, moderate: 0.43, target: 33 }
+    light: { very: 0.30, low: 0.35, moderate: 0.45, target: 35 },
+    dark:  { very: 0.24, low: 0.30, moderate: 0.40, target: 30 },
+    mixed: { very: 0.28, low: 0.33, moderate: 0.43, target: 33 }
   };
   
   const t = thresholds[metrics.theme];
