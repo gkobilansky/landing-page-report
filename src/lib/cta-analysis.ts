@@ -95,6 +95,14 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
         
         hasAnyClass: (element: Element, classes: readonly string[]): boolean => {
           return classes.some(className => element.classList.contains(className));
+        },
+        
+        matchesAnyClassPattern: (element: Element, patterns: readonly string[]): boolean => {
+          const className = element.className || '';
+          return patterns.some(patternStr => {
+            const pattern = new RegExp(patternStr, 'i');
+            return pattern.test(String(className));
+          });
         }
       };
       
@@ -236,6 +244,11 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
       const refineCTAType = (element: Element, initialType: string, text: string, computedStyle: CSSStyleDeclaration): string => {
         // Check for explicit primary CTA indicators
         if (ctaHelpers.hasAnyClass(element, ctaDictionary.PRIMARY_CTA_CLASSES)) {
+          return 'primary';
+        }
+        
+        // Check for primary CTA class patterns (e.g., btn-primary-3, button--primary-large)
+        if (ctaHelpers.matchesAnyClassPattern(element, ctaDictionary.PRIMARY_CTA_CLASS_PATTERNS)) {
           return 'primary';
         }
         
@@ -437,7 +450,8 @@ export async function analyzeCTA(urlOrHtml: string, options: AnalysisOptions = {
       // Convert regex patterns to strings for serialization
       DECORATIVE_PATTERNS: CTA_DICTIONARY.DECORATIVE_PATTERNS.map(r => r.source),
       LOGO_PATTERNS: CTA_DICTIONARY.LOGO_PATTERNS.map(r => r.source),
-      NAME_PATTERNS: CTA_DICTIONARY.NAME_PATTERNS.map(r => r.source)
+      NAME_PATTERNS: CTA_DICTIONARY.NAME_PATTERNS.map(r => r.source),
+      PRIMARY_CTA_CLASS_PATTERNS: CTA_DICTIONARY.PRIMARY_CTA_CLASS_PATTERNS.map(r => r.source)
     });
 
     console.log(`📊 Found ${ctaData.length} potential CTAs`);

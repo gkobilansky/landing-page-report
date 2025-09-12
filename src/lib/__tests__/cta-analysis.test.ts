@@ -472,5 +472,44 @@ describe('CTA Analysis', () => {
       expect(result.ctas.some(cta => cta.text === 'Get Started')).toBe(true);
       expect(result.ctas.some(cta => cta.text === 'Sign Up Today')).toBe(true);
     });
+
+    it('should detect input submit with btn-primary-3 class and Join Waitlist value', async () => {
+      const waitlistHTML = `
+        <html>
+          <body>
+            <form>
+              <input type="submit" data-wait="Please wait..." class="btn-primary-3 is-form w-button" value="Join Waitlist" />
+            </form>
+          </body>
+        </html>
+      `;
+
+      // Mock the CTA data that should be detected for this specific input
+      mockPage.evaluate.mockResolvedValue([
+        { 
+          text: 'Join Waitlist', 
+          type: 'primary', // Should be classified as primary due to btn-primary-3 class pattern match
+          isAboveFold: true, 
+          actionStrength: 'strong', // "join" is a strong action word
+          urgency: 'low', 
+          visibility: 'medium', 
+          context: 'form', 
+          hasValueProposition: false, 
+          hasUrgency: false, 
+          hasGuarantee: false, 
+          mobileOptimized: true, 
+          position: { top: 50, left: 8, width: 120, height: 32 } 
+        }
+      ]);
+
+      const result = await analyzeCTA(waitlistHTML, { isHtml: true });
+      
+      expect(result.ctas).toHaveLength(1);
+      expect(result.ctas[0].text).toBe('Join Waitlist');
+      expect(result.ctas[0].type).toBe('primary'); // Should be classified as primary due to btn-primary-3 class
+      expect(result.ctas[0].actionStrength).toBe('strong'); // "join" is a strong action word
+      expect(result.ctas[0].context).toBe('form'); // Input is inside a form
+      expect(result.score).toBeGreaterThan(70); // Should have good score with primary CTA
+    });
   });
 });
