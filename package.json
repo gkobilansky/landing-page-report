@@ -18,7 +18,6 @@
   "description": "",
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
-    "@tailwindcss/line-clamp": "^0.4.4",
     "@tailwindcss/postcss": "^4.1.7",
     "@vercel/analytics": "^1.5.0",
     "@vercel/blob": "^1.1.1",
