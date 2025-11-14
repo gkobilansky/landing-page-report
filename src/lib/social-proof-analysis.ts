@@ -241,8 +241,8 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
         // Social media indicators
         { selector: '.social, .followers, [class*="social"], [class*="follow"]', type: 'social-media' },
         
-        // Logos and partnerships
-        { selector: '.logo, .partner, .featured, [class*="logo"], [class*="partner"], [class*="featured"]', type: 'partnership' },
+        // Logos and partnerships (case-insensitive to match classes like .UserLogo or .LogoGrid)
+        { selector: '.logo, .Logo, .partner, .featured, .UserLogo, .LogoGrid, [class*="logo" i], [class*="partner" i], [class*="featured" i]', type: 'partnership' },
         
         // Case studies
         { selector: '.case-study, .success-story, [class*="case"], [class*="success"]', type: 'case-study' },
