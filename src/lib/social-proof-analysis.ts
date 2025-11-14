@@ -110,16 +110,16 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
         return 'medium';
       };
       
-      const calculateCredibilityScore = (element: Element, text: string, type: string): number => {
+      const calculateCredibilityScore = (element: Element | null, text: string, type: string): number => {
         let score = 50; // Base score
         
         // Check for specific credibility indicators
         const hasName = /[A-Z][a-z]+ [A-Z][a-z]+/.test(text) || 
-                       element.querySelector('.name, .author, [class*="name"], [class*="author"]');
+                       element?.querySelector?.('.name, .author, [class*="name"], [class*="author"]');
         const hasCompany = /\b(CEO|CTO|Manager|Director|VP|President|Founder)\b/i.test(text) ||
-                          element.querySelector('.company, .title, [class*="company"], [class*="title"]');
-        const hasImage = element.querySelector('img, .avatar, [class*="avatar"], [class*="photo"]');
-        const hasRating = element.querySelector('.rating, .stars, [class*="rating"], [class*="star"]') ||
+                          element?.querySelector?.('.company, .title, [class*="company"], [class*="title"]');
+        const hasImage = element?.querySelector?.('img, .avatar, [class*="avatar"], [class*="photo"]');
+        const hasRating = element?.querySelector?.('.rating, .stars, [class*="rating"], [class*="star"]') ||
                          /★|⭐|stars?|rating/i.test(text);
         
         // Boost score for credibility indicators
@@ -223,6 +223,282 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
         return 'other';
       };
 
+      const normalizeText = (value?: string | null): string => {
+        if (!value) return '';
+        return value.replace(/\s+/g, ' ').trim();
+      };
+
+      const collectElementText = (element: Element): string => {
+        const chunks = new Set<string>();
+        const push = (value?: string | null) => {
+          const normalized = normalizeText(value);
+          if (normalized) {
+            chunks.add(normalized);
+          }
+        };
+
+        push(element.textContent);
+
+        const attributeCandidates = [
+          'aria-label',
+          'title',
+          'data-name',
+          'data-company',
+          'data-client',
+          'data-partner',
+          'data-brand',
+          'data-source'
+        ];
+        attributeCandidates.forEach(attr => push(element.getAttribute(attr)));
+
+        const labelledBy = element.getAttribute('aria-labelledby');
+        if (labelledBy) {
+          labelledBy.split(/\s+/).forEach(id => {
+            const ref = document.getElementById(id);
+            if (ref) push(ref.textContent);
+          });
+        }
+
+        element.querySelectorAll('img, svg, picture, figure, [aria-label], [title], [data-company], [data-client], [data-partner]').forEach(node => {
+          if (node instanceof HTMLImageElement) {
+            push(node.alt);
+            push(node.title);
+            push(node.getAttribute('aria-label'));
+            push(node.getAttribute('data-name'));
+            push(node.getAttribute('data-company'));
+            push(node.getAttribute('data-client'));
+            push(node.getAttribute('data-partner'));
+          } else {
+            push(node.getAttribute('aria-label'));
+            push(node.getAttribute('title'));
+          }
+        });
+
+        return Array.from(chunks).join(' • ');
+      };
+
+      const deriveLogoText = (element: Element): string => {
+        const names = new Set<string>();
+        const push = (value?: string | null) => {
+          const normalized = normalizeText(value);
+          if (normalized) names.add(normalized);
+        };
+
+        const images = element.querySelectorAll('img');
+        images.forEach(img => {
+          push(img.alt);
+          push(img.getAttribute('data-name'));
+          push(img.getAttribute('data-company'));
+          if (!img.alt) {
+            const src = img.src || img.getAttribute('data-src') || '';
+            if (src) {
+              const filename = src.split(/[/?#]/).pop() || '';
+              const clean = filename.replace(/\.[a-z0-9]+$/i, '').replace(/[-_]/g, ' ');
+              push(clean);
+            }
+          }
+        });
+
+        if (names.size === 0) {
+          const aria = element.getAttribute('aria-label') || element.getAttribute('title');
+          if (aria) {
+            push(aria);
+          }
+        }
+
+        return Array.from(names).join(' • ');
+      };
+
+      const passesLengthConstraints = (text: string, type: string, options: { hasVisualEvidence?: boolean } = {}): boolean => {
+        const wordCount = text.split(/\s+/).filter(Boolean).length;
+        const hasVisualEvidence = options.hasVisualEvidence || false;
+        
+        if (wordCount === 0) {
+          return hasVisualEvidence;
+        }
+        if (type === 'testimonial') {
+          return wordCount >= 10 && wordCount <= 180;
+        }
+        if (type === 'review' || type === 'rating') {
+          return wordCount >= 5 && wordCount <= 120;
+        }
+        if (type === 'case-study') {
+          return wordCount >= 25 && wordCount <= 400;
+        }
+        if (type === 'customer-count') {
+          return wordCount >= 3 && wordCount <= 80;
+        }
+        if (type === 'trust-badge' || type === 'certification') {
+          return wordCount >= 2 && wordCount <= 60;
+        }
+        if (type === 'partnership') {
+          return wordCount >= 1 || hasVisualEvidence;
+        }
+        return wordCount >= 3 && wordCount <= 250;
+      };
+
+      const isGenericContent = (text: string, type: string): boolean => {
+        if (type === 'partnership' || type === 'news-mention') return false;
+        const trimmed = text.trim();
+        if (/^(home|about|contact|services|portfolio|blog|get started|learn more|our|we|you|your|build|design|develop|create|solution|offer|provide|built|terms|privacy|policy)/i.test(trimmed)) {
+          return true;
+        }
+        if (/\b(click|button|link|menu|navigation|header|footer|sidebar|copyright|reserved|policy|terms|lansky|tech)\b/i.test(trimmed.toLowerCase())) {
+          return true;
+        }
+        if (trimmed.includes('→') || trimmed.includes('↓')) return true;
+        if (/^\s*[💡👩🏻‍💻💰😤]/.test(trimmed)) return true;
+        return false;
+      };
+
+      const pushStructuredElement = (text: string, type: string, metadata: { hasImage?: boolean; hasName?: boolean; hasCompany?: boolean; hasRating?: boolean } = {}) => {
+        const normalized = normalizeText(text);
+        if (!normalized) return;
+        if (!passesLengthConstraints(normalized, type)) return;
+        if (isGenericContent(normalized, type)) return;
+        
+        const credibilityScore = calculateCredibilityScore(null, normalized, type);
+        elements.push({
+          type,
+          text: normalized.length > 300 ? normalized.substring(0, 300) + '...' : normalized,
+          score: credibilityScore,
+          position: {
+            top: 0,
+            left: 0,
+            width: 0,
+            height: 0
+          },
+          isAboveFold: false,
+          hasImage: !!metadata.hasImage,
+          hasName: !!metadata.hasName,
+          hasCompany: !!metadata.hasCompany,
+          hasRating: !!metadata.hasRating,
+          credibilityScore,
+          visibility: 'medium',
+          context: 'other'
+        });
+      };
+
+      const getNameFromField = (field: any): string => {
+        if (!field) return '';
+        if (typeof field === 'string') return field;
+        return field.name || field.alternateName || '';
+      };
+
+      const processStructuredEntry = (entry: any) => {
+        if (!entry) return;
+
+        if (Array.isArray(entry)) {
+          entry.forEach(processStructuredEntry);
+          return;
+        }
+
+        if (entry['@graph']) {
+          processStructuredEntry(entry['@graph']);
+        }
+
+        const typeField = entry['@type'];
+        const typeCandidates = Array.isArray(typeField) ? typeField : [typeField];
+        typeCandidates.forEach(typeName => {
+          if (!typeName) return;
+          const lowerType = String(typeName).toLowerCase();
+          
+          if (lowerType === 'review' || lowerType === 'testimonial') {
+            const body = entry.reviewBody || entry.description || entry.name || '';
+            if (!body) return;
+            const authorName = getNameFromField(entry.author);
+            const companyName = getNameFromField(entry.publisher) || getNameFromField(entry.itemReviewed);
+            const ratingValue = entry.reviewRating?.ratingValue || entry.aggregateRating?.ratingValue;
+            const ratingScale = entry.reviewRating?.bestRating;
+            let text = body;
+            if (ratingValue) {
+              text = `${body} (Rated ${ratingValue}${ratingScale ? `/${ratingScale}` : ''})`;
+            }
+            if (authorName) {
+              text = `${text} — ${authorName}`;
+            }
+            if (companyName) {
+              text = `${text}, ${companyName}`;
+            }
+            pushStructuredElement(text, ratingValue ? 'review' : 'testimonial', {
+              hasImage: !!entry.image,
+              hasName: !!authorName,
+              hasCompany: !!companyName,
+              hasRating: !!ratingValue
+            });
+            return;
+          }
+          
+          if (lowerType === 'aggregaterating') {
+            const ratingValue = entry.ratingValue || entry.rating;
+            const bestRating = entry.bestRating || entry.ratingScale;
+            const reviewCount = entry.reviewCount || entry.ratingCount;
+            if (ratingValue || reviewCount) {
+              const parts = [];
+              if (ratingValue) {
+                parts.push(`Average rating ${ratingValue}${bestRating ? `/${bestRating}` : ''}`);
+              }
+              if (reviewCount) {
+                parts.push(`based on ${reviewCount} reviews`);
+              }
+              pushStructuredElement(parts.join(' '), 'rating', { hasRating: !!ratingValue });
+            }
+            return;
+          }
+          
+          if (lowerType === 'newsarticle' || lowerType === 'article' || lowerType === 'blogposting') {
+            const publisherName = getNameFromField(entry.publisher);
+            const headline = entry.headline || entry.name || entry.alternativeHeadline;
+            if (publisherName || headline) {
+              const text = `${publisherName ? `Featured in ${publisherName}` : 'Media mention'}${headline ? ` — "${headline}"` : ''}`;
+              pushStructuredElement(text, 'news-mention', {
+                hasCompany: !!publisherName
+              });
+            }
+            return;
+          }
+          
+          if (lowerType === 'organization' || lowerType === 'brand') {
+            if (entry.aggregateRating) {
+              processStructuredEntry(entry.aggregateRating);
+            }
+            if (entry.review) {
+              processStructuredEntry(entry.review);
+            }
+            if (entry.award) {
+              const awards = Array.isArray(entry.award) ? entry.award : [entry.award];
+              awards.forEach((award: string) => {
+                pushStructuredElement(`${entry.name || 'This company'} awarded ${award}`, 'trust-badge', { hasCompany: !!entry.name });
+              });
+            }
+            return;
+          }
+        });
+
+        if (entry.review) {
+          processStructuredEntry(entry.review);
+        }
+        if (entry.aggregateRating) {
+          processStructuredEntry(entry.aggregateRating);
+        }
+        if (entry.testimonial) {
+          processStructuredEntry(entry.testimonial);
+        }
+      };
+      
+      const parseStructuredData = () => {
+        const scriptTags = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
+        scriptTags.forEach(script => {
+          if (!script.textContent) return;
+          try {
+            const payload = JSON.parse(script.textContent);
+            processStructuredEntry(payload);
+          } catch (error) {
+            // Ignore malformed JSON-LD
+          }
+        });
+      };
+
       // Define selectors for different types of social proof
       const socialProofSelectors = [
         // Testimonials and quotes
@@ -258,22 +534,21 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
         foundElements.forEach((element) => {
           if (processedElements.has(element)) return;
           
-          let text = element.textContent?.trim() || '';
-          if (text.length === 0) return;
+          const textContent = collectElementText(element);
+          const hasLogoVisuals = !!element.querySelector('img, svg, [data-logo], [class*="logo"]');
+          let text = textContent;
           
-          // Skip very short or very long content, and filter out obvious non-social proof
-          if (text.length < 10 || text.length > 1000) return;
+          if (!text && hasLogoVisuals) {
+            text = deriveLogoText(element);
+            if (!text && type === 'partnership') {
+              const logoCount = element.querySelectorAll('img, svg').length;
+              text = logoCount > 0 ? `Partner logos (${logoCount})` : 'Partner logos';
+            }
+          }
           
-          // Filter out navigation, page copy, and generic content
-          const isGenericContent = /^(home|about|contact|services|portfolio|blog|get started|learn more|our|we|you|your|build|design|develop|create|solution|offer|provide|built|copyright|all rights|terms|privacy|policy)/i.test(text.trim()) ||
-                                  /\b(click|button|link|menu|navigation|header|footer|sidebar|copyright|reserved|policy|terms|lansky|tech)\b/i.test(text.toLowerCase()) ||
-                                  text.includes('→') || text.includes('↓') || // Arrow indicators suggest UI elements
-                                  /^\s*[💡👩🏻‍💻💰😤]\s*/.test(text) || // Starts with emojis (likely design elements)
-                                  text.toLowerCase().includes('founder') || // Company bio content
-                                  /\b(web development|done right|copyright)\b/i.test(text) ||
-                                  text.length > 200; // Very long text is likely page content, not social proof
-          
-          if (isGenericContent) return;
+          if (!text) {
+            return;
+          }
           
           const rect = element.getBoundingClientRect();
           const computedStyle = window.getComputedStyle(element);
@@ -287,12 +562,20 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
           const isAboveFold = rect.top < viewport.height;
           const context = determineContext(element);
           const visibility = analyzeVisibility(element, computedStyle);
-          const actualType = classifyElement(element, text);
+          const classifiedType = classifyElement(element, text);
+          const finalType = classifiedType === 'other' ? type : classifiedType;
           
-          // Skip elements that don't classify as actual social proof
-          if (actualType === 'other') return;
+          if (finalType === 'other') return;
           
-          const credibilityScore = calculateCredibilityScore(element, text, actualType);
+          if (!passesLengthConstraints(text, finalType, { hasVisualEvidence: hasLogoVisuals })) {
+            return;
+          }
+          
+          if (isGenericContent(text, finalType)) {
+            return;
+          }
+          
+          const credibilityScore = calculateCredibilityScore(element, text, finalType);
           
           const hasImage = !!element.querySelector('img, .avatar, [class*="avatar"], [class*="photo"]');
           const hasName = /[A-Z][a-z]+ [A-Z][a-z]+/.test(text) || 
@@ -303,8 +586,8 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
                            /★|⭐|stars?|rating/i.test(text);
 
           const socialProofElement = {
-            type: actualType,
-            text: text.length > 200 ? text.substring(0, 200) + '...' : text,
+            type: finalType,
+            text: text.length > 300 ? text.substring(0, 300) + '...' : text,
             score: credibilityScore,
             position: {
               top: rect.top,
@@ -332,8 +615,11 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
       allTextElements.forEach(element => {
         if (processedElements.has(element)) return;
         
-        const text = element.textContent?.trim() || '';
-        if (text.length < 20 || text.length > 500) return;
+        const text = collectElementText(element);
+        if (!text) return;
+        
+        const lowerText = text.toLowerCase();
+        if (lowerText.length < 30) return;
         
         // Look for customer count patterns
         const hasCustomerCount = /\d+[,\.]?\d*\s*(customers?|users?|clients?|companies?|businesses?|people|members?)/i.test(text) ||
@@ -341,9 +627,9 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
         
         // Look for testimonial patterns - be more strict
         const hasTestimonialPattern = (text.includes('"') || text.includes("'")) && 
-                                     text.length > 30 && text.length < 300 &&
+                                     text.length > 40 && text.length < 600 &&
                                      /\b(amazing|excellent|great|fantastic|wonderful|outstanding|love|recommend|best|helped|improved|transformed|changed my|saved us|increased our)\b/i.test(text) &&
-                                     !/\b(we|our|us|you|your|lansky|tech|build|design|development|service|solution|offer|provide)\b/i.test(text.substring(0, 50)); // Avoid first-person company copy
+                                     !/\b(we|our|us|you|your|lansky|tech|build|design|development|service|solution|offer|provide)\b/i.test(text.substring(0, 80));
         
         // Look for trust indicators
         const hasTrustPattern = /ssl|secure|verified|trusted|guarantee|certified|award|safe|protected/i.test(text);
@@ -361,10 +647,18 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
           const context = determineContext(element);
           const visibility = analyzeVisibility(element, computedStyle);
           
-          let detectedType = 'testimonial';
+          let detectedType: string = 'testimonial';
           if (hasCustomerCount) detectedType = 'customer-count';
           else if (hasTrustPattern) detectedType = 'trust-badge';
           else if (!hasTestimonialPattern) return; // Skip if no clear social proof pattern
+          
+          if (!passesLengthConstraints(text, detectedType)) {
+            return;
+          }
+          
+          if (isGenericContent(text, detectedType)) {
+            return;
+          }
           
           const credibilityScore = calculateCredibilityScore(element, text, detectedType);
           
@@ -375,7 +669,7 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
 
           const socialProofElement = {
             type: detectedType,
-            text: text.length > 200 ? text.substring(0, 200) + '...' : text,
+            text: text.length > 300 ? text.substring(0, 300) + '...' : text,
             score: credibilityScore,
             position: {
               top: rect.top,
@@ -398,6 +692,7 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
         }
       });
       
+      parseStructuredData();
       return elements;
     }, viewport);
 

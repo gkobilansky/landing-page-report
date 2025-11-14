@@ -4,6 +4,7 @@ import { analyzeFontUsage } from './font-analysis';
 import { analyzeCTA } from './cta-analysis';
 import { analyzePageSpeed } from './page-speed-analysis';
 import { analyzeWhitespace } from './whitespace-assessment';
+import { analyzeSocialProof, SocialProofAnalysisResult, SocialProofElement } from './social-proof-analysis';
 
 export interface AnalysisResult {
   url: string;
@@ -82,11 +83,10 @@ export interface AnalysisResult {
   };
   socialProof: {
     score: number;
-    elements: Array<{
-      type: string;
-      text: string;
-    }>;
+    elements: SocialProofElement[];
+    summary: SocialProofAnalysisResult['summary'];
     issues: string[];
+    recommendations: string[];
   };
   overallScore: number;
   status: 'pending' | 'completed' | 'failed';
@@ -129,7 +129,7 @@ export class LandingPageAnalyzer {
         this.analyzeImageOptimization(page),
         this.analyzeCTAWrapper(page, url),
         this.analyzeWhitespaceWrapper(url),
-        this.analyzeSocialProof(page)
+        this.analyzeSocialProofWrapper(page, url)
       ]);
 
       console.log('📊 Calculating overall score...')
@@ -358,7 +358,25 @@ export class LandingPageAnalyzer {
     }
   }
 
-  private async analyzeSocialProof(page: Page) {
+  private async analyzeSocialProofWrapper(page: Page, url: string) {
+    try {
+      console.log('🔍 Starting social proof analysis...');
+      const result = await analyzeSocialProof(url);
+      console.log(`✅ Social proof analysis complete. Found ${result.elements.length} elements, score: ${result.score}`);
+      return {
+        score: result.score,
+        elements: result.elements,
+        summary: result.summary,
+        issues: result.issues,
+        recommendations: result.recommendations
+      };
+    } catch (error) {
+      console.error('❌ Social proof analysis failed:', error);
+      return this.legacySocialProofFallback(page);
+    }
+  }
+
+  private async legacySocialProofFallback(page: Page): Promise<AnalysisResult['socialProof']> {
     const socialProofElements = await page.evaluate(() => {
       const indicators = [
         { selector: '[class*="testimonial"]', type: 'testimonial' },
@@ -376,7 +394,7 @@ export class LandingPageAnalyzer {
         elements.forEach(el => {
           const text = el.textContent?.trim();
           if (text && text.length > 0) {
-            found.push({ type, text: text.substring(0, 100) });
+            found.push({ type, text: text.substring(0, 120) });
           }
         });
       });
@@ -384,18 +402,67 @@ export class LandingPageAnalyzer {
       return found;
     });
 
-    const issues: string[] = [];
-    let score = socialProofElements.length * 20;
+    const normalizedElements: SocialProofElement[] = socialProofElements.map(({ type, text }) => {
+      const mappedType = this.mapLegacySocialProofType(type);
+      return {
+        type: mappedType,
+        text,
+        score: 40,
+        position: { top: 0, left: 0, width: 0, height: 0 },
+        isAboveFold: false,
+        hasImage: mappedType === 'partnership',
+        hasName: false,
+        hasCompany: mappedType === 'partnership',
+        hasRating: mappedType === 'review' || mappedType === 'rating',
+        credibilityScore: 40,
+        visibility: 'medium',
+        context: 'content'
+      };
+    });
 
-    if (socialProofElements.length === 0) {
+    const summary = this.buildSocialProofSummary(normalizedElements);
+    const issues: string[] = [];
+    const recommendations: string[] = [];
+
+    let score = normalizedElements.length * 20;
+    if (normalizedElements.length === 0) {
       issues.push('No social proof elements found');
+      recommendations.push('Add testimonials, reviews, or trust badges to build credibility');
       score = 0;
     }
 
     return {
       score: Math.min(100, score),
-      elements: socialProofElements,
-      issues
+      elements: normalizedElements,
+      summary,
+      issues,
+      recommendations
+    };
+  }
+
+  private mapLegacySocialProofType(type: string): SocialProofElement['type'] {
+    const normalized = type.toLowerCase();
+    if (normalized.includes('review')) return 'review';
+    if (normalized.includes('rating')) return 'rating';
+    if (normalized.includes('trust')) return 'trust-badge';
+    if (normalized.includes('logo') || normalized.includes('client')) return 'partnership';
+    return 'testimonial';
+  }
+
+  private buildSocialProofSummary(elements: SocialProofElement[]): SocialProofAnalysisResult['summary'] {
+    return {
+      totalElements: elements.length,
+      aboveFoldElements: elements.filter(e => e.isAboveFold).length,
+      testimonials: elements.filter(e => e.type === 'testimonial').length,
+      reviews: elements.filter(e => e.type === 'review').length,
+      ratings: elements.filter(e => e.type === 'rating').length,
+      trustBadges: elements.filter(e => e.type === 'trust-badge').length,
+      customerCounts: elements.filter(e => e.type === 'customer-count').length,
+      socialMedia: elements.filter(e => e.type === 'social-media').length,
+      certifications: elements.filter(e => e.type === 'certification').length,
+      partnerships: elements.filter(e => e.type === 'partnership').length,
+      caseStudies: elements.filter(e => e.type === 'case-study').length,
+      newsMentions: elements.filter(e => e.type === 'news-mention').length
     };
   }
 
