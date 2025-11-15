@@ -1,5 +1,6 @@
 import { Page } from 'puppeteer-core';
 import { createPuppeteerBrowser } from './puppeteer-config';
+import { SOCIAL_PROOF_DICTIONARY } from './social-proof-dictionary';
 
 export interface SocialProofElement {
   type: 'testimonial' | 'review' | 'rating' | 'trust-badge' | 'customer-count' | 'social-media' | 'certification' | 'partnership' | 'case-study' | 'news-mention';
@@ -53,6 +54,10 @@ interface AnalysisOptions {
   };
 }
 
+const SUSPICIOUS_TEXT_PATTERNS = (SOCIAL_PROOF_DICTIONARY.TEXT_PATTERNS.suspiciousContent || []).map(
+  ({ pattern, flags }) => new RegExp(pattern, flags || '')
+);
+
 export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOptions = {}): Promise<SocialProofAnalysisResult> {
   console.log('🔍 Social Proof Analysis starting...');
   
@@ -84,11 +89,61 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
 
     // Extract social proof elements using Puppeteer page evaluation
     console.log('🔍 Extracting social proof elements...');
-    const socialProofData = await page.evaluate((viewport: { width: number; height: number }) => {
+    const socialProofData = await page.evaluate((
+      viewport: { width: number; height: number },
+      dictionary: typeof SOCIAL_PROOF_DICTIONARY
+    ) => {
       const elements: any[] = [];
       const processedElements = new Set<Element>();
+      const toRegExp = (definition: { pattern: string; flags?: string }) =>
+        new RegExp(definition.pattern, definition.flags || '');
+      const patternMap = Object.entries(dictionary.TEXT_PATTERNS || {}).reduce<Record<string, RegExp[]>>(
+        (acc, [key, defs]) => {
+          acc[key] = defs.map(toRegExp);
+          return acc;
+        },
+        {}
+      );
+      const matchPattern = (key: string, text: string): boolean => {
+        return (patternMap[key] || []).some(pattern => pattern.test(text));
+      };
+      const emojiPattern = dictionary.GENERIC_CONTENT?.emojiPattern
+        ? toRegExp(dictionary.GENERIC_CONTENT.emojiPattern)
+        : null;
+      const selectorGroups = (dictionary.SELECTOR_GROUPS || []).map(group => ({
+        type: group.type,
+        selector: group.selectors.join(', ')
+      }));
+      const typeRules = dictionary.TYPE_RULES || [];
+      const logoIndicatorSelectors = dictionary.LOGO_INDICATOR_SELECTORS || [];
+      const ratingIndicatorQueries = dictionary.RATING_INDICATOR_QUERIES || [];
+      const additionalTextSelector =
+        dictionary.ADDITIONAL_TEXT_TAGS && dictionary.ADDITIONAL_TEXT_TAGS.length > 0
+          ? dictionary.ADDITIONAL_TEXT_TAGS.join(', ')
+          : 'p, div, span';
       
       // Helper functions (moved inside evaluate)
+      const matchesSelectorList = (element: Element, selectors?: string[]): boolean => {
+        if (!selectors?.length) return false;
+        return selectors.some(selector => {
+          try {
+            return element.matches(selector) || !!element.querySelector(selector);
+          } catch {
+            return false;
+          }
+        });
+      };
+
+      const elementHasRatingIndicator = (element: Element | null, text: string): boolean => {
+        if (matchPattern('rating', text)) return true;
+        if (!element) return false;
+        return matchesSelectorList(element, ratingIndicatorQueries);
+      };
+
+      const hasLogoIndicators = (element: Element): boolean => matchesSelectorList(element, logoIndicatorSelectors);
+
+      const getWordCount = (value: string): number => value.split(/\s+/).filter(Boolean).length;
+      
       const determineContext = (element: Element): string => {
         const parent = element.closest('header, nav, .header, .navigation') ? 'header' :
                        element.closest('footer, .footer') ? 'footer' :
@@ -119,8 +174,7 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
         const hasCompany = /\b(CEO|CTO|Manager|Director|VP|President|Founder)\b/i.test(text) ||
                           element?.querySelector?.('.company, .title, [class*="company"], [class*="title"]');
         const hasImage = element?.querySelector?.('img, .avatar, [class*="avatar"], [class*="photo"]');
-        const hasRating = element?.querySelector?.('.rating, .stars, [class*="rating"], [class*="star"]') ||
-                         /★|⭐|stars?|rating/i.test(text);
+        const hasRating = elementHasRatingIndicator(element, text);
         
         // Boost score for credibility indicators
         if (hasName) score += 15;
@@ -139,7 +193,7 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
         
         // Penalty for generic or low-quality content
         if (text.length < 20) score -= 20;
-        if (/lorem ipsum|placeholder|sample|test/i.test(text)) score -= 30;
+        if (matchPattern('suspiciousContent', text)) score -= 30;
         
         return Math.max(0, Math.min(100, score));
       };
@@ -147,79 +201,32 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
       const classifyElement = (element: Element, text: string): string => {
         const lowerText = text.toLowerCase();
         const classList = element.className?.toString().toLowerCase() || '';
+        const ratingPresent = elementHasRatingIndicator(element, text);
         
-        // Testimonial patterns
-        if (classList.includes('testimonial') || classList.includes('quote') ||
-            lowerText.includes('testimonial') || 
-            (lowerText.includes('"') && lowerText.length > 50)) {
+        for (const rule of typeRules) {
+          const classMatch = (rule.classKeywords || []).some(keyword => classList.includes(keyword));
+          const textMatch = (rule.textPatternKeys || []).some(key => matchPattern(key, text));
+          const selectorMatch = matchesSelectorList(element, rule.selectorQueries);
+          
+          if (!classMatch && !textMatch && !selectorMatch) continue;
+          if (rule.requiresRatingIndicator && !ratingPresent) continue;
+          
+          return rule.type;
+        }
+        
+        const quoteDetection = dictionary.QUOTE_DETECTION;
+        if (quoteDetection &&
+            (lowerText.includes('"') || lowerText.includes("'")) &&
+            lowerText.length > quoteDetection.minLength &&
+            lowerText.length < quoteDetection.maxLength &&
+            matchPattern(quoteDetection.positivePatternKey, text)) {
+          if (quoteDetection.negativePrefixKey &&
+              matchPattern(quoteDetection.negativePrefixKey, text.substring(0, quoteDetection.negativePrefixWindow || 80))) {
+            return 'other';
+          }
           return 'testimonial';
         }
         
-        // Review patterns - be more strict, require actual rating indicators
-        if ((classList.includes('review') || lowerText.includes('review')) &&
-            (element.querySelector('.rating, .stars, [class*="rating"], [class*="star"]') ||
-             /★|⭐|stars?|rating|\d+\/\d+|\d+\.\d+\/\d+/i.test(text))) {
-          return 'review';
-        }
-        
-        // Trust badge patterns
-        if (classList.includes('trust') || classList.includes('badge') || classList.includes('secure') ||
-            classList.includes('ssl') || classList.includes('certified') ||
-            /ssl|secure|verified|trusted|guarantee|certified|award/i.test(text)) {
-          return 'trust-badge';
-        }
-        
-        // Customer count patterns
-        if (/\d+[,\.]?\d*\s*(customers?|users?|clients?|companies?|businesses?|people|members?)/i.test(text) ||
-            /over\s+\d+|more than\s+\d+|\d+\+/i.test(text)) {
-          return 'customer-count';
-        }
-        
-        // Social media patterns
-        if (classList.includes('social') || classList.includes('follow') ||
-            /followers?|likes?|shares?|facebook|twitter|instagram|linkedin|youtube/i.test(text) ||
-            element.querySelector('[class*="social"], [class*="facebook"], [class*="twitter"], [class*="instagram"]')) {
-          return 'social-media';
-        }
-        
-        // Certification patterns
-        if (/iso\s?\d+|certified|accredited|compliant|gdpr|hipaa|soc\s?\d+/i.test(text) ||
-            classList.includes('certification') || classList.includes('compliance')) {
-          return 'certification';
-        }
-        
-        // Partnership patterns
-        if (/partner|partnership|powered by|featured in|trusted by/i.test(text) ||
-            classList.includes('partner') || classList.includes('featured')) {
-          return 'partnership';
-        }
-        
-        // Case study patterns
-        if (/case study|success story|customer story|client story/i.test(text) ||
-            classList.includes('case-study') || classList.includes('success')) {
-          return 'case-study';
-        }
-        
-        // News mention patterns
-        if (/featured in|mentioned in|press|news|media|forbes|techcrunch|reuters/i.test(text) ||
-            classList.includes('press') || classList.includes('media') || classList.includes('news')) {
-          return 'news-mention';
-        }
-        
-        // Rating patterns (specific check)
-        if (/★|⭐|stars?|rating|\d+\/\d+|\d+\.\d+\/\d+/i.test(text)) {
-          return 'rating';
-        }
-        
-        // Default to testimonial for quote-like content only if it looks like actual feedback
-        if ((lowerText.includes('"') || lowerText.includes("'")) && 
-            lowerText.length > 30 && lowerText.length < 300 &&
-            /\b(helped|improved|transformed|changed|saved|increased|love|recommend|amazing|excellent|great|fantastic|wonderful|outstanding)\b/i.test(text) &&
-            !/\b(we|our|build|design|create|offer|provide|service|solution)\b/i.test(text.substring(0, 50))) {
-          return 'testimonial';
-        }
-        
-        // Don't classify as social proof if it doesn't match specific patterns
         return 'other';
       };
 
@@ -239,17 +246,7 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
 
         push(element.textContent);
 
-        const attributeCandidates = [
-          'aria-label',
-          'title',
-          'data-name',
-          'data-company',
-          'data-client',
-          'data-partner',
-          'data-brand',
-          'data-source'
-        ];
-        attributeCandidates.forEach(attr => push(element.getAttribute(attr)));
+        (dictionary.ACCESSIBILITY_ATTRIBUTES || []).forEach(attr => push(element.getAttribute(attr)));
 
         const labelledBy = element.getAttribute('aria-labelledby');
         if (labelledBy) {
@@ -310,44 +307,36 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
       };
 
       const passesLengthConstraints = (text: string, type: string, options: { hasVisualEvidence?: boolean } = {}): boolean => {
-        const wordCount = text.split(/\s+/).filter(Boolean).length;
+        const wordCount = getWordCount(text);
         const hasVisualEvidence = options.hasVisualEvidence || false;
         
         if (wordCount === 0) {
           return hasVisualEvidence;
         }
-        if (type === 'testimonial') {
-          return wordCount >= 10 && wordCount <= 180;
+        
+        const bounds = dictionary.LENGTH_BOUNDS[type];
+        if (!bounds) {
+          return wordCount >= 3 && wordCount <= 250;
         }
-        if (type === 'review' || type === 'rating') {
-          return wordCount >= 5 && wordCount <= 120;
-        }
-        if (type === 'case-study') {
-          return wordCount >= 25 && wordCount <= 400;
-        }
-        if (type === 'customer-count') {
-          return wordCount >= 3 && wordCount <= 80;
-        }
-        if (type === 'trust-badge' || type === 'certification') {
-          return wordCount >= 2 && wordCount <= 60;
-        }
-        if (type === 'partnership') {
-          return wordCount >= 1 || hasVisualEvidence;
-        }
-        return wordCount >= 3 && wordCount <= 250;
+        
+        return wordCount >= bounds.minWords && wordCount <= bounds.maxWords;
       };
 
       const isGenericContent = (text: string, type: string): boolean => {
-        if (type === 'partnership' || type === 'news-mention') return false;
+        if ((dictionary.GENERIC_CONTENT.allowedTypes || []).includes(type)) return false;
         const trimmed = text.trim();
-        if (/^(home|about|contact|services|portfolio|blog|get started|learn more|our|we|you|your|build|design|develop|create|solution|offer|provide|built|terms|privacy|policy)/i.test(trimmed)) {
+        if (!trimmed) return true;
+        const lower = trimmed.toLowerCase();
+        if ((dictionary.GENERIC_CONTENT.prefixes || []).some(prefix => lower.startsWith(prefix))) {
           return true;
         }
-        if (/\b(click|button|link|menu|navigation|header|footer|sidebar|copyright|reserved|policy|terms|lansky|tech)\b/i.test(trimmed.toLowerCase())) {
+        if ((dictionary.GENERIC_CONTENT.keywords || []).some(keyword => lower.includes(keyword))) {
           return true;
         }
-        if (trimmed.includes('→') || trimmed.includes('↓')) return true;
-        if (/^\s*[💡👩🏻‍💻💰😤]/.test(trimmed)) return true;
+        if ((dictionary.GENERIC_CONTENT.arrowCharacters || []).some(char => trimmed.includes(char))) {
+          return true;
+        }
+        if (emojiPattern && emojiPattern.test(trimmed)) return true;
         return false;
       };
 
@@ -499,43 +488,15 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
         });
       };
 
-      // Define selectors for different types of social proof
-      const socialProofSelectors = [
-        // Testimonials and quotes
-        { selector: '.testimonial, .quote, .client-quote, [class*="testimonial"], [class*="quote"]', type: 'testimonial' },
-        { selector: 'blockquote', type: 'testimonial' },
-        
-        // Reviews and ratings
-        { selector: '.review, .rating, .stars, [class*="review"], [class*="rating"], [class*="star"]', type: 'review' },
-        
-        // Trust badges and certifications
-        { selector: '.trust-badge, .security, .ssl, .certified, [class*="trust"], [class*="secure"], [class*="ssl"]', type: 'trust-badge' },
-        
-        // Customer counts and stats
-        { selector: '.stats, .counter, .customer-count, [class*="stats"], [class*="counter"], [class*="customer"]', type: 'customer-count' },
-        
-        // Social media indicators
-        { selector: '.social, .followers, [class*="social"], [class*="follow"]', type: 'social-media' },
-        
-        // Logos and partnerships (case-insensitive to match classes like .UserLogo or .LogoGrid)
-        { selector: '.logo, .Logo, .partner, .featured, .UserLogo, .LogoGrid, [class*="logo" i], [class*="partner" i], [class*="featured" i]', type: 'partnership' },
-        
-        // Case studies
-        { selector: '.case-study, .success-story, [class*="case"], [class*="success"]', type: 'case-study' },
-        
-        // Press mentions
-        { selector: '.press, .media, .news, [class*="press"], [class*="media"], [class*="news"]', type: 'news-mention' }
-      ];
-
       // Process specific selectors
-      for (const { selector, type } of socialProofSelectors) {
+      for (const { selector, type } of selectorGroups) {
         const foundElements = document.querySelectorAll(selector);
         
         foundElements.forEach((element) => {
           if (processedElements.has(element)) return;
           
           const textContent = collectElementText(element);
-          const hasLogoVisuals = !!element.querySelector('img, svg, [data-logo], [class*="logo"]');
+          const hasLogoVisuals = hasLogoIndicators(element);
           let text = textContent;
           
           if (!text && hasLogoVisuals) {
@@ -582,8 +543,7 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
                          !!element.querySelector('.name, .author, [class*="name"], [class*="author"]');
           const hasCompany = /\b(CEO|CTO|Manager|Director|VP|President|Founder)\b/i.test(text) ||
                             !!element.querySelector('.company, .title, [class*="company"], [class*="title"]');
-          const hasRating = !!element.querySelector('.rating, .stars, [class*="rating"], [class*="star"]') ||
-                           /★|⭐|stars?|rating/i.test(text);
+          const hasRating = elementHasRatingIndicator(element, text);
 
           const socialProofElement = {
             type: finalType,
@@ -611,7 +571,7 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
       }
 
       // Additional text-based search for social proof patterns
-      const allTextElements = document.querySelectorAll('p, div, span, h1, h2, h3, h4, h5, h6');
+      const allTextElements = document.querySelectorAll(additionalTextSelector);
       allTextElements.forEach(element => {
         if (processedElements.has(element)) return;
         
@@ -622,17 +582,23 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
         if (lowerText.length < 30) return;
         
         // Look for customer count patterns
-        const hasCustomerCount = /\d+[,\.]?\d*\s*(customers?|users?|clients?|companies?|businesses?|people|members?)/i.test(text) ||
-                                /over\s+\d+|more than\s+\d+|\d+\+\s*(customers?|users?|clients?)/i.test(text);
+        const hasCustomerCount = matchPattern('customerCount', text);
         
         // Look for testimonial patterns - be more strict
-        const hasTestimonialPattern = (text.includes('"') || text.includes("'")) && 
-                                     text.length > 40 && text.length < 600 &&
-                                     /\b(amazing|excellent|great|fantastic|wonderful|outstanding|love|recommend|best|helped|improved|transformed|changed my|saved us|increased our)\b/i.test(text) &&
-                                     !/\b(we|our|us|you|your|lansky|tech|build|design|development|service|solution|offer|provide)\b/i.test(text.substring(0, 80));
+        const quoteDetection = dictionary.QUOTE_DETECTION;
+        const hasTestimonialPattern = quoteDetection
+          ? (text.includes('"') || text.includes("'")) &&
+            text.length > quoteDetection.minLength &&
+            text.length < Math.max(quoteDetection.maxLength, 600) &&
+            matchPattern(quoteDetection.positivePatternKey, text) &&
+            !(
+              quoteDetection.negativePrefixKey &&
+              matchPattern(quoteDetection.negativePrefixKey, text.substring(0, quoteDetection.negativePrefixWindow || 80))
+            )
+          : false;
         
         // Look for trust indicators
-        const hasTrustPattern = /ssl|secure|verified|trusted|guarantee|certified|award|safe|protected/i.test(text);
+        const hasTrustPattern = matchPattern('trustIndicator', text);
         
         if (hasCustomerCount || hasTestimonialPattern || hasTrustPattern) {
           const rect = element.getBoundingClientRect();
@@ -665,7 +631,7 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
           const hasImage = !!element.querySelector('img, .avatar, [class*="avatar"], [class*="photo"]');
           const hasName = /[A-Z][a-z]+ [A-Z][a-z]+/.test(text);
           const hasCompany = /\b(CEO|CTO|Manager|Director|VP|President|Founder)\b/i.test(text);
-          const hasRating = /★|⭐|stars?|rating/i.test(text);
+          const hasRating = elementHasRatingIndicator(element, text);
 
           const socialProofElement = {
             type: detectedType,
@@ -694,7 +660,7 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
       
       parseStructuredData();
       return elements;
-    }, viewport);
+    }, viewport, SOCIAL_PROOF_DICTIONARY);
 
     console.log(`📊 Found ${socialProofData.length} social proof elements`);
     
@@ -881,10 +847,8 @@ function calculateSocialProofScore(
   
   // Check for potential fake social proof patterns
   const suspiciousElements = elements.filter(e => 
-    e.text.includes('lorem ipsum') || 
-    e.text.includes('sample') || 
-    e.text.includes('placeholder') ||
-    e.credibilityScore < 30
+    e.credibilityScore < 30 ||
+    SUSPICIOUS_TEXT_PATTERNS.some(pattern => pattern.test(e.text))
   );
   
   if (suspiciousElements.length > 0) {
