@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/react'
 import './globals.css'
+import SocialFooter from '@/components/SocialFooter'
 
 export const metadata: Metadata = {
   title: 'Landing Page Report | lansky.tech',
@@ -38,6 +39,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="font-sans">
         {children}
+        <SocialFooter />
         <Analytics />
       </body>
     </html>

@@ -11,7 +11,6 @@ import ErrorNotification from '@/components/ErrorNotification'
 import FeaturesGrid from '@/components/FeaturesGrid'
 import TopPerformingPages from '@/components/TopPerformingPages'
 import AboutSection from '@/components/AboutSection'
-import SocialFooter from '@/components/SocialFooter'
 
 interface AnalysisState {
   isLoading: boolean
@@ -432,11 +431,9 @@ export default function Home() {
             <TopPerformingPages />
           </div>
         )}
-   
+  
         <AboutSection />
       </div>
-
-      <SocialFooter />
     </main>
   )
 }
