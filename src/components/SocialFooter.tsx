@@ -153,13 +153,13 @@ export default function SocialFooter() {
               Work with us
             </a>
             <span className="hidden text-gray-700 md:inline">•</span>
-            <a href="/reports" className="text-gray-500 transition hover:text-white">
+            <Link href="/reports" className="text-gray-500 transition hover:text-white">
               Recent analyses
-            </a>
+            </Link>
             <span className="hidden text-gray-700 md:inline">•</span>
-            <a href="/blueprint" className="text-gray-500 transition hover:text-white">
+            <Link href="/blueprint" className="text-gray-500 transition hover:text-white">
               Free blueprint
-            </a>
+            </Link>
           </div>
         </div>
       </div>
