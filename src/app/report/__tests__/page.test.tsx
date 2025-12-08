@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import AnalysisPage from '../../analysis/page';
+import AnalysisPage from '../page';
 
 // Mock Next.js router
 const mockPush = jest.fn();

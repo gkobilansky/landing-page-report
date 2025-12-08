@@ -1,4 +1,4 @@
-import { Page } from 'puppeteer-core';
+import type { Browser, Page } from 'puppeteer-core';
 import { createPuppeteerBrowser } from './puppeteer-config';
 import { SOCIAL_PROOF_DICTIONARY } from './social-proof-dictionary';
 
@@ -50,6 +50,7 @@ interface AnalysisOptions {
   };
   isHtml?: boolean;
   puppeteer?: {
+    browser?: Browser;
     forceBrowserless?: boolean;
   };
 }
@@ -61,7 +62,9 @@ const SUSPICIOUS_TEXT_PATTERNS = (SOCIAL_PROOF_DICTIONARY.TEXT_PATTERNS.suspicio
 export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOptions = {}): Promise<SocialProofAnalysisResult> {
   console.log('🔍 Social Proof Analysis starting...');
   
-  let browser;
+  const providedBrowser = options.puppeteer?.browser;
+  const shouldCloseBrowser = !providedBrowser;
+  let browser: Browser | null = providedBrowser || null;
   
   try {
     const viewport = options.viewport || { width: 1920, height: 1080 };
@@ -69,7 +72,11 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
     
     console.log('📱 Launching Puppeteer browser...');
     
-    browser = await createPuppeteerBrowser(options.puppeteer || {});
+    if (!browser) {
+      browser = await createPuppeteerBrowser({
+        forceBrowserless: options.puppeteer?.forceBrowserless
+      });
+    }
     
     const page = await browser.newPage();
     await page.setViewport(viewport);
@@ -742,7 +749,7 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
       recommendations: []
     };
   } finally {
-    if (browser) {
+    if (shouldCloseBrowser && browser) {
       console.log('🔒 Closing browser...');
       await browser.close();
       console.log('✨ Social proof analysis complete!');

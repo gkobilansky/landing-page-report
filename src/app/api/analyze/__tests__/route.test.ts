@@ -71,7 +71,7 @@ describe('/api/analyze', () => {
     let analysisIdCounter = 0;
     let cacheMap = new Map(); // Track analyses by URL for caching tests
     
-    mockSupabaseAdmin.from.mockImplementation((table) => {
+    mockSupabaseAdmin.from.mockImplementation((table: string) => {
       if (table === 'users') {
         return {
           select: jest.fn().mockReturnValue({
@@ -284,7 +284,10 @@ describe('/api/analyze', () => {
     // Verify all analysis functions were called
     expect(mockAnalyzeFontUsage).toHaveBeenCalledWith('https://example.com/', expect.any(Object));
     expect(mockAnalyzeImageOptimization).toHaveBeenCalledWith('https://example.com/', expect.any(Object));
-    expect(mockAnalyzePageSpeed).toHaveBeenCalledWith('https://example.com/');
+    expect(mockAnalyzePageSpeed).toHaveBeenCalledWith(
+      'https://example.com/',
+      expect.objectContaining({ puppeteer: expect.any(Object) })
+    );
     expect(mockAnalyzeWhitespace).toHaveBeenCalledWith('https://example.com/', expect.any(Object));
     expect(mockAnalyzeCTA).toHaveBeenCalledWith('https://example.com/', expect.any(Object));
     expect(mockAnalyzeSocialProof).toHaveBeenCalledWith('https://example.com/', expect.any(Object));
@@ -352,7 +355,10 @@ describe('/api/analyze', () => {
     expect(data.success).toBe(true);
     
     // Only page speed analysis should run
-    expect(mockAnalyzePageSpeed).toHaveBeenCalledWith('https://example.com/');
+    expect(mockAnalyzePageSpeed).toHaveBeenCalledWith(
+      'https://example.com/',
+      expect.objectContaining({ puppeteer: expect.any(Object) })
+    );
     expect(mockAnalyzeFontUsage).not.toHaveBeenCalled();
     expect(mockAnalyzeImageOptimization).not.toHaveBeenCalled();
     
@@ -651,7 +657,10 @@ describe('/api/analyze', () => {
       expect(data.fromCache).toBe(false);
       
       // Only page speed analysis should run
-      expect(mockAnalyzePageSpeed).toHaveBeenCalledWith('https://example.com/');
+      expect(mockAnalyzePageSpeed).toHaveBeenCalledWith(
+        'https://example.com/',
+        expect.objectContaining({ puppeteer: expect.any(Object) })
+      );
       expect(mockAnalyzeFontUsage).not.toHaveBeenCalled();
       
       expect(data.analysis.pageLoadSpeed).toBeDefined();

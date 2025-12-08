@@ -1,3 +1,4 @@
+import type { Browser } from 'puppeteer-core';
 import { analyzePageSpeedPuppeteer } from './page-speed-puppeteer';
 
 export interface PageSpeedMetrics {
@@ -21,6 +22,10 @@ interface PageSpeedOptions {
   };
   throttling?: 'mobile' | 'desktop' | 'none';
   timeout?: number;
+  puppeteer?: {
+    browser?: Browser;
+    forceBrowserless?: boolean;
+  };
 }
 
 export async function analyzePageSpeed(

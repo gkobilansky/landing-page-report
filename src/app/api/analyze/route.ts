@@ -8,12 +8,34 @@ import { analyzeSocialProof } from '@/lib/social-proof-analysis';
 import { supabaseAdmin } from '@/lib/supabase';
 import { captureAndStoreScreenshot } from '@/lib/screenshot-storage';
 import { extractPageMetadata } from '@/lib/page-metadata';
+import { createPuppeteerBrowser } from '@/lib/puppeteer-config';
+import type { Browser } from 'puppeteer-core';
 
 export async function POST(request: NextRequest) {
   console.log('🔥 API /analyze endpoint called')
   
   const startTime = Date.now();
   let analysisId: string | null = null;
+  let sharedBrowser: Browser | null = null;
+
+  const closeSharedBrowser = async () => {
+    if (sharedBrowser) {
+      try {
+        await sharedBrowser.close();
+      } catch (closeError) {
+        console.warn('⚠️ Failed to close shared browser cleanly:', closeError);
+      } finally {
+        sharedBrowser = null;
+      }
+    }
+  };
+
+  const getSharedBrowser = async (forceBrowserless?: boolean) => {
+    if (!sharedBrowser) {
+      sharedBrowser = await createPuppeteerBrowser({ forceBrowserless });
+    }
+    return sharedBrowser;
+  };
   
   try {
     console.log('📥 Parsing request body...')
@@ -208,6 +230,8 @@ export async function POST(request: NextRequest) {
               screenshotUrl = null;
             }
           }
+
+          await closeSharedBrowser();
           
           return NextResponse.json({
             success: true,
@@ -370,7 +394,10 @@ export async function POST(request: NextRequest) {
     if (shouldRun('speed') || shouldRun('pageSpeed')) {
       console.log('🔄 Starting page speed analysis...')
       try {
-        const pageSpeedResult = await analyzePageSpeed(validatedUrl.toString());
+        const browser = await getSharedBrowser(forceBrowserless);
+        const pageSpeedResult = await analyzePageSpeed(validatedUrl.toString(), {
+          puppeteer: { forceBrowserless, browser }
+        });
         analysisResult.pageLoadSpeed = {
           score: pageSpeedResult.score,
           metrics: pageSpeedResult.metrics,
@@ -398,8 +425,9 @@ export async function POST(request: NextRequest) {
 
     if (shouldRun('font')) {
       console.log('🔄 Starting font usage analysis...')
+      const browser = await getSharedBrowser(forceBrowserless);
       const fontUsageResult = await analyzeFontUsage(validatedUrl.toString(), {
-        puppeteer: { forceBrowserless }
+        puppeteer: { forceBrowserless, browser }
       });
       analysisResult.fontUsage = {
         score: fontUsageResult.score,
@@ -415,8 +443,9 @@ export async function POST(request: NextRequest) {
 
     if (shouldRun('image')) {
       console.log('🔄 Starting image optimization analysis...')
+      const browser = await getSharedBrowser(forceBrowserless);
       const imageOptimizationResult = await analyzeImageOptimization(validatedUrl.toString(), {
-        puppeteer: { forceBrowserless }
+        puppeteer: { forceBrowserless, browser }
       });
       analysisResult.imageOptimization = {
         score: imageOptimizationResult.score,
@@ -439,8 +468,9 @@ export async function POST(request: NextRequest) {
       
       try {
         console.log('🎯 Running CTA analysis...');
+        const browser = await getSharedBrowser(forceBrowserless);
         const ctaResult = await analyzeCTA(validatedUrl.toString(), {
-          puppeteer: { forceBrowserless }
+          puppeteer: { forceBrowserless, browser }
         });
         console.log(`✅ CTA analysis complete: ${ctaResult.ctas.length} CTAs found, score: ${ctaResult.score}`);
         
@@ -482,7 +512,7 @@ export async function POST(request: NextRequest) {
       try {
         const whitespaceResult = await analyzeWhitespace(validatedUrl.toString(), {
           screenshotUrl: screenshotResult?.blobUrl, // Use the captured screenshot
-          puppeteer: { forceBrowserless }
+          puppeteer: { forceBrowserless, browser: await getSharedBrowser(forceBrowserless) }
         });
         analysisResult.whitespaceAssessment = {
           score: whitespaceResult.score,
@@ -540,8 +570,9 @@ export async function POST(request: NextRequest) {
     if (shouldRun('social') || shouldRun('socialProof')) {
       console.log('🔄 Starting social proof analysis...')
       try {
+        const browser = await getSharedBrowser(forceBrowserless);
         const socialProofResult = await analyzeSocialProof(validatedUrl.toString(), {
-          puppeteer: { forceBrowserless }
+          puppeteer: { forceBrowserless, browser }
         });
         analysisResult.socialProof = {
           score: socialProofResult.score,
@@ -666,6 +697,8 @@ export async function POST(request: NextRequest) {
 
     console.log(`🎉 Analysis complete! Overall score: ${analysisResult.overallScore}/100`)
     console.log('📤 Sending response to client...')
+
+    await closeSharedBrowser();
     
     return NextResponse.json({
       success: true,
@@ -702,6 +735,7 @@ export async function POST(request: NextRequest) {
         console.error('❌ Failed to update error status in database:', dbError);
       }
     }
+    await closeSharedBrowser();
     
     return NextResponse.json(
       { error: 'Internal server error' },

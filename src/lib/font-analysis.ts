@@ -10,8 +10,11 @@ export interface FontAnalysisResult {
   recommendations: string[]
 }
 
+import type { Browser } from 'puppeteer-core';
+
 export interface FontAnalysisOptions {
   puppeteer?: {
+    browser?: Browser;
     forceBrowserless?: boolean;
   };
 }
@@ -20,8 +23,12 @@ export async function analyzeFontUsage(url: string, options: FontAnalysisOptions
   console.log(`🚀 Starting font analysis for: ${url}`)
   
   console.log('📱 Launching Puppeteer browser...')
-  
-  const browser = await createPuppeteerBrowser(options.puppeteer || {})
+
+  const providedBrowser = options.puppeteer?.browser;
+  const shouldCloseBrowser = !providedBrowser;
+  const browser = providedBrowser || await createPuppeteerBrowser({
+    forceBrowserless: options.puppeteer?.forceBrowserless
+  });
   
   try {
     console.log('🌐 Creating new page and navigating to URL...')
@@ -77,8 +84,10 @@ export async function analyzeFontUsage(url: string, options: FontAnalysisOptions
     }
     
   } finally {
-    console.log('🔒 Closing browser...')
-    await browser.close()
+    if (shouldCloseBrowser) {
+      console.log('🔒 Closing browser...')
+      await browser.close()
+    }
     console.log('✨ Font analysis complete!')
   }
 }

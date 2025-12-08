@@ -1,3 +1,4 @@
+import type { Browser } from 'puppeteer-core';
 import { createPuppeteerBrowser } from './puppeteer-config';
 
 export interface ImageOptimizationResult {
@@ -47,6 +48,7 @@ const MAX_REASONABLE_SIZE = 2000; // pixels
 
 export interface ImageOptimizationOptions {
   puppeteer?: {
+    browser?: Browser;
     forceBrowserless?: boolean;
   };
 }
@@ -54,10 +56,16 @@ export interface ImageOptimizationOptions {
 export async function analyzeImageOptimization(url: string, options: ImageOptimizationOptions = {}): Promise<ImageOptimizationResult> {
   console.log('🖼️ Starting image optimization analysis for:', url);
   
-  let browser;
+  const providedBrowser = options.puppeteer?.browser;
+  const shouldCloseBrowser = !providedBrowser;
+  let browser: Browser | null = providedBrowser || null;
   
   try {
-    browser = await createPuppeteerBrowser(options.puppeteer || {});
+    if (!browser) {
+      browser = await createPuppeteerBrowser({
+        forceBrowserless: options.puppeteer?.forceBrowserless
+      });
+    }
     
     const page = await browser.newPage();
     
@@ -205,7 +213,7 @@ export async function analyzeImageOptimization(url: string, options: ImageOptimi
     };
     
   } finally {
-    if (browser) {
+    if (shouldCloseBrowser && browser) {
       await browser.close();
     }
   }

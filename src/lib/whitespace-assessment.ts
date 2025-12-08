@@ -1,3 +1,4 @@
+import type { Browser } from 'puppeteer-core';
 import { createPuppeteerBrowser } from './puppeteer-config';
 
 // Conditional import for Jimp to avoid test environment issues
@@ -94,6 +95,7 @@ interface WhitespaceOptions {
   pixelThreshold?: number; // Pixel intensity threshold for content detection (0-255, default: 240)
   screenshotUrl?: string; // Use existing screenshot instead of capturing new one
   puppeteer?: {
+    browser?: Browser;
     forceBrowserless?: boolean;
   };
 }
@@ -381,7 +383,9 @@ export async function analyzeWhitespace(
   console.log(`🚀 Starting whitespace assessment for: ${options.isHtml ? 'HTML content' : urlOrHtml}`);
   const startTime = Date.now();
   
-  let browser;
+  const providedBrowser = options.puppeteer?.browser;
+  const shouldCloseBrowser = !providedBrowser;
+  let browser: Browser | null = providedBrowser || null;
   
   try {
     const viewport = options.viewport || { width: 1920, height: 1080 };
@@ -391,7 +395,11 @@ export async function analyzeWhitespace(
 
     console.log('📱 Launching Puppeteer browser...');
     
-    browser = await createPuppeteerBrowser(options.puppeteer || {});
+    if (!browser) {
+      browser = await createPuppeteerBrowser({
+        forceBrowserless: options.puppeteer?.forceBrowserless
+      });
+    }
 
     const page = await browser.newPage();
     await page.setViewport(viewport);
@@ -830,7 +838,7 @@ export async function analyzeWhitespace(
       loadTime
     };
   } finally {
-    if (browser) {
+    if (shouldCloseBrowser && browser) {
       await browser.close();
     }
   }

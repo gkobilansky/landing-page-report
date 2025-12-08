@@ -1,3 +1,4 @@
+import type { Browser } from 'puppeteer-core';
 import { createPuppeteerBrowser } from './puppeteer-config';
 
 export interface PageSpeedMetrics {
@@ -26,6 +27,10 @@ interface PageSpeedOptions {
   };
   throttling?: 'mobile' | 'desktop' | 'none';
   timeout?: number;
+  puppeteer?: {
+    browser?: Browser;
+    forceBrowserless?: boolean;
+  };
 }
 
 export async function analyzePageSpeedPuppeteer(
@@ -35,7 +40,9 @@ export async function analyzePageSpeedPuppeteer(
   console.log(`🚀 Starting Puppeteer-based page speed analysis for: ${url}`);
   const startTime = Date.now();
   
-  let browser;
+  const providedBrowser = options.puppeteer?.browser;
+  const shouldCloseBrowser = !providedBrowser;
+  let browser: Browser | null = providedBrowser || null;
   
   try {
     const viewport = options.viewport || { width: 1920, height: 1080 };
@@ -43,7 +50,11 @@ export async function analyzePageSpeedPuppeteer(
 
     console.log('📱 Launching Puppeteer browser...');
     
-    browser = await createPuppeteerBrowser();
+    if (!browser) {
+      browser = await createPuppeteerBrowser({
+        forceBrowserless: options.puppeteer?.forceBrowserless
+      });
+    }
 
     const page = await browser.newPage();
     await page.setViewport(viewport);
@@ -181,7 +192,7 @@ export async function analyzePageSpeedPuppeteer(
     console.error('❌ Puppeteer page speed analysis failed:', error);
     throw new Error(`Failed to analyze page speed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   } finally {
-    if (browser) {
+    if (shouldCloseBrowser && browser) {
       await browser.close();
     }
   }

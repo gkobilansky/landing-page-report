@@ -10,6 +10,7 @@ This summarizes how the analysis works today, based on the code in `src/app/api/
    - Create/find `users` record; create `analyses` record in `processing` state
    - Cache check (24h by URL, independent of user); return cached record if fresh
    - Capture full-page screenshot and update `analyses.screenshot_url`
+   - Lazily create a shared Puppeteer browser (honors `forceBrowserless`) and reuse it across all module runs; close it before responding, even on errors
    - Run modules (serially in current route): page speed, fonts, images, CTA, whitespace, social
    - Compute overall weighted score
    - Update `analyses` with per-module results and overall score; set `status=completed`
@@ -21,7 +22,7 @@ This summarizes how the analysis works today, based on the code in `src/app/api/
 - Page Speed (`src/lib/page-speed-analysis.ts`)
   - Puppeteer-based performance sampling (`page-speed-puppeteer.ts`)
   - Metrics approximations: LCP, FCP, CLS, TBT, size, resource count
-  - Converts to marketing-friendly metrics; returns `score`, `grade`, `issues`, `recommendations`, `loadTime`
+  - Converts to marketing-friendly metrics; returns `score`, `issues`, `recommendations`, `loadTime`
 - Fonts (`src/lib/font-analysis.ts`)
   - Counts unique `font-family` declarations; classifies system vs web fonts
   - Returns `score`, `fontFamilies`, counts, `issues`, `recommendations`
@@ -33,14 +34,13 @@ This summarizes how the analysis works today, based on the code in `src/app/api/
   - Returns `score`, `ctas[]`, `primaryCTA`, `issues`, `recommendations`
 - Whitespace (`src/lib/whitespace-assessment.ts`)
   - Grid-based density + spacing analysis + screenshot pixel whitespace
-  - Returns `score`, `grade`, `metrics`, `issues`, `recommendations`, `loadTime`
+  - Returns `score`, `metrics`, `issues`, `recommendations`, `loadTime`
 - Social Proof (`src/lib/social-proof-analysis.ts`)
   - Detects testimonials, reviews, trust badges, logos, counts; dedupes; returns `score`, `elements[]`, `summary`, `issues`, `recommendations`
 
-## Scoring and overall grade
+## Scoring
 - Weights (in route): speed 0.25, CTA 0.25, social 0.20, whitespace 0.15, images 0.10, fonts 0.05
 - Overall score = weighted average over available module scores (based on defined `score` fields)
-- Grade stored in DB is currently page speed's letter grade, not derived from overall score
 
 ## Component-based runs
 - Request can specify `component`. The route checks for names: `speed|pageSpeed`, `font`, `image`, `cta`, `whitespace|spacing`, `social|socialProof`.
@@ -51,12 +51,11 @@ This summarizes how the analysis works today, based on the code in `src/app/api/
 - If cached record lacks screenshot, a new screenshot is captured and the record is updated
 
 ## Database writes (selected)
-- `analyses`: `page_speed_analysis`, `font_analysis`, `image_analysis`, `cta_analysis`, `whitespace_analysis`, `social_proof_analysis`, `overall_score`, `grade`, `screenshot_url`, timestamps
+- `analyses`: `page_speed_analysis`, `font_analysis`, `image_analysis`, `cta_analysis`, `whitespace_analysis`, `social_proof_analysis`, `overall_score`, `screenshot_url`, timestamps
 - `schema_data` is stored from `extractPageMetadata()`
 
 ## Known constraints
-- Modules run sequentially in `route.ts`; each module launches Puppeteer independently
-- Mixed result contracts across modules (grade/time/confidence not uniform)
-- Overall grade not derived from overall score
+- Modules run sequentially in `route.ts`; a shared Puppeteer instance reduces launch overhead but analysis is still serialized
+- Mixed result contracts across modules (time/confidence not uniform)
 - Component filter names mismatched vs docs
-- Heuristics uncalibrated (e.g., whitespace pixel threshold, CLS/TBT approximations) 
+- Heuristics uncalibrated (e.g., whitespace pixel threshold, CLS/TBT approximations)
