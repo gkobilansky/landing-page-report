@@ -22,7 +22,7 @@
     "@vercel/analytics": "^1.5.0",
     "@vercel/blob": "^1.1.1",
     "jimp": "^0.22.12",
-    "next": "^15.3.6",
+    "next": "15.3.8",
     "puppeteer-core": "^24.9.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
