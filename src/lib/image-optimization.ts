@@ -1,5 +1,6 @@
 import type { Browser } from 'puppeteer-core';
 import { createPuppeteerBrowser } from './puppeteer-config';
+import { getImageRecommendations, RecommendationContext } from './recommendations';
 
 export interface ImageOptimizationResult {
   score: number | null;
@@ -375,64 +376,59 @@ function analyzeImages(images: ImageData[]): ImageOptimizationResult {
     }
   });
   
-  // Generate issues and recommendations
+  // Generate issues based on analysis
   const legacyCount = images.length - modernFormats;
   if (legacyCount > 0) {
     issues.push(`${legacyCount} images using legacy formats (JPG/PNG)`);
-    recommendations.push('Convert JPG/PNG images to WebP or AVIF for better compression');
   }
-  
+
   const missingAltCount = images.length - withAltText;
   if (missingAltCount > 0) {
     issues.push(`${missingAltCount} images missing descriptive alt text`);
-    recommendations.push('Add descriptive alt text to all images for accessibility');
   }
-  
+
   const oversizedCount = images.length - appropriatelySized;
   const unknownSizeCount = images.filter(img => img.width === 0 || img.height === 0).length;
-  
+
   if (oversizedCount > unknownSizeCount) {
     issues.push(`${oversizedCount - unknownSizeCount} images may be oversized (>2000px width/height)`);
-    recommendations.push('Resize large images to appropriate dimensions for web display');
   }
-  
+
   if (unknownSizeCount > 0) {
     issues.push(`${unknownSizeCount} images have unknown dimensions`);
-    recommendations.push('Ensure all images have proper width/height attributes');
   }
-  
-  // New responsive image issues and recommendations
+
+  // New responsive image issues
   const imgTagsCount = images.filter(img => img.type === 'img').length;
   const nonResponsiveCount = imgTagsCount - responsiveImages;
-  
+
   if (nonResponsiveCount > 0 && imgTagsCount > 0) {
     issues.push(`${nonResponsiveCount} images missing responsive attributes (srcset/sizes)`);
-    recommendations.push('Add srcset and sizes attributes to images for responsive loading');
   }
-  
+
   const improperlyLoadedCount = imgTagsCount - properlyLoadedImages;
   if (improperlyLoadedCount > 0 && imgTagsCount > 0) {
     issues.push(`${improperlyLoadedCount} images have suboptimal loading strategy`);
-    recommendations.push('Use loading="lazy" for below-fold images and loading="eager" for above-fold images');
   }
-  
+
   // Above-fold images without fetchpriority="high"
   const aboveFoldImgTags = images.filter(img => img.type === 'img' && img.isAboveFold);
   const aboveFoldWithoutPriority = aboveFoldImgTags.filter(img => img.fetchPriority !== 'high').length;
-  
+
   if (aboveFoldWithoutPriority > 0 && aboveFoldImages > 0) {
     issues.push(`${aboveFoldWithoutPriority} above-fold images missing fetchpriority="high"`);
-    recommendations.push('Add fetchpriority="high" to above-fold images for faster loading');
   }
-  
-  // Placeholder usage recommendations
-  if (placeholderUsage < imgTagsCount && imgTagsCount > 0) {
-    if (placeholderUsage === 0) {
-      recommendations.push('Consider adding blur placeholders for better perceived performance');
-    } else {
-      recommendations.push('Consider adding blur placeholders to more images for better perceived performance');
-    }
-  }
+
+  // Generate recommendations using the new system
+  const ctx: RecommendationContext = {
+    totalImages: images.length,
+    imagesWithoutAlt: missingAltCount,
+    oversizedImages: oversizedCount - unknownSizeCount,
+    nonModernFormatCount: legacyCount,
+    imageFormats: Object.keys(formatBreakdown),
+  };
+  const generatedRecs = getImageRecommendations(ctx);
+  recommendations.push(...generatedRecs.legacyStrings);
   
   // Calculate weighted score with new responsive metrics
   const formatScore = (modernFormats / images.length) * 25; // Reduced from 40%

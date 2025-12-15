@@ -1,4 +1,5 @@
 import { createPuppeteerBrowser } from './puppeteer-config';
+import { getFontRecommendations, RecommendationContext } from './recommendations';
 
 export interface FontAnalysisResult {
   fontFamilies: string[]
@@ -69,7 +70,12 @@ export async function analyzeFontUsage(url: string, options: FontAnalysisOptions
     
     const score = calculateFontScore(systemFontCount, webFontCount)
     const issues = generateIssues(systemFontCount, webFontCount)
-    const recommendations = generateRecommendations(systemFontCount, webFontCount)
+    const recommendations = generateRecommendationsForFonts(
+      systemFontCount,
+      webFontCount,
+      fontFamilyDeclarations,
+      url
+    )
     
     console.log(`💯 Font usage score: ${score}/100 (${fontCount} font families)`)
     
@@ -175,26 +181,19 @@ function generateIssues(systemFontCount: number, webFontCount: number): string[]
   return issues
 }
 
-function generateRecommendations(systemFontCount: number, webFontCount: number): string[] {
-  const recommendations: string[] = []
-  
-  if (webFontCount > 2) {
-    recommendations.push('Limit web fonts to 1-2 maximum for optimal performance.')
-    recommendations.push('Consider using system fonts for body text and save web fonts for headings or branding.')
+function generateRecommendationsForFonts(
+  systemFontCount: number,
+  webFontCount: number,
+  fontFamilies: string[],
+  url?: string
+): string[] {
+  const ctx: RecommendationContext = {
+    systemFontCount,
+    webFontCount,
+    fontFamilies,
+    url,
   }
-  
-  if (systemFontCount > 3 && webFontCount <= 2) {
-    recommendations.push('Consider consolidating system fonts for better visual consistency.')
-  }
-  
-  if (webFontCount === 0) {
-    recommendations.push('Excellent choice using system fonts! This ensures fast loading and good cross-platform compatibility.')
-  } else if (webFontCount <= 2 && systemFontCount <= 3) {
-    recommendations.push('Good font balance! Limited web fonts with system font fallbacks provide good performance.')
-  }
-  
-  recommendations.push('Use font weights and styles instead of different font families for text variation.')
-  recommendations.push('Ensure web fonts are preloaded and have proper fallbacks to system fonts.')
-  
-  return recommendations
+
+  const result = getFontRecommendations(ctx)
+  return result.legacyStrings
 }
