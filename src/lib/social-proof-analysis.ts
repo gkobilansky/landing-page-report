@@ -1,6 +1,7 @@
 import type { Browser, Page } from 'puppeteer-core';
 import { createPuppeteerBrowser } from './puppeteer-config';
 import { SOCIAL_PROOF_DICTIONARY } from './social-proof-dictionary';
+import { getSocialProofRecommendations, RecommendationContext } from './recommendations';
 
 export interface SocialProofElement {
   type: 'testimonial' | 'review' | 'rating' | 'trust-badge' | 'customer-count' | 'social-media' | 'certification' | 'partnership' | 'case-study' | 'news-mention';
@@ -758,27 +759,34 @@ export async function analyzeSocialProof(urlOrHtml: string, options: AnalysisOpt
 }
 
 function calculateSocialProofScore(
-  elements: SocialProofElement[], 
+  elements: SocialProofElement[],
   summary: any,
-  issues: string[], 
+  issues: string[],
   recommendations: string[]
 ): number {
   let score = 100;
-  
+
   // Base penalties for missing social proof
   if (elements.length === 0) {
     issues.push('No social proof elements found on the page');
-    recommendations.push('Add testimonials, reviews, or trust badges to build credibility');
+    // Generate recommendations with new system
+    const ctx: RecommendationContext = {
+      testimonialCount: 0,
+      reviewCount: 0,
+      trustBadgeCount: 0,
+      hasAboveFoldProof: false,
+    };
+    const generatedRecs = getSocialProofRecommendations(ctx);
+    recommendations.push(...generatedRecs.legacyStrings);
     return 0;
   }
-  
+
   // No social proof above the fold
   if (summary.aboveFoldElements === 0) {
     issues.push('No social proof elements above the fold');
-    recommendations.push('Place at least one testimonial or trust indicator above the fold');
     score -= 30;
   }
-  
+
   // Diversity of social proof types
   const typesPresent = [
     summary.testimonials > 0,
@@ -787,82 +795,83 @@ function calculateSocialProofScore(
     summary.customerCounts > 0,
     summary.certifications > 0
   ].filter(Boolean).length;
-  
+
   if (typesPresent < 2) {
     issues.push('Limited variety of social proof types');
-    recommendations.push('Add different types of social proof (testimonials, reviews, trust badges, customer counts)');
     score -= 20;
   } else if (typesPresent >= 4) {
     score += 10; // Bonus for good variety
   }
-  
+
   // Quality assessment
   const highQualityElements = elements.filter(e => e.credibilityScore >= 70);
   if (highQualityElements.length === 0) {
     issues.push('Social proof elements lack credibility indicators');
-    recommendations.push('Add names, companies, photos, and specific details to testimonials');
     score -= 25;
   }
-  
+
   // Testimonial quality
   if (summary.testimonials > 0) {
     const testimonialElements = elements.filter(e => e.type === 'testimonial');
     const qualityTestimonials = testimonialElements.filter(e => e.hasName && e.credibilityScore >= 60);
-    
+
     if (qualityTestimonials.length / testimonialElements.length < 0.5) {
       issues.push('Testimonials lack names or credibility indicators');
-      recommendations.push('Include full names, titles, and companies in testimonials');
       score -= 15;
     }
   } else {
-    recommendations.push('Add customer testimonials with names and companies for stronger credibility');
     score -= 15;
   }
-  
+
   // Trust indicators
   if (summary.trustBadges === 0 && summary.certifications === 0) {
-    recommendations.push('Add security badges or certifications to increase trust');
     score -= 10;
   }
-  
+
   // Customer count/stats
   if (summary.customerCounts === 0) {
-    recommendations.push('Display customer counts or usage statistics to show popularity');
     score -= 10;
   }
-  
+
   // Element visibility
   const lowVisibilityElements = elements.filter(e => e.visibility === 'low');
   if (lowVisibilityElements.length > elements.length * 0.3) {
     issues.push('Some social proof elements have low visibility');
-    recommendations.push('Make social proof elements more prominent with better styling and positioning');
     score -= 10;
   }
-  
+
   // Positioning assessment
   const heroElements = elements.filter(e => e.context === 'hero' && e.isAboveFold);
   if (heroElements.length === 0) {
-    recommendations.push('Place social proof in the hero section for maximum impact');
     score -= 5;
   }
-  
+
   // Bonus for excellent implementation
-  if (elements.length >= 3 && summary.aboveFoldElements >= 2 && 
+  if (elements.length >= 3 && summary.aboveFoldElements >= 2 &&
       highQualityElements.length >= 2 && typesPresent >= 3) {
     score += 10;
   }
-  
+
   // Check for potential fake social proof patterns
-  const suspiciousElements = elements.filter(e => 
+  const suspiciousElements = elements.filter(e =>
     e.credibilityScore < 30 ||
     SUSPICIOUS_TEXT_PATTERNS.some(pattern => pattern.test(e.text))
   );
-  
+
   if (suspiciousElements.length > 0) {
     issues.push('Some social proof elements appear generic or low-quality');
-    recommendations.push('Replace generic social proof with authentic customer feedback');
     score -= 15;
   }
-  
+
+  // Generate recommendations using the new system
+  const ctx: RecommendationContext = {
+    testimonialCount: summary.testimonials,
+    reviewCount: summary.reviews,
+    trustBadgeCount: summary.trustBadges + summary.certifications,
+    hasAboveFoldProof: summary.aboveFoldElements > 0,
+  };
+  const generatedRecs = getSocialProofRecommendations(ctx);
+  recommendations.push(...generatedRecs.legacyStrings);
+
   return Math.max(0, Math.min(100, Math.round(score)));
 }

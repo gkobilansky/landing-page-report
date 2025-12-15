@@ -1,5 +1,6 @@
 import type { Browser } from 'puppeteer-core';
 import { createPuppeteerBrowser } from './puppeteer-config';
+import { getWhitespaceRecommendations, RecommendationContext } from './recommendations';
 
 // Conditional import for Jimp to avoid test environment issues
 let Jimp: any;
@@ -1034,86 +1035,74 @@ function generateWhitespaceRecommendations(
   metrics: AdaptiveWhitespaceMetrics
 ): { issues: string[]; recommendations: string[] } {
   const issues: string[] = [];
-  const recommendations: string[] = [];
 
   // Check for clutter flags (PRD requirement)
   if (metrics.clutterScore > 70) {
     issues.push('Page layout appears cluttered');
-    recommendations.push('Significantly reduce element density and increase spacing');
   } else if (metrics.clutterScore > 50) {
     issues.push('Page layout shows signs of clutter');
-    recommendations.push('Consider reducing element density per section');
   }
 
   // Element density issues
   if (metrics.elementDensityPerSection.maxDensity > 12) {
     issues.push(`High element density detected (${metrics.elementDensityPerSection.maxDensity} elements in one section)`);
-    recommendations.push('Reduce element density per section');
   }
 
-  // Spacing-specific issues and recommendations
+  // Spacing-specific issues
   if (!metrics.spacingAnalysis.headlineSpacing.adequate) {
     issues.push('Insufficient spacing around headlines');
-    recommendations.push('Increase margins around headlines (minimum 16px top, 12px bottom)');
   }
 
   if (!metrics.spacingAnalysis.ctaSpacing.adequate) {
     issues.push('CTA elements lack adequate spacing');
-    recommendations.push('Add more spacing around call-to-action buttons (minimum 20px margins)');
   }
 
   if (!metrics.spacingAnalysis.contentBlockSpacing.adequate) {
     issues.push('Insufficient spacing between content blocks');
-    recommendations.push('Increase spacing between major content sections (minimum 16px)');
   }
 
   if (!metrics.spacingAnalysis.lineHeight.adequate) {
     issues.push('Line height too tight for optimal readability');
-    recommendations.push('Increase line height to at least 1.4 for better text readability');
   }
 
   // Theme-aware whitespace ratio issues
-  const displayRatio = metrics.screenshotAnalysis.visualWhitespaceRatio > 0 
-    ? metrics.screenshotAnalysis.visualWhitespaceRatio 
+  const displayRatio = metrics.screenshotAnalysis.visualWhitespaceRatio > 0
+    ? metrics.screenshotAnalysis.visualWhitespaceRatio
     : metrics.whitespaceRatio;
-  const analysisMethod = metrics.screenshotAnalysis.visualWhitespaceRatio > 0 
-    ? `visual analysis with ${metrics.theme} theme (threshold: ${metrics.adaptiveThreshold})` 
+  const analysisMethod = metrics.screenshotAnalysis.visualWhitespaceRatio > 0
+    ? `visual analysis with ${metrics.theme} theme (threshold: ${metrics.adaptiveThreshold})`
     : 'DOM analysis';
 
-  // Use theme-specific thresholds for recommendations
+  // Use theme-specific thresholds for issues
   const thresholds = {
-    light: { very: 0.30, low: 0.35, moderate: 0.45, target: 35 },
-    dark:  { very: 0.24, low: 0.30, moderate: 0.40, target: 30 },
-    mixed: { very: 0.28, low: 0.33, moderate: 0.43, target: 33 }
+    light: { very: 0.30, low: 0.35, moderate: 0.45 },
+    dark:  { very: 0.24, low: 0.30, moderate: 0.40 },
+    mixed: { very: 0.28, low: 0.33, moderate: 0.43 }
   };
-  
+
   const t = thresholds[metrics.theme];
 
   if (displayRatio < t.very) {
     issues.push(`Very low whitespace ratio (${Math.round(displayRatio * 100)}% via ${analysisMethod})`);
-    recommendations.push(`Significantly increase whitespace - aim for at least ${t.target}% of page area (adjusted for ${metrics.theme} theme)`);
   } else if (displayRatio < t.low) {
     issues.push(`Low whitespace ratio (${Math.round(displayRatio * 100)}% via ${analysisMethod})`);
-    recommendations.push(`Increase overall whitespace for better visual breathing room (${metrics.theme} theme detected)`);
   } else if (displayRatio < t.moderate) {
     issues.push(`Moderate whitespace ratio (${Math.round(displayRatio * 100)}% via ${analysisMethod})`);
-    recommendations.push(`Consider adding more spacing between content sections (optimized for ${metrics.theme} theme)`);
   }
 
-  // Contrast ratio feedback
+  // Contrast ratio issues
   if (metrics.contrastRatio < 3) {
     issues.push('Poor contrast ratio - text may be difficult to read');
-    recommendations.push('Improve color contrast between text and background elements');
-  } else if (metrics.contrastRatio >= 7) {
-    recommendations.push(`Excellent contrast ratio (${metrics.contrastRatio.toFixed(1)}) - great accessibility!`);
   }
 
-  // Positive feedback for good whitespace
-  if (issues.length === 0) {
-    recommendations.push('Excellent whitespace usage! Content is well-spaced and digestible');
-  } else if (issues.length <= 2 && metrics.clutterScore < 30) {
-    recommendations.push('Good whitespace foundation - minor improvements will enhance readability');
-  }
+  // Generate recommendations using the new system
+  const ctx: RecommendationContext = {
+    whitespaceRatio: displayRatio,
+    contentDensity: metrics.elementDensityPerSection.averageDensity / 20, // Normalize to 0-1 range
+    avgLineHeight: metrics.spacingAnalysis.lineHeight.average,
+    clutterScore: metrics.clutterScore,
+  };
+  const generatedRecs = getWhitespaceRecommendations(ctx);
 
-  return { issues, recommendations };
+  return { issues, recommendations: generatedRecs.legacyStrings };
 }

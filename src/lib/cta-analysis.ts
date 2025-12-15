@@ -1,6 +1,7 @@
 import type { Browser, Page } from 'puppeteer-core';
 import { createPuppeteerBrowser } from './puppeteer-config';
 import { CTA_DICTIONARY, CTA_HELPERS } from './cta-dictionary';
+import { getCtaRecommendations, RecommendationContext } from './recommendations';
 
 export interface CTAElement {
   text: string;
@@ -577,87 +578,96 @@ function identifyPrimaryCTA(ctas: CTAElement[]): CTAElement | undefined {
 }
 
 function calculateCTAScore(
-  ctas: CTAElement[], 
-  primaryCTA: CTAElement | undefined, 
-  issues: string[], 
+  ctas: CTAElement[],
+  primaryCTA: CTAElement | undefined,
+  issues: string[],
   recommendations: string[]
 ): number {
   let score = 100;
-  
+
   const aboveFoldCTAs = ctas.filter(cta => cta.isAboveFold);
-  
+
+  // Collect weak action words for context
+  const weakActionWords: string[] = [];
+
   // If we have CTAs but none above the fold
   if (ctas.length > 0 && aboveFoldCTAs.length === 0) {
     issues.push('No clear CTA above the fold');
     score -= 50;
   }
-  
+
   // No primary CTA identified but we have CTAs
   if (!primaryCTA && ctas.length > 0) {
     issues.push('No clear primary CTA identified');
     score -= 30;
-    recommendations.push('Add a prominent primary CTA with strong action words');
   }
-  
+
   // No CTAs at all - severe penalty
   if (ctas.length === 0) {
     issues.push('No CTAs found on page');
     score -= 50;
   }
-  
+
   // Too many competing CTAs above the fold
   if (aboveFoldCTAs.length > 4) {
     issues.push(`Too many competing CTAs above the fold (${aboveFoldCTAs.length} found) - focus on 1-2 primary actions`);
     score -= 20;
   }
-  
+
   // Evaluate primary CTA quality
   if (primaryCTA) {
     if (primaryCTA.actionStrength === 'weak') {
       issues.push('Primary CTA uses weak action words');
       score -= 15;
-      recommendations.push('Use stronger action words like "Get", "Start", "Buy", or "Join"');
+      weakActionWords.push(primaryCTA.text);
     }
-    
+
     if (primaryCTA.visibility === 'low') {
       issues.push('Primary CTA has low visibility');
       score -= 20;
-      recommendations.push('Make primary CTA more prominent with better contrast, size, and spacing');
     }
-    
+
     if (!primaryCTA.hasValueProposition) {
       score -= 10;
-      recommendations.push('Add value proposition near your primary CTA');
     }
-    
+
     if (primaryCTA.context === 'footer') {
       issues.push('Primary CTA is located in footer instead of above the fold');
       score -= 25;
     }
   }
-  
+
   // Check for mobile optimization
   const mobileOptimizedCTAs = ctas.filter(cta => cta.mobileOptimized);
   if (mobileOptimizedCTAs.length < ctas.length * 0.8) {
     issues.push('Some CTAs may not be mobile-optimized');
     score -= 10;
-    recommendations.push('Ensure CTAs have adequate touch target size (44px+) and readable text (16px+)');
   }
-  
+
   // Check for very weak CTAs (only weak action words)
   const weakCTAs = ctas.filter(cta => cta.actionStrength === 'weak' && cta.type === 'other');
   if (weakCTAs.length === ctas.length && ctas.length > 0) {
     score -= 15; // Additional penalty for only having weak CTAs
   }
-  
+
   // Bonus for best practices
   if (primaryCTA?.hasGuarantee) {
     score += 5;
   }
-  
+
   if (primaryCTA?.hasValueProposition && primaryCTA?.context === 'hero') {
     score += 5;
   }
-  
+
+  // Generate recommendations using the new system
+  const ctx: RecommendationContext = {
+    ctaCount: ctas.length,
+    ctasAboveFold: aboveFoldCTAs.length,
+    primaryCtaDetected: !!primaryCTA,
+    weakActionWords: weakActionWords.length > 0 ? weakActionWords : undefined,
+  };
+  const generatedRecs = getCtaRecommendations(ctx);
+  recommendations.push(...generatedRecs.legacyStrings);
+
   return Math.max(0, Math.min(100, Math.round(score)));
 }

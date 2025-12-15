@@ -1,5 +1,6 @@
 import type { Browser } from 'puppeteer-core';
 import { createPuppeteerBrowser } from './puppeteer-config';
+import { getSpeedRecommendations, RecommendationContext } from './recommendations';
 
 export interface PageSpeedMetrics {
   lcp: number; // Largest Contentful Paint (ms)
@@ -238,67 +239,53 @@ function generateRecommendations(
   metrics: PageSpeedMetrics
 ): { issues: string[]; recommendations: string[] } {
   const issues: string[] = [];
-  const recommendations: string[] = [];
 
-  // Convert load time to seconds for easier understanding
-  const loadTimeSeconds = Math.round(metrics.lcp / 1000 * 10) / 10;
-
-  // LCP analysis with marketing language
+  // LCP issues
   if (metrics.lcp > 4000) {
-    issues.push(`Slow loading - visitors may leave before seeing your content`);
-    recommendations.push('Optimize your main images and content to load faster');
-    recommendations.push('Use modern image formats to reduce loading time');
-    recommendations.push('Consider professional image optimization services');
+    issues.push('Slow loading - visitors may leave before seeing your content');
   } else if (metrics.lcp > 2500) {
-    issues.push(`Moderate loading speed - room for improvement`);
-    recommendations.push('Optimize above-the-fold content to improve first impressions');
+    issues.push('Moderate loading speed - room for improvement');
   }
 
-  // FCP analysis with marketing focus
+  // FCP issues
   if (metrics.fcp > 3000) {
-    issues.push(`Takes too long to show content - impacts user experience`);
-    recommendations.push('Streamline your page code to show content faster');
-    recommendations.push('Remove unnecessary scripts that slow down loading');
+    issues.push('Takes too long to show content - impacts user experience');
   } else if (metrics.fcp > 1800) {
-    issues.push(`Content appears slowly - could be faster`);
-    recommendations.push('Optimize code delivery for better user experience');
+    issues.push('Content appears slowly - could be faster');
   }
 
-  // CLS analysis with user experience focus
+  // CLS issues
   if (metrics.cls > 0.25) {
-    issues.push(`Page content jumps around - creates confusing experience`);
-    recommendations.push('Fix layout shifts to improve user experience');
-    recommendations.push('Reserve proper space for images and dynamic content');
+    issues.push('Page content jumps around - creates confusing experience');
   } else if (metrics.cls > 0.1) {
-    issues.push(`Some content shifting detected - minor user experience issue`);
-    recommendations.push('Minimize unexpected content movements');
+    issues.push('Some content shifting detected - minor user experience issue');
   }
 
-  // Resource count analysis
+  // Resource count issues
   if (metrics.resourceCount > 100) {
-    issues.push(`Too many files slow down your page - simplify for better performance`);
-    recommendations.push('Combine and optimize your website files');
-    recommendations.push('Remove unnecessary plugins and scripts');
+    issues.push('Too many files slow down your page - simplify for better performance');
   }
 
-  // Page size analysis with business impact
+  // Page size issues
   const sizeMB = Math.round((metrics.totalSize / (1024 * 1024)) * 10) / 10;
   if (sizeMB > 5) {
     issues.push(`Heavy page (${sizeMB}MB) - visitors on mobile may struggle`);
-    recommendations.push('Compress images and files to improve mobile experience');
-    recommendations.push('Consider a faster hosting solution');
-    recommendations.push('Mobile users may abandon slow-loading pages');
   } else if (sizeMB > 3) {
     issues.push(`Moderate page size (${sizeMB}MB) - could be lighter`);
-    recommendations.push('Further optimize images for better mobile performance');
   }
 
-  // Add business-focused recommendations for good performance
-  if (issues.length === 0) {
-    recommendations.push('Excellent performance! Your page loads fast enough to keep visitors engaged');
-    recommendations.push('Fast loading pages improve SEO rankings and conversion rates');
-    recommendations.push('Monitor performance regularly to maintain this competitive advantage');
-  }
+  // Calculate score for context
+  const score = calculatePerformanceScore(metrics);
 
-  return { issues, recommendations };
+  // Generate recommendations using the new system
+  const ctx: RecommendationContext = {
+    lcp: metrics.lcp,
+    fcp: metrics.fcp,
+    cls: metrics.cls,
+    ttfb: metrics.domContentLoaded, // Using domContentLoaded as proxy for TTFB
+    speedScore: score,
+  };
+  const generatedRecs = getSpeedRecommendations(ctx);
+
+  return { issues, recommendations: generatedRecs.legacyStrings };
 }
