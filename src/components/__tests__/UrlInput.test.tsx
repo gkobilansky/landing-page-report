@@ -12,17 +12,16 @@ describe('UrlInput Component', () => {
 
   it('should render input field and analyze button', () => {
     render(<UrlInput onAnalyze={mockOnAnalyze} />)
-    
-    expect(screen.getByLabelText(/enter your landing page url/i)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('https://your-landing-page.com')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /analyze/i })).toBeInTheDocument()
+
+    expect(screen.getByPlaceholderText('stripe.com')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /run your report/i })).toBeInTheDocument()
   })
 
   it('should show error when submitting empty URL', async () => {
     render(<UrlInput onAnalyze={mockOnAnalyze} />)
-    
-    fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
-    
+
+    fireEvent.click(screen.getByRole('button', { name: /run your report/i }))
+
     await waitFor(() => {
       expect(screen.getByText('Please enter a URL')).toBeInTheDocument()
     })
@@ -31,12 +30,12 @@ describe('UrlInput Component', () => {
 
   it('should show error for invalid URL', async () => {
     render(<UrlInput onAnalyze={mockOnAnalyze} />)
-    
-    fireEvent.change(screen.getByPlaceholderText('https://your-landing-page.com'), {
+
+    fireEvent.change(screen.getByPlaceholderText('stripe.com'), {
       target: { value: 'not a valid url with spaces' }
     })
-    fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
-    
+    fireEvent.click(screen.getByRole('button', { name: /run your report/i }))
+
     await waitFor(() => {
       expect(screen.getByText('Please enter a valid URL')).toBeInTheDocument()
     })
@@ -45,12 +44,12 @@ describe('UrlInput Component', () => {
 
   it('should call onAnalyze with valid URL', async () => {
     render(<UrlInput onAnalyze={mockOnAnalyze} />)
-    
-    fireEvent.change(screen.getByPlaceholderText('https://your-landing-page.com'), {
+
+    fireEvent.change(screen.getByPlaceholderText('stripe.com'), {
       target: { value: 'https://example.com' }
     })
-    fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
-    
+    fireEvent.click(screen.getByRole('button', { name: /run your report/i }))
+
     await waitFor(() => {
       expect(mockOnAnalyze).toHaveBeenCalledWith('https://example.com')
     })
@@ -58,12 +57,12 @@ describe('UrlInput Component', () => {
 
   it('should add https:// prefix to URL without protocol', async () => {
     render(<UrlInput onAnalyze={mockOnAnalyze} />)
-    
-    fireEvent.change(screen.getByPlaceholderText('https://your-landing-page.com'), {
+
+    fireEvent.change(screen.getByPlaceholderText('stripe.com'), {
       target: { value: 'example.com' }
     })
-    fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
-    
+    fireEvent.click(screen.getByRole('button', { name: /run your report/i }))
+
     await waitFor(() => {
       expect(mockOnAnalyze).toHaveBeenCalledWith('https://example.com')
     })
@@ -71,36 +70,36 @@ describe('UrlInput Component', () => {
 
   it('should show loading state when isLoading is true', () => {
     render(<UrlInput onAnalyze={mockOnAnalyze} isLoading={true} />)
-    
+
     expect(screen.getByRole('button', { name: /analyzing.../i })).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('https://your-landing-page.com')).toBeDisabled()
+    expect(screen.getByPlaceholderText('stripe.com')).toBeDisabled()
     expect(screen.getByRole('button')).toBeDisabled()
   })
 
   it('should clear error when typing new URL', async () => {
     render(<UrlInput onAnalyze={mockOnAnalyze} />)
-    
+
     // Trigger error first
-    fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
+    fireEvent.click(screen.getByRole('button', { name: /run your report/i }))
     await waitFor(() => {
       expect(screen.getByText('Please enter a URL')).toBeInTheDocument()
     })
-    
+
     // Type new URL - error should clear
-    fireEvent.change(screen.getByPlaceholderText('https://your-landing-page.com'), {
+    fireEvent.change(screen.getByPlaceholderText('stripe.com'), {
       target: { value: 'https://example.com' }
     })
-    
+
     expect(screen.queryByText('Please enter a URL')).not.toBeInTheDocument()
   })
 
   it('should handle form submission with Enter key', async () => {
     render(<UrlInput onAnalyze={mockOnAnalyze} />)
-    
-    const input = screen.getByPlaceholderText('https://your-landing-page.com')
+
+    const input = screen.getByPlaceholderText('stripe.com')
     fireEvent.change(input, { target: { value: 'https://example.com' } })
     fireEvent.submit(input.closest('form')!)
-    
+
     await waitFor(() => {
       expect(mockOnAnalyze).toHaveBeenCalledWith('https://example.com')
     })
@@ -108,12 +107,12 @@ describe('UrlInput Component', () => {
 
   it('should accept http:// URLs as valid', async () => {
     render(<UrlInput onAnalyze={mockOnAnalyze} />)
-    
-    fireEvent.change(screen.getByPlaceholderText('https://your-landing-page.com'), {
+
+    fireEvent.change(screen.getByPlaceholderText('stripe.com'), {
       target: { value: 'http://example.com' }
     })
-    fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
-    
+    fireEvent.click(screen.getByRole('button', { name: /run your report/i }))
+
     await waitFor(() => {
       expect(mockOnAnalyze).toHaveBeenCalledWith('http://example.com')
     })
@@ -121,12 +120,12 @@ describe('UrlInput Component', () => {
 
   it('should reject incomplete URLs without proper domain', async () => {
     render(<UrlInput onAnalyze={mockOnAnalyze} />)
-    
-    fireEvent.change(screen.getByPlaceholderText('https://your-landing-page.com'), {
+
+    fireEvent.change(screen.getByPlaceholderText('stripe.com'), {
       target: { value: 'https://stripe' }
     })
-    fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
-    
+    fireEvent.click(screen.getByRole('button', { name: /run your report/i }))
+
     await waitFor(() => {
       expect(screen.getByText('Please enter a valid URL')).toBeInTheDocument()
     })
@@ -135,12 +134,12 @@ describe('UrlInput Component', () => {
 
   it('should reject URLs without domain extension', async () => {
     render(<UrlInput onAnalyze={mockOnAnalyze} />)
-    
-    fireEvent.change(screen.getByPlaceholderText('https://your-landing-page.com'), {
+
+    fireEvent.change(screen.getByPlaceholderText('stripe.com'), {
       target: { value: 'github' }
     })
-    fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
-    
+    fireEvent.click(screen.getByRole('button', { name: /run your report/i }))
+
     await waitFor(() => {
       expect(screen.getByText('Please enter a valid URL')).toBeInTheDocument()
     })
@@ -149,12 +148,12 @@ describe('UrlInput Component', () => {
 
   it('should reject URLs ending with dot', async () => {
     render(<UrlInput onAnalyze={mockOnAnalyze} />)
-    
-    fireEvent.change(screen.getByPlaceholderText('https://your-landing-page.com'), {
+
+    fireEvent.change(screen.getByPlaceholderText('stripe.com'), {
       target: { value: 'https://example.com.' }
     })
-    fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
-    
+    fireEvent.click(screen.getByRole('button', { name: /run your report/i }))
+
     await waitFor(() => {
       expect(screen.getByText('Please enter a valid URL')).toBeInTheDocument()
     })

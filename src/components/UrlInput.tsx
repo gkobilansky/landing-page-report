@@ -84,7 +84,7 @@ export default function UrlInput({ onAnalyze, isLoading = false, initialUrl = ''
             Analyze Your Landing Page Now
           </h2>
           <p className="text-gray-400 text-lg">
-            Enter your URL below and get your free report in about a minute
+            Test one of your landing pages for a free report
           </p>
         </div>
 
@@ -96,7 +96,7 @@ export default function UrlInput({ onAnalyze, isLoading = false, initialUrl = ''
               id="url"
               value={url}
               onChange={handleUrlChange}
-              placeholder="https://your-landing-page.com"
+              placeholder="stripe.com"
               className="flex-1 px-6 py-4 bg-gray-700/50 border border-gray-600 text-gray-100 rounded-xl focus:ring-2 focus:ring-[#FFCC00] focus:border-[#FFCC00] outline-none placeholder-gray-400 text-lg"
               disabled={isLoading}
             />
