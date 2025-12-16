@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useRef, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import UrlInput from '@/components/UrlInput'
 import EmailInput from '@/components/EmailInput'
@@ -27,8 +27,12 @@ interface AnalysisState {
   siteDescription: string | null
 }
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const [initialUrl, setInitialUrl] = useState<string>('')
+  const hasAutoTriggered = useRef(false)
+
   const [analysisState, setAnalysisState] = useState<AnalysisState>({
     isLoading: false,
     error: null,
@@ -66,6 +70,26 @@ export default function Home() {
 
     fetchStats()
   }, [])
+
+  // Handle URL parameter for auto-analysis
+  useEffect(() => {
+    const urlParam = searchParams.get('url')
+    if (urlParam && !hasAutoTriggered.current) {
+      // Normalize the URL
+      let normalizedUrl = urlParam.trim()
+      if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+        normalizedUrl = 'https://' + normalizedUrl
+      }
+
+      setInitialUrl(normalizedUrl)
+      hasAutoTriggered.current = true
+
+      // Auto-trigger analysis after a brief delay to ensure component is mounted
+      setTimeout(() => {
+        handleAnalyze(normalizedUrl)
+      }, 100)
+    }
+  }, [searchParams])
 
   const handleAnalyze = async (url: string, forceRescan = false) => {
     setAnalysisState({
@@ -330,9 +354,10 @@ export default function Home() {
             </p>
 
             {/* URL Input */}
-            <UrlInput 
-              onAnalyze={handleAnalyze} 
+            <UrlInput
+              onAnalyze={handleAnalyze}
               isLoading={analysisState.isLoading}
+              initialUrl={initialUrl}
             />
 
               {/* Statistics */}
@@ -435,5 +460,23 @@ export default function Home() {
         <AboutSection />
       </div>
     </main>
+  )
+}
+
+// Wrap in Suspense for useSearchParams
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen">
+        <div className="container mx-auto px-4 py-20 text-center">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-700 rounded w-64 mx-auto mb-4"></div>
+            <div className="h-4 bg-gray-700 rounded w-96 mx-auto"></div>
+          </div>
+        </div>
+      </main>
+    }>
+      <HomeContent />
+    </Suspense>
   )
 }

@@ -1,14 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface UrlInputProps {
   onAnalyze: (url: string) => void
   isLoading?: boolean
+  initialUrl?: string
 }
 
-export default function UrlInput({ onAnalyze, isLoading = false }: UrlInputProps) {
-  const [url, setUrl] = useState('')
+export default function UrlInput({ onAnalyze, isLoading = false, initialUrl = '' }: UrlInputProps) {
+  const [url, setUrl] = useState(initialUrl)
+
+  // Update url when initialUrl changes
+  useEffect(() => {
+    if (initialUrl) {
+      setUrl(initialUrl)
+    }
+  }, [initialUrl])
   const [error, setError] = useState('')
 
   const validateUrl = (input: string): boolean => {
