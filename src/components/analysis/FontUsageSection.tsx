@@ -33,7 +33,7 @@ export default function FontUsageSection({ fontUsage }: FontUsageSectionProps) {
   const groupedRecommendations = groupByImpact(categorized.recommendations)
 
   return (
-    <div id="fonts-section">
+    <div>
       <div className={`rounded-xl border p-8 ${categoryConfig.bgClass} ${categoryConfig.borderClass}`}>
         <SectionHeader 
           title="Font Usage" 

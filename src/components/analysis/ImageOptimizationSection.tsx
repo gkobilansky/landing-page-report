@@ -34,7 +34,7 @@ export default function ImageOptimizationSection({ imageOptimization }: ImageOpt
   const groupedRecommendations = groupByImpact(categorized.recommendations)
 
   return (
-    <div id="images-section">
+    <div>
       <div className={`rounded-xl border p-8 ${categoryConfig.bgClass} ${categoryConfig.borderClass}`}>
         <SectionHeader 
           title="Image Optimization" 

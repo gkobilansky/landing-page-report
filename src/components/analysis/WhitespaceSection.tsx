@@ -47,7 +47,7 @@ export default function WhitespaceSection({ whitespaceAssessment }: WhitespaceSe
   const groupedRecommendations = groupByImpact(categorized.recommendations)
 
   return (
-    <div id="whitespace-section">
+    <div>
       <div className={`rounded-xl border p-8 ${categoryConfig.bgClass} ${categoryConfig.borderClass}`}>
         <SectionHeader 
           title="Whitespace Assessment" 

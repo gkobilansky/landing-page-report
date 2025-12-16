@@ -53,7 +53,7 @@ export default function CTASection({ ctaAnalysis }: CTASectionProps) {
   const groupedRecommendations = groupByImpact(categorized.recommendations)
 
   return (
-    <div id="cta-section">
+    <div>
       <div className={`rounded-xl border p-8 ${categoryConfig.bgClass} ${categoryConfig.borderClass}`}>
         <SectionHeader 
           title="CTA Analysis" 

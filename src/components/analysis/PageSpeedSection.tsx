@@ -35,7 +35,7 @@ export default function PageSpeedSection({ pageLoadSpeed }: PageSpeedSectionProp
   const groupedRecommendations = groupByImpact(categorized.recommendations)
 
   return (
-    <div id="speed-section">
+    <div>
       <div className={`rounded-xl border p-8 ${categoryConfig.bgClass} ${categoryConfig.borderClass}`}>
         <SectionHeader 
           title="Page Load Speed" 

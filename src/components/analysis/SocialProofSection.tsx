@@ -57,7 +57,7 @@ export default function SocialProofSection({ socialProof }: SocialProofSectionPr
   const groupedRecommendations = groupByImpact(categorized.recommendations)
 
   return (
-    <div id="social-section">
+    <div>
       <div className={`rounded-xl border p-8 ${categoryConfig.bgClass} ${categoryConfig.borderClass}`}>
         <SectionHeader 
           title="Social Proof" 
