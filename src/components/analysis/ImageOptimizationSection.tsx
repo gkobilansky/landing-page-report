@@ -1,8 +1,8 @@
 import React from 'react'
 import SectionHeader from '../ui/SectionHeader'
 import { MetricsGrid, MetricItem } from '../ui/MetricsGrid'
-import AccordionSection from '../AccordionSection'
-import { categorizeContent, groupByImpact } from '@/lib/impact-analyzer'
+import { IssuesWithFixesList } from '../IssueWithFix'
+import { pairIssuesWithFixes } from '@/lib/issue-fix-pairer'
 
 interface ImageOptimization {
   score: number
@@ -29,19 +29,18 @@ const categoryConfig = {
 }
 
 export default function ImageOptimizationSection({ imageOptimization }: ImageOptimizationSectionProps) {
-  const categorized = categorizeContent(imageOptimization.issues, imageOptimization.recommendations)
-  const groupedIssues = groupByImpact(categorized.issues)
-  const groupedRecommendations = groupByImpact(categorized.recommendations)
+  const pairs = pairIssuesWithFixes(imageOptimization.issues, imageOptimization.recommendations)
+  const hasHighImpact = pairs.some(p => p.impact === 'High')
 
   return (
-    <div id="images-section">
+    <div>
       <div className={`rounded-xl border p-8 ${categoryConfig.bgClass} ${categoryConfig.borderClass}`}>
-        <SectionHeader 
-          title="Image Optimization" 
-          score={imageOptimization.score} 
-          config={categoryConfig} 
+        <SectionHeader
+          title="Image Optimization"
+          score={imageOptimization.score}
+          config={categoryConfig}
         />
-        
+
         <MetricsGrid className="mb-6">
           <MetricItem label="Total Images" value={imageOptimization.totalImages} />
           <MetricItem label="Modern Formats" value={imageOptimization.modernFormats} />
@@ -49,28 +48,10 @@ export default function ImageOptimizationSection({ imageOptimization }: ImageOpt
           <MetricItem label="Properly Sized" value={imageOptimization.appropriatelySized} />
         </MetricsGrid>
 
-        <div className="space-y-4">
-          {Object.entries(groupedIssues).map(([impact, items]) => (
-            <AccordionSection
-              key={`images-issues-${impact}`}
-              title="Issues"
-              impact={impact as any}
-              items={items}
-              type="issues"
-              defaultOpen={impact === 'High'}
-            />
-          ))}
-          {Object.entries(groupedRecommendations).map(([impact, items]) => (
-            <AccordionSection
-              key={`images-recommendations-${impact}`}
-              title="Recommendations"
-              impact={impact as any}
-              items={items}
-              type="recommendations"
-              defaultOpen={impact === 'High'}
-            />
-          ))}
-        </div>
+        <IssuesWithFixesList
+          pairs={pairs}
+          defaultOpen={hasHighImpact}
+        />
       </div>
     </div>
   )

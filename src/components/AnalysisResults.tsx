@@ -6,6 +6,7 @@ import WhitespaceSection from './analysis/WhitespaceSection'
 import ImageOptimizationSection from './analysis/ImageOptimizationSection'
 import FontUsageSection from './analysis/FontUsageSection'
 import ScreenshotSection from './analysis/ScreenshotSection'
+import CollapsibleSection, { COLLAPSE_THRESHOLD } from './CollapsibleSection'
 
 interface AnalysisResult {
   url: string
@@ -127,7 +128,57 @@ interface AnalysisResultsProps {
   analysisId?: string
 }
 
-
+// Section configurations for CollapsibleSection
+const sectionConfigs = {
+  cta: {
+    title: 'CTA Analysis',
+    icon: '🎯',
+    colorTheme: {
+      bgClass: 'bg-purple-950/20',
+      borderClass: 'border-purple-800/40'
+    }
+  },
+  social: {
+    title: 'Social Proof',
+    icon: '⭐',
+    colorTheme: {
+      bgClass: 'bg-amber-950/20',
+      borderClass: 'border-amber-800/40'
+    }
+  },
+  speed: {
+    title: 'Page Load Speed',
+    icon: '⚡',
+    colorTheme: {
+      bgClass: 'bg-blue-950/20',
+      borderClass: 'border-blue-800/40'
+    }
+  },
+  images: {
+    title: 'Image Optimization',
+    icon: '🖼️',
+    colorTheme: {
+      bgClass: 'bg-cyan-950/20',
+      borderClass: 'border-cyan-800/40'
+    }
+  },
+  whitespace: {
+    title: 'Whitespace',
+    icon: '📐',
+    colorTheme: {
+      bgClass: 'bg-indigo-950/20',
+      borderClass: 'border-indigo-800/40'
+    }
+  },
+  fonts: {
+    title: 'Font Usage',
+    icon: '🔤',
+    colorTheme: {
+      bgClass: 'bg-rose-950/20',
+      borderClass: 'border-rose-800/40'
+    }
+  }
+}
 
 export default function AnalysisResults({ result, analysisId }: AnalysisResultsProps) {
   return (
@@ -135,32 +186,80 @@ export default function AnalysisResults({ result, analysisId }: AnalysisResultsP
       <div className="grid grid-cols-1 gap-8">
         {/* CTA Analysis - 25% weight */}
         {result.ctaAnalysis && (
-          <CTASection ctaAnalysis={result.ctaAnalysis} />
+          <CollapsibleSection
+            title={sectionConfigs.cta.title}
+            score={result.ctaAnalysis.score}
+            icon={sectionConfigs.cta.icon}
+            colorTheme={sectionConfigs.cta.colorTheme}
+            sectionId="cta-section"
+          >
+            <CTASection ctaAnalysis={result.ctaAnalysis} />
+          </CollapsibleSection>
         )}
 
-          {/* Social Proof - 20% weight */}
+        {/* Social Proof - 20% weight */}
         {result.socialProof && (
-          <SocialProofSection socialProof={result.socialProof} />
+          <CollapsibleSection
+            title={sectionConfigs.social.title}
+            score={result.socialProof.score}
+            icon={sectionConfigs.social.icon}
+            colorTheme={sectionConfigs.social.colorTheme}
+            sectionId="social-section"
+          >
+            <SocialProofSection socialProof={result.socialProof} />
+          </CollapsibleSection>
         )}
 
         {/* Page Load Speed - 25% weight */}
         {result.pageLoadSpeed && (
-          <PageSpeedSection pageLoadSpeed={result.pageLoadSpeed} />
+          <CollapsibleSection
+            title={sectionConfigs.speed.title}
+            score={result.pageLoadSpeed.score}
+            icon={sectionConfigs.speed.icon}
+            colorTheme={sectionConfigs.speed.colorTheme}
+            sectionId="speed-section"
+          >
+            <PageSpeedSection pageLoadSpeed={result.pageLoadSpeed} />
+          </CollapsibleSection>
         )}
 
-         {/* Image Optimization - 10% weight */}
+        {/* Image Optimization - 10% weight */}
         {result.imageOptimization && (
-          <ImageOptimizationSection imageOptimization={result.imageOptimization} />
+          <CollapsibleSection
+            title={sectionConfigs.images.title}
+            score={result.imageOptimization.score}
+            icon={sectionConfigs.images.icon}
+            colorTheme={sectionConfigs.images.colorTheme}
+            sectionId="images-section"
+          >
+            <ImageOptimizationSection imageOptimization={result.imageOptimization} />
+          </CollapsibleSection>
         )}
 
         {/* Whitespace Assessment - 15% weight */}
         {result.whitespaceAssessment && (
-          <WhitespaceSection whitespaceAssessment={result.whitespaceAssessment} />
+          <CollapsibleSection
+            title={sectionConfigs.whitespace.title}
+            score={result.whitespaceAssessment.score}
+            icon={sectionConfigs.whitespace.icon}
+            colorTheme={sectionConfigs.whitespace.colorTheme}
+            sectionId="whitespace-section"
+          >
+            <WhitespaceSection whitespaceAssessment={result.whitespaceAssessment} />
+          </CollapsibleSection>
         )}
 
         {/* Font Usage - 5% weight */}
         {result.fontUsage && (
-          <FontUsageSection fontUsage={result.fontUsage} />
+          <CollapsibleSection
+            title={sectionConfigs.fonts.title}
+            score={result.fontUsage.score}
+            icon={sectionConfigs.fonts.icon}
+            colorTheme={sectionConfigs.fonts.colorTheme}
+            sectionId="fonts-section"
+          >
+            <FontUsageSection fontUsage={result.fontUsage} />
+          </CollapsibleSection>
         )}
       </div>
 

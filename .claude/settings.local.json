@@ -44,7 +44,8 @@
       "Bash(find:*)",
       "Bash(mv:*)",
       "Bash(npx supabase:*)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "WebSearch"
     ],
     "deny": []
   },

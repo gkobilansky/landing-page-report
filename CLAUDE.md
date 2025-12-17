@@ -73,10 +73,22 @@ src/
 ├── app/
 │   ├── layout.tsx          # Root layout
 │   ├── page.tsx            # Home page
-│   ├── tool/               # Analysis tool pages
+│   ├── reports/            # Report pages (gallery + individual)
 │   └── api/                # API routes
-├── components/             # Reusable components
-├── lib/                    # Utilities and configurations
+├── components/
+│   ├── analysis/           # Section components (CTA, Speed, etc.)
+│   ├── ui/                 # UI primitives (ScoreBadge, MetricsGrid, etc.)
+│   ├── IssueWithFix.tsx    # Issue→fix pair display
+│   ├── PriorityInsight.tsx # Priority message component
+│   ├── PriorityFixList.tsx # Top 3 fixes cards
+│   ├── CollapsibleSection.tsx # Auto-collapse wrapper
+│   └── ScoreBar.tsx        # Sticky navigation bar
+├── lib/
+│   ├── priority-insight.ts # Priority calculation logic
+│   ├── issue-fix-pairer.ts # Issue-to-fix matching
+│   ├── verdict.ts          # Score-to-verdict mapping
+│   ├── impact-analyzer.ts  # Impact level categorization
+│   └── [analysis modules]  # CTA, speed, images, etc.
 └── types/                  # TypeScript type definitions
 ```
 
@@ -181,9 +193,14 @@ src/
 
 ### Frontend Components
 - **Main Page** (`src/app/page.tsx`): URL input and results display with proper API response handling
-- **AnalysisResults** (`src/components/AnalysisResults.tsx`): Comprehensive results display with score badges
+- **AnalysisResults** (`src/components/AnalysisResults.tsx`): Comprehensive results display with collapsible sections
 - **UrlInput** (`src/components/UrlInput.tsx`): Enhanced URL validation and submission form with domain extension requirements
-- **Individual Reports** (`src/app/reports/[id]/page.tsx`): Enhanced with schema.org data for branded report titles (e.g., "Stripe Landing Page Report")
+- **Individual Reports** (`src/app/reports/[id]/page.tsx`): Priority-first UX with verdict badge, priority insight, and sticky navigation
+- **PriorityInsight** (`src/components/PriorityInsight.tsx`): Displays #1 priority fix message in hero section
+- **PriorityFixList** (`src/components/PriorityFixList.tsx`): Top 3 actionable fixes as cards
+- **CollapsibleSection** (`src/components/CollapsibleSection.tsx`): Auto-collapsing wrapper for high-scoring sections
+- **IssueWithFix** (`src/components/IssueWithFix.tsx`): Consolidated issue→fix pair display
+- **ScoreBar** (`src/components/ScoreBar.tsx`): Sticky navigation with status indicators and overall score
 
 ## Current Status
 
@@ -208,6 +225,44 @@ src/
 - ✅ **Branded Report Titles** - Individual reports now use organization names from schema data (e.g., "Stripe Landing Page Report")
 - ✅ **Database Schema Enhancement** - Added `schema_data` JSONB field with GIN indexing
 - ✅ **Comprehensive Test Coverage** - Updated all tests for schema functionality including error handling
+
+### Report UX Redesign (Complete)
+The report page has been completely redesigned to transform from a "wall of data" into an actionable, prioritized experience:
+
+#### Epic 1: Priority-First Hero Experience
+- **Verdict Badge** - Single-word verdict (Critical/Fair/Good/Excellent) with semantic colors next to overall score
+- **Priority Insight** - Prominent message telling users their #1 priority fix immediately
+- **Utility**: `src/lib/verdict.ts`, `src/lib/priority-insight.ts`
+- **Component**: `src/components/PriorityInsight.tsx`
+
+#### Epic 2: Smart Section Collapsing
+- **Auto-collapse** - Sections scoring ≥85 are collapsed by default to reduce noise
+- **Expand on demand** - Users can expand any section to see full details
+- **Component**: `src/components/CollapsibleSection.tsx`
+
+#### Epic 3: Actionable Fix List
+- **Priority Fixes** - Top 3 fixes displayed as actionable cards replacing generic Executive Summary
+- **Severity indicators** - Critical/High/Medium badges for each fix
+- **Component**: `src/components/PriorityFixList.tsx`
+
+#### Epic 4: Sticky Navigation & Polish
+- **Sticky ScoreBar** - Navigation bar sticks to top when scrolling
+- **Status indicators** - Visual checkmarks/exclamation marks on ScoreBar items
+- **Overall score in nav** - Always visible context while scrolling
+- **Mobile responsive** - All components work well on mobile devices
+
+#### Epic 5: Consolidated Issue+Fix Display
+- **Problem→Solution pairs** - Each issue is paired directly with its relevant fix
+- **Intelligent matching** - Keyword-based pairing of issues to recommendations
+- **Reduced cognitive load** - No more looking back and forth between separate lists
+- **Utility**: `src/lib/issue-fix-pairer.ts`
+- **Component**: `src/components/IssueWithFix.tsx`
+
+#### Design Principles Applied
+- **Inverted pyramid**: Most critical info at top
+- **5-second rule**: Key takeaway visible immediately
+- **Progressive disclosure**: Details available on demand
+- **Reduced cognitive load**: Focus on 3 priorities, not 6 sections
 
 ## API Usage Examples
 

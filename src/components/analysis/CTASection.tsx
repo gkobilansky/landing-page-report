@@ -1,8 +1,8 @@
 import React from 'react'
 import SectionHeader from '../ui/SectionHeader'
 import CategoryTag from '../ui/CategoryTag'
-import AccordionSection from '../AccordionSection'
-import { categorizeContent, groupByImpact } from '@/lib/impact-analyzer'
+import { IssuesWithFixesList } from '../IssueWithFix'
+import { pairIssuesWithFixes } from '@/lib/issue-fix-pairer'
 
 interface CTAAnalysis {
   score: number
@@ -48,17 +48,16 @@ function getScoreBarColor(score: number): string {
 }
 
 export default function CTASection({ ctaAnalysis }: CTASectionProps) {
-  const categorized = categorizeContent(ctaAnalysis.issues, ctaAnalysis.recommendations)
-  const groupedIssues = groupByImpact(categorized.issues)
-  const groupedRecommendations = groupByImpact(categorized.recommendations)
+  const pairs = pairIssuesWithFixes(ctaAnalysis.issues, ctaAnalysis.recommendations)
+  const hasHighImpact = pairs.some(p => p.impact === 'High')
 
   return (
-    <div id="cta-section">
+    <div>
       <div className={`rounded-xl border p-8 ${categoryConfig.bgClass} ${categoryConfig.borderClass}`}>
-        <SectionHeader 
-          title="CTA Analysis" 
-          score={ctaAnalysis.score} 
-          config={categoryConfig} 
+        <SectionHeader
+          title="CTA Analysis"
+          score={ctaAnalysis.score}
+          config={categoryConfig}
         />
 
         {/* Two Column Layout */}
@@ -72,7 +71,7 @@ export default function CTASection({ ctaAnalysis }: CTASectionProps) {
                   &ldquo;{ctaAnalysis.primaryCTA.text}&rdquo;
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-2.5">
-                  <div 
+                  <div
                     className={`${getScoreBarColor(ctaAnalysis.score)} h-2.5 rounded-full transition-all duration-300`}
                     style={{width: `${ctaAnalysis.score}%`}}
                   ></div>
@@ -122,28 +121,10 @@ export default function CTASection({ ctaAnalysis }: CTASectionProps) {
           </div>
         </div>
 
-        <div className="space-y-4">
-          {Object.entries(groupedIssues).map(([impact, items]) => (
-            <AccordionSection
-              key={`cta-issues-${impact}`}
-              title="Issues"
-              impact={impact as any}
-              items={items}
-              type="issues"
-              defaultOpen={impact === 'High'}
-            />
-          ))}
-          {Object.entries(groupedRecommendations).map(([impact, items]) => (
-            <AccordionSection
-              key={`cta-recommendations-${impact}`}
-              title="Recommendations"
-              impact={impact as any}
-              items={items}
-              type="recommendations"
-              defaultOpen={impact === 'High'}
-            />
-          ))}
-        </div>
+        <IssuesWithFixesList
+          pairs={pairs}
+          defaultOpen={hasHighImpact}
+        />
       </div>
     </div>
   )

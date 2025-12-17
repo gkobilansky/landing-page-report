@@ -8,6 +8,9 @@ import AnalysisResults from '@/components/AnalysisResults'
 import EmailInput from '@/components/EmailInput'
 import AlgorithmModal, { AlgorithmModalButton } from '@/components/AlgorithmModal'
 import ScoreBar from '@/components/ScoreBar'
+import PriorityInsight from '@/components/PriorityInsight'
+import PriorityFixList from '@/components/PriorityFixList'
+import { getVerdict } from '@/lib/verdict'
 
 interface AnalysisData {
   id: string
@@ -249,8 +252,13 @@ export default function IndividualReportPage() {
             {/* Score and share section */}
             <div className="flex flex-row sm:flex-col items-center justify-center sm:justify-start gap-4 lg:order-3 lg:flex-shrink-0 bg-gray-800/30 rounded-lg p-4 sm:bg-transparent sm:p-0">
               <div className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-brand-yellow">{analysis.overall_score}/100</div>
-                <div className="text-xs sm:text-sm text-gray-400">Overall Score</div>
+                <div className="flex items-center justify-center gap-3">
+                  <div className="text-3xl sm:text-4xl font-bold text-brand-yellow">{analysis.overall_score}/100</div>
+                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getVerdict(analysis.overall_score).bgClass} ${getVerdict(analysis.overall_score).colorClass}`}>
+                    {getVerdict(analysis.overall_score).text}
+                  </span>
+                </div>
+                <div className="text-xs sm:text-sm text-gray-400 mt-1">Overall Score</div>
               </div>
               
               {/* Share Button */}
@@ -269,28 +277,36 @@ export default function IndividualReportPage() {
               </button>     
             </div>
           </div>
+
+          {/* Priority Insight */}
+          <PriorityInsight
+            analysisResult={analysisResult}
+            overallScore={analysis.overall_score}
+          />
         </div>
 
-        {/* Report Summary */}
+        {/* Priority Fixes */}
         <div className="w-full max-w-6xl mx-auto">
           <div className="rounded-lg border border-gray-700 p-8 mb-6" style={{ backgroundColor: 'var(--color-bg-card)' }}>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-              <h2 className="text-2xl font-bold text-gray-100">Executive Summary</h2>
+              <h2 className="text-2xl font-bold text-gray-100">Priority Fixes</h2>
               <aside>
-                <AlgorithmModalButton 
+                <AlgorithmModalButton
                   onClick={() => setShowAlgorithmModal(true)}
                   className="text-sm text-gray-400 hover:text-gray-300"
                   variant="compact"
                 />
               </aside>
             </div>
-            
-            <p className="text-gray-300 text-lg leading-relaxed mb-8">
-              We&apos;ve run {cleanAnalysisUrl} through a series of automated tests analyzing the most important conversion elements: <em className="text-gray-200">speed, call to action, social proof and plenty of space.</em>
+
+            <p className="text-gray-300 text-base leading-relaxed mb-6">
+              Focus on these high-impact improvements to boost your conversion rate.
             </p>
-            <p className="text-gray-300 text-lg mb-8">
-               
-            </p>
+
+            {/* Priority Fix List */}
+            <div className="mb-8">
+              <PriorityFixList analysisResult={analysisResult} />
+            </div>
 
             {/* Score Bar */}
             <ScoreBar
@@ -301,7 +317,7 @@ export default function IndividualReportPage() {
               whitespaceAssessment={analysisResult.whitespaceAssessment}
               socialProof={analysisResult.socialProof}
             />
-            
+
             {!hasSignedUpThisSession && (
               <div className="mt-8">
                 <p className="text-gray-300 text-base leading-relaxed">
@@ -347,9 +363,21 @@ export default function IndividualReportPage() {
           </div>
         )}
 
-        <AlgorithmModal 
+        <AlgorithmModal
           isOpen={showAlgorithmModal}
           onClose={() => setShowAlgorithmModal(false)}
+        />
+
+        {/* Sticky Score Bar */}
+        <ScoreBar
+          pageSpeed={analysisResult.pageLoadSpeed}
+          fontUsage={analysisResult.fontUsage}
+          imageOptimization={analysisResult.imageOptimization}
+          ctaAnalysis={analysisResult.ctaAnalysis}
+          whitespaceAssessment={analysisResult.whitespaceAssessment}
+          socialProof={analysisResult.socialProof}
+          overallScore={analysis.overall_score}
+          sticky={true}
         />
 
         {/* Analysis Results */}
