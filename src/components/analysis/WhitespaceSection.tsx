@@ -1,8 +1,8 @@
 import React from 'react'
 import SectionHeader from '../ui/SectionHeader'
 import { MetricsGrid, MetricItem } from '../ui/MetricsGrid'
-import AccordionSection from '../AccordionSection'
-import { categorizeContent, groupByImpact } from '@/lib/impact-analyzer'
+import { IssuesWithFixesList } from '../IssueWithFix'
+import { pairIssuesWithFixes } from '@/lib/issue-fix-pairer'
 
 interface WhitespaceAssessment {
   score: number
@@ -42,19 +42,18 @@ const categoryConfig = {
 }
 
 export default function WhitespaceSection({ whitespaceAssessment }: WhitespaceSectionProps) {
-  const categorized = categorizeContent(whitespaceAssessment.issues, whitespaceAssessment.recommendations)
-  const groupedIssues = groupByImpact(categorized.issues)
-  const groupedRecommendations = groupByImpact(categorized.recommendations)
+  const pairs = pairIssuesWithFixes(whitespaceAssessment.issues, whitespaceAssessment.recommendations)
+  const hasHighImpact = pairs.some(p => p.impact === 'High')
 
   return (
     <div>
       <div className={`rounded-xl border p-8 ${categoryConfig.bgClass} ${categoryConfig.borderClass}`}>
-        <SectionHeader 
-          title="Whitespace Assessment" 
-          score={whitespaceAssessment.score} 
-          config={categoryConfig} 
+        <SectionHeader
+          title="Whitespace Assessment"
+          score={whitespaceAssessment.score}
+          config={categoryConfig}
         />
-        
+
         <MetricsGrid className="mb-6">
           <MetricItem label="Whitespace Ratio" value={whitespaceAssessment.metrics.whitespaceRatio.toFixed(2)} />
           <MetricItem label="Clutter Score" value={whitespaceAssessment.metrics.clutterScore} />
@@ -62,28 +61,10 @@ export default function WhitespaceSection({ whitespaceAssessment }: WhitespaceSe
           <MetricItem label="Spacing Adequate" value={whitespaceAssessment.metrics.hasAdequateSpacing ? 'Yes' : 'No'} />
         </MetricsGrid>
 
-        <div className="space-y-4">
-          {Object.entries(groupedIssues).map(([impact, items]) => (
-            <AccordionSection
-              key={`whitespace-issues-${impact}`}
-              title="Issues"
-              impact={impact as any}
-              items={items}
-              type="issues"
-              defaultOpen={impact === 'High'}
-            />
-          ))}
-          {Object.entries(groupedRecommendations).map(([impact, items]) => (
-            <AccordionSection
-              key={`whitespace-recommendations-${impact}`}
-              title="Recommendations"
-              impact={impact as any}
-              items={items}
-              type="recommendations"
-              defaultOpen={impact === 'High'}
-            />
-          ))}
-        </div>
+        <IssuesWithFixesList
+          pairs={pairs}
+          defaultOpen={hasHighImpact}
+        />
       </div>
     </div>
   )

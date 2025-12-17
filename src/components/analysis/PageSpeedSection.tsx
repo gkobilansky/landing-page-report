@@ -1,8 +1,8 @@
 import React from 'react'
 import SectionHeader from '../ui/SectionHeader'
 import PerformanceBar from '../ui/PerformanceBar'
-import AccordionSection from '../AccordionSection'
-import { categorizeContent, groupByImpact } from '@/lib/impact-analyzer'
+import { IssuesWithFixesList } from '../IssueWithFix'
+import { pairIssuesWithFixes } from '@/lib/issue-fix-pairer'
 
 interface PageLoadSpeed {
   score: number
@@ -30,47 +30,28 @@ const categoryConfig = {
 }
 
 export default function PageSpeedSection({ pageLoadSpeed }: PageSpeedSectionProps) {
-  const categorized = categorizeContent(pageLoadSpeed.issues, pageLoadSpeed.recommendations)
-  const groupedIssues = groupByImpact(categorized.issues)
-  const groupedRecommendations = groupByImpact(categorized.recommendations)
+  const pairs = pairIssuesWithFixes(pageLoadSpeed.issues, pageLoadSpeed.recommendations)
+  const hasHighImpact = pairs.some(p => p.impact === 'High')
 
   return (
     <div>
       <div className={`rounded-xl border p-8 ${categoryConfig.bgClass} ${categoryConfig.borderClass}`}>
-        <SectionHeader 
-          title="Page Load Speed" 
-          score={pageLoadSpeed.score} 
-          config={categoryConfig} 
+        <SectionHeader
+          title="Page Load Speed"
+          score={pageLoadSpeed.score}
+          config={categoryConfig}
         />
 
-        <PerformanceBar 
+        <PerformanceBar
           score={pageLoadSpeed.score}
           description={`${pageLoadSpeed.metrics.speedDescription} - ${pageLoadSpeed.metrics.relativeTo}`}
           colorTheme={categoryConfig.colorTheme}
         />
 
-        <div className="space-y-4">
-          {Object.entries(groupedIssues).map(([impact, items]) => (
-            <AccordionSection
-              key={`issues-${impact}`}
-              title="Issues"
-              impact={impact as any}
-              items={items}
-              type="issues"
-              defaultOpen={impact === 'High'}
-            />
-          ))}
-          {Object.entries(groupedRecommendations).map(([impact, items]) => (
-            <AccordionSection
-              key={`recommendations-${impact}`}
-              title="Recommendations"
-              impact={impact as any}
-              items={items}
-              type="recommendations"
-              defaultOpen={impact === 'High'}
-            />
-          ))}
-        </div>
+        <IssuesWithFixesList
+          pairs={pairs}
+          defaultOpen={hasHighImpact}
+        />
       </div>
     </div>
   )

@@ -2,8 +2,8 @@ import React from 'react'
 import SectionHeader from '../ui/SectionHeader'
 import CategoryTag from '../ui/CategoryTag'
 import { MetricsGrid, MetricItem } from '../ui/MetricsGrid'
-import AccordionSection from '../AccordionSection'
-import { categorizeContent, groupByImpact } from '@/lib/impact-analyzer'
+import { IssuesWithFixesList } from '../IssueWithFix'
+import { pairIssuesWithFixes } from '@/lib/issue-fix-pairer'
 
 interface SocialProof {
   score: number
@@ -52,19 +52,18 @@ const categoryConfig = {
 }
 
 export default function SocialProofSection({ socialProof }: SocialProofSectionProps) {
-  const categorized = categorizeContent(socialProof.issues, socialProof.recommendations)
-  const groupedIssues = groupByImpact(categorized.issues)
-  const groupedRecommendations = groupByImpact(categorized.recommendations)
+  const pairs = pairIssuesWithFixes(socialProof.issues, socialProof.recommendations)
+  const hasHighImpact = pairs.some(p => p.impact === 'High')
 
   return (
     <div>
       <div className={`rounded-xl border p-8 ${categoryConfig.bgClass} ${categoryConfig.borderClass}`}>
-        <SectionHeader 
-          title="Social Proof" 
-          score={socialProof.score} 
-          config={categoryConfig} 
+        <SectionHeader
+          title="Social Proof"
+          score={socialProof.score}
+          config={categoryConfig}
         />
-        
+
         <MetricsGrid className="mb-6">
           <MetricItem label="Total Elements" value={socialProof.summary.totalElements} />
           <MetricItem label="Above Fold" value={socialProof.summary.aboveFoldElements} />
@@ -73,7 +72,7 @@ export default function SocialProofSection({ socialProof }: SocialProofSectionPr
           <MetricItem label="Trust Badges" value={socialProof.summary.trustBadges} />
           <MetricItem label="Customer Counts" value={socialProof.summary.customerCounts} />
         </MetricsGrid>
-        
+
         {socialProof.elements.length > 0 ? (
           <div className="mb-6">
             <h4 className="font-semibold text-sm uppercase tracking-wide text-gray-100 mb-4">Social Proof Elements</h4>
@@ -103,29 +102,11 @@ export default function SocialProofSection({ socialProof }: SocialProofSectionPr
         ) : (
           <div className="text-gray-400 text-sm mb-6">No social proof elements detected.</div>
         )}
-        
-        <div className="space-y-4">
-          {Object.entries(groupedIssues).map(([impact, items]) => (
-            <AccordionSection
-              key={`social-issues-${impact}`}
-              title="Issues"
-              impact={impact as any}
-              items={items}
-              type="issues"
-              defaultOpen={impact === 'High'}
-            />
-          ))}
-          {Object.entries(groupedRecommendations).map(([impact, items]) => (
-            <AccordionSection
-              key={`social-recommendations-${impact}`}
-              title="Recommendations"
-              impact={impact as any}
-              items={items}
-              type="recommendations"
-              defaultOpen={impact === 'High'}
-            />
-          ))}
-        </div>
+
+        <IssuesWithFixesList
+          pairs={pairs}
+          defaultOpen={hasHighImpact}
+        />
       </div>
     </div>
   )

@@ -1,8 +1,8 @@
 import React from 'react'
 import SectionHeader from '../ui/SectionHeader'
 import CategoryTag from '../ui/CategoryTag'
-import AccordionSection from '../AccordionSection'
-import { categorizeContent, groupByImpact } from '@/lib/impact-analyzer'
+import { IssuesWithFixesList } from '../IssueWithFix'
+import { pairIssuesWithFixes } from '@/lib/issue-fix-pairer'
 
 interface FontUsage {
   score: number
@@ -28,19 +28,18 @@ const categoryConfig = {
 }
 
 export default function FontUsageSection({ fontUsage }: FontUsageSectionProps) {
-  const categorized = categorizeContent(fontUsage.issues, fontUsage.recommendations)
-  const groupedIssues = groupByImpact(categorized.issues)
-  const groupedRecommendations = groupByImpact(categorized.recommendations)
+  const pairs = pairIssuesWithFixes(fontUsage.issues, fontUsage.recommendations)
+  const hasHighImpact = pairs.some(p => p.impact === 'High')
 
   return (
     <div>
       <div className={`rounded-xl border p-8 ${categoryConfig.bgClass} ${categoryConfig.borderClass}`}>
-        <SectionHeader 
-          title="Font Usage" 
-          score={fontUsage.score} 
-          config={categoryConfig} 
+        <SectionHeader
+          title="Font Usage"
+          score={fontUsage.score}
+          config={categoryConfig}
         />
-        
+
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h4 className="font-semibold text-sm uppercase tracking-wide text-gray-100">Font Families</h4>
@@ -65,28 +64,10 @@ export default function FontUsageSection({ fontUsage }: FontUsageSectionProps) {
           </div>
         </div>
 
-        <div className="space-y-4">
-          {Object.entries(groupedIssues).map(([impact, items]) => (
-            <AccordionSection
-              key={`fonts-issues-${impact}`}
-              title="Issues"
-              impact={impact as any}
-              items={items}
-              type="issues"
-              defaultOpen={impact === 'High'}
-            />
-          ))}
-          {Object.entries(groupedRecommendations).map(([impact, items]) => (
-            <AccordionSection
-              key={`fonts-recommendations-${impact}`}
-              title="Recommendations"
-              impact={impact as any}
-              items={items}
-              type="recommendations"
-              defaultOpen={impact === 'High'}
-            />
-          ))}
-        </div>
+        <IssuesWithFixesList
+          pairs={pairs}
+          defaultOpen={hasHighImpact}
+        />
       </div>
     </div>
   )
