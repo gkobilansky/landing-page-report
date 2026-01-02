@@ -1,6 +1,11 @@
 import type { Browser } from 'puppeteer-core';
 import { createPuppeteerBrowser } from './puppeteer-config';
 import { getSpeedRecommendations, RecommendationContext } from './recommendations';
+import {
+  fetchBrowserlessPerformance,
+  isBrowserlessAvailable,
+  type BrowserlessPerformanceMetrics,
+} from './browserless-performance';
 
 export interface PageSpeedMetrics {
   lcp: number; // Largest Contentful Paint (ms)
@@ -11,6 +16,8 @@ export interface PageSpeedMetrics {
   loadComplete: number; // Load complete time (ms)
   resourceCount: number; // Total resources loaded
   totalSize: number; // Total page size (bytes)
+  ttfb?: number; // Time to First Byte (ms) - from Browserless API
+  speedIndex?: number; // Speed Index (ms) - from Browserless API
 }
 
 export interface PageSpeedAnalysisResult {
@@ -32,25 +39,120 @@ interface PageSpeedOptions {
     browser?: Browser;
     forceBrowserless?: boolean;
   };
+  /**
+   * When true, uses the Browserless /performance REST API for Lighthouse-based metrics
+   * even if a shared browser is provided. This gives more accurate Core Web Vitals
+   * but creates an additional API call.
+   *
+   * When false (default), reuses the shared browser to avoid redundant connections.
+   */
+  preferLighthouse?: boolean;
 }
 
 export async function analyzePageSpeedPuppeteer(
-  url: string, 
+  url: string,
   options: PageSpeedOptions = {}
 ): Promise<PageSpeedAnalysisResult> {
-  console.log(`🚀 Starting Puppeteer-based page speed analysis for: ${url}`);
+  console.log(`🚀 Starting page speed analysis for: ${url}`);
   const startTime = Date.now();
-  
+
+  const hasSharedBrowser = !!options.puppeteer?.browser;
+  const shouldUseLighthouse = options.preferLighthouse || !hasSharedBrowser;
+
+  // Use Browserless Performance REST API for more accurate Lighthouse-based metrics when:
+  // 1. No shared browser is provided (standalone speed test), OR
+  // 2. preferLighthouse is explicitly set to true
+  // This avoids redundant connections when running as part of a full analysis workflow
+  if (shouldUseLighthouse && isBrowserlessAvailable()) {
+    try {
+      console.log(hasSharedBrowser
+        ? '🔬 preferLighthouse=true: Using REST API for accurate metrics (separate from shared browser)'
+        : '🌐 No shared browser: Using Browserless Performance REST API');
+      return await analyzeWithBrowserlessAPI(url, options, startTime);
+    } catch (error) {
+      console.warn('⚠️ Browserless Performance API failed, falling back to Puppeteer:', error);
+      // Fall through to Puppeteer-based analysis
+    }
+  } else if (hasSharedBrowser) {
+    console.log('🔄 Using shared browser for performance metrics (efficient, single connection)');
+  }
+
+  // Use Puppeteer-based analysis:
+  // - When shared browser is provided (part of full analysis workflow)
+  // - In local development
+  // - As fallback when REST API fails
+  return await analyzeWithPuppeteer(url, options, startTime);
+}
+
+/**
+ * Analyze page speed using Browserless /performance REST API (Lighthouse-based)
+ */
+async function analyzeWithBrowserlessAPI(
+  url: string,
+  options: PageSpeedOptions,
+  startTime: number
+): Promise<PageSpeedAnalysisResult> {
+  console.log('🌐 Using Browserless Performance REST API for Lighthouse-based metrics...');
+
+  const token = process.env.BLESS_KEY!;
+  const timeout = options.timeout || 60000;
+
+  const result = await fetchBrowserlessPerformance(url, { token, timeout });
+  const browserlessMetrics = result.metrics;
+
+  // Convert Browserless metrics to our PageSpeedMetrics format
+  const metrics: PageSpeedMetrics = {
+    lcp: browserlessMetrics.lcp,
+    fcp: browserlessMetrics.fcp,
+    cls: browserlessMetrics.cls,
+    tbt: browserlessMetrics.tbt,
+    ttfb: browserlessMetrics.ttfb,
+    speedIndex: browserlessMetrics.speedIndex,
+    // These aren't provided by Lighthouse, so we set reasonable defaults
+    domContentLoaded: browserlessMetrics.fcp, // Approximate
+    loadComplete: browserlessMetrics.lcp, // Approximate
+    resourceCount: 0, // Not provided by Lighthouse performance API
+    totalSize: 0, // Not provided by Lighthouse performance API
+  };
+
+  // Use Lighthouse's score directly (already 0-100)
+  const score = browserlessMetrics.performanceScore;
+
+  // Generate issues and recommendations based on metrics
+  const { issues, recommendations } = generateRecommendations(metrics);
+
+  const loadTime = Date.now() - startTime;
+  console.log(`✅ Browserless Performance API analysis completed in ${loadTime}ms with score: ${score}`);
+
+  return {
+    score,
+    metrics,
+    issues,
+    recommendations,
+    loadTime,
+  };
+}
+
+/**
+ * Analyze page speed using Puppeteer and browser Performance APIs (fallback for local dev)
+ */
+async function analyzeWithPuppeteer(
+  url: string,
+  options: PageSpeedOptions,
+  startTime: number
+): Promise<PageSpeedAnalysisResult> {
+  console.log('📱 Using Puppeteer-based page speed analysis...');
+
   const providedBrowser = options.puppeteer?.browser;
   const shouldCloseBrowser = !providedBrowser;
   let browser: Browser | null = providedBrowser || null;
-  
+
   try {
     const viewport = options.viewport || { width: 1920, height: 1080 };
     const timeout = options.timeout || 60000;
 
     console.log('📱 Launching Puppeteer browser...');
-    
+
     if (!browser) {
       browser = await createPuppeteerBrowser({
         forceBrowserless: options.puppeteer?.forceBrowserless
@@ -65,15 +167,12 @@ export async function analyzePageSpeedPuppeteer(
     await page.coverage.startJSCoverage();
     await page.coverage.startCSSCoverage();
 
-    // Track navigation timing and paint metrics
-    const navigationStart = Date.now();
-    
     console.log('🌐 Navigating to URL and measuring performance...');
-    
+
     // Navigate and collect timing data
-    const response = await page.goto(url, { 
-      waitUntil: 'networkidle2', 
-      timeout 
+    const response = await page.goto(url, {
+      waitUntil: 'networkidle2',
+      timeout
     });
 
     if (!response) {
@@ -87,10 +186,10 @@ export async function analyzePageSpeedPuppeteer(
     const performanceMetrics = await page.evaluate(() => {
       const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
       const paintEntries = performance.getEntriesByType('paint');
-      
+
       let fcp = 0;
       let lcp = 0;
-      
+
       // Get First Contentful Paint
       const fcpEntry = paintEntries.find(entry => entry.name === 'first-contentful-paint');
       if (fcpEntry) {
@@ -136,7 +235,7 @@ export async function analyzePageSpeedPuppeteer(
       const resourceEntries = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
       let totalSize = 0;
       let resourceCount = resourceEntries.length;
-      
+
       // Estimate total size based on transfer sizes where available
       resourceEntries.forEach(resource => {
         if ((resource as any).transferSize) {
@@ -172,15 +271,15 @@ export async function analyzePageSpeedPuppeteer(
     };
 
     console.log('🎯 Calculating performance score and recommendations...');
-    
+
     // Calculate score based on metrics
     const score = calculatePerformanceScore(metrics);
     const { issues, recommendations } = generateRecommendations(metrics);
-    
+
     const loadTime = Date.now() - startTime;
-    
+
     console.log(`✅ Puppeteer page speed analysis completed in ${loadTime}ms with score: ${score}`);
-    
+
     return {
       score,
       metrics,
