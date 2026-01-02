@@ -39,6 +39,14 @@ interface PageSpeedOptions {
     browser?: Browser;
     forceBrowserless?: boolean;
   };
+  /**
+   * When true, uses the Browserless /performance REST API for Lighthouse-based metrics
+   * even if a shared browser is provided. This gives more accurate Core Web Vitals
+   * but creates an additional API call.
+   *
+   * When false (default), reuses the shared browser to avoid redundant connections.
+   */
+  preferLighthouse?: boolean;
 }
 
 export async function analyzePageSpeedPuppeteer(
@@ -48,17 +56,31 @@ export async function analyzePageSpeedPuppeteer(
   console.log(`🚀 Starting page speed analysis for: ${url}`);
   const startTime = Date.now();
 
-  // Use Browserless Performance REST API in production for more accurate Lighthouse-based metrics
-  if (isBrowserlessAvailable()) {
+  const hasSharedBrowser = !!options.puppeteer?.browser;
+  const shouldUseLighthouse = options.preferLighthouse || !hasSharedBrowser;
+
+  // Use Browserless Performance REST API for more accurate Lighthouse-based metrics when:
+  // 1. No shared browser is provided (standalone speed test), OR
+  // 2. preferLighthouse is explicitly set to true
+  // This avoids redundant connections when running as part of a full analysis workflow
+  if (shouldUseLighthouse && isBrowserlessAvailable()) {
     try {
+      console.log(hasSharedBrowser
+        ? '🔬 preferLighthouse=true: Using REST API for accurate metrics (separate from shared browser)'
+        : '🌐 No shared browser: Using Browserless Performance REST API');
       return await analyzeWithBrowserlessAPI(url, options, startTime);
     } catch (error) {
       console.warn('⚠️ Browserless Performance API failed, falling back to Puppeteer:', error);
       // Fall through to Puppeteer-based analysis
     }
+  } else if (hasSharedBrowser) {
+    console.log('🔄 Using shared browser for performance metrics (efficient, single connection)');
   }
 
-  // Local development or fallback: use Puppeteer-based analysis
+  // Use Puppeteer-based analysis:
+  // - When shared browser is provided (part of full analysis workflow)
+  // - In local development
+  // - As fallback when REST API fails
   return await analyzeWithPuppeteer(url, options, startTime);
 }
 

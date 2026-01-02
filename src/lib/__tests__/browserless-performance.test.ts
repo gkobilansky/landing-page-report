@@ -2,10 +2,16 @@ import {
   fetchBrowserlessPerformance,
   isBrowserlessAvailable,
 } from '../browserless-performance';
+import { analyzePageSpeedPuppeteer } from '../page-speed-puppeteer';
 
 // Mock fetch globally
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
+
+// Mock the puppeteer-config module
+jest.mock('../puppeteer-config', () => ({
+  createPuppeteerBrowser: jest.fn(),
+}));
 
 describe('Browserless Performance API', () => {
   const originalEnv = process.env;
@@ -14,6 +20,7 @@ describe('Browserless Performance API', () => {
     jest.clearAllMocks();
     process.env = { ...originalEnv };
     console.log = jest.fn();
+    console.warn = jest.fn();
   });
 
   afterEach(() => {
@@ -245,6 +252,114 @@ describe('Browserless Performance API', () => {
 
       expect(result.rawAudits).toBeDefined();
       expect(result.rawAudits!['largest-contentful-paint']).toBeDefined();
+    });
+  });
+
+  describe('analyzePageSpeedPuppeteer integration', () => {
+    const mockLighthouseResponse = {
+      audits: {
+        'largest-contentful-paint': { numericValue: 1200 },
+        'first-contentful-paint': { numericValue: 800 },
+        'cumulative-layout-shift': { numericValue: 0.02 },
+        'total-blocking-time': { numericValue: 150 },
+        'server-response-time': { numericValue: 50 },
+        'speed-index': { numericValue: 1500 },
+      },
+      categories: {
+        performance: { score: 0.95 },
+      },
+    };
+
+    it('should use REST API when no shared browser is provided in production', async () => {
+      process.env.NODE_ENV = 'production';
+      process.env.BLESS_KEY = 'test-token';
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockLighthouseResponse,
+      });
+
+      const result = await analyzePageSpeedPuppeteer('https://example.com', {});
+
+      // Should have called the REST API
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/performance'),
+        expect.any(Object)
+      );
+      expect(result.score).toBe(95);
+    });
+
+    it('should use shared browser instead of REST API when browser is provided', async () => {
+      process.env.NODE_ENV = 'production';
+      process.env.BLESS_KEY = 'test-token';
+
+      // Create a mock browser
+      const mockPage = {
+        setViewport: jest.fn(),
+        coverage: {
+          startJSCoverage: jest.fn(),
+          startCSSCoverage: jest.fn(),
+        },
+        goto: jest.fn().mockResolvedValue({ ok: true }),
+        evaluate: jest.fn()
+          .mockResolvedValueOnce({
+            domContentLoaded: 100,
+            loadComplete: 200,
+            fcp: 800,
+            lcp: 1200,
+            cls: 0.02,
+            responseTime: 50,
+            domInteractive: 900,
+          })
+          .mockResolvedValueOnce({
+            resourceCount: 30,
+            totalSize: 1500000,
+          }),
+        close: jest.fn(),
+      };
+
+      const mockBrowser = {
+        newPage: jest.fn().mockResolvedValue(mockPage),
+        close: jest.fn(),
+      };
+
+      const result = await analyzePageSpeedPuppeteer('https://example.com', {
+        puppeteer: { browser: mockBrowser as any },
+      });
+
+      // Should NOT have called the REST API
+      expect(mockFetch).not.toHaveBeenCalled();
+      // Should have used the shared browser
+      expect(mockBrowser.newPage).toHaveBeenCalled();
+    });
+
+    it('should use REST API when preferLighthouse is true even with shared browser', async () => {
+      process.env.NODE_ENV = 'production';
+      process.env.BLESS_KEY = 'test-token';
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockLighthouseResponse,
+      });
+
+      const mockBrowser = {
+        newPage: jest.fn(),
+        close: jest.fn(),
+      };
+
+      const result = await analyzePageSpeedPuppeteer('https://example.com', {
+        puppeteer: { browser: mockBrowser as any },
+        preferLighthouse: true,
+      });
+
+      // Should have called the REST API despite having a shared browser
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/performance'),
+        expect.any(Object)
+      );
+      // Should NOT have used the shared browser
+      expect(mockBrowser.newPage).not.toHaveBeenCalled();
+      expect(result.score).toBe(95);
     });
   });
 });
