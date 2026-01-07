@@ -113,9 +113,15 @@ src/
 
 #### 1. Font Analysis (`src/lib/font-analysis.ts`)
 - **Purpose**: Evaluate font family usage for performance and consistency
-- **Algorithm**: CSS parsing with font-family detection and stack handling
-- **Scoring**: 100pts (≤2 families), 85pts (3 families), penalized for excess
-- **Test Coverage**: 14 test cases including real-world font stacks
+- **Algorithm**: CSS parsing with font-family detection, variable font detection, and loading strategy analysis
+- **Features**:
+  - Comprehensive system font list (40+ fonts including modern fonts: Inter, Segoe UI, SF Pro, Roboto, Ubuntu, CJK fonts)
+  - Variable font detection via `font-variation-settings` and `woff2-variations` format
+  - Font loading strategy detection (`font-display`, preload hints)
+  - Font subsetting detection via `unicode-range`
+  - Performance impact calculation (render-blocking fonts, estimated load time)
+- **Scoring**: Base scoring for font counts, bonuses for variable fonts (+10), proper loading strategies (+5), subsetting (+5), preloading (+5)
+- **Test Coverage**: 13 test cases including variable font detection, loading strategy detection, and performance impact
 
 #### 2. Image Optimization (`src/lib/image-optimization.ts`) 
 - **Purpose**: Assess image format, sizing, and accessibility compliance
