@@ -81,7 +81,6 @@ export default function IndividualReportPage() {
       }
 
       const data = await response.json()
-      console.log(data)
       setAnalysis(data)
     } catch (err) {
       console.error('Error fetching analysis:', err)
